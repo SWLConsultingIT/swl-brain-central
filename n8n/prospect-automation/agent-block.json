@@ -1,0 +1,172 @@
+{
+  "name": "Prospect Automation - Agent Block",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Evaluate this Upwork job for SWL Consulting.\n\nJob Title: {{ $json.title }}\nTicket Max: ${{ $json.ticketMax }}\n\nJob Description:\n{{ $json.description }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a senior qualification analyst for SWL Consulting, an AI-native consulting firm.\n\nYour job: decide if an incoming Upwork prospect is a MATCH for SWL.\n\nYou have TWO tools:\n\n1. `swl_services_kb` — returns SWL's full services catalog (8 service areas + tools + keywords + what we DON'T do). Call this first to understand scope.\n\n2. `historical_sent_jobs` — returns jobs SWL actually sent proposals to in the last 60 days. Use this to learn SWL's REAL applied criteria (titles, budgets, areas they bet on). Treat 'Sent' as a positive signal — these passed manual review by the team.\n\nDecision protocol:\n- Step 1: Read the job title + description.\n- Step 2: Query `swl_services_kb` to confirm the work falls inside one of the 8 service areas.\n- Step 3: Query `historical_sent_jobs` filtered or sampled by similar title/keywords to see if SWL has applied to similar work. Quote 1–2 examples in your reason.\n- Step 4: Decide: match=true ONLY if BOTH (a) services_kb confirms scope AND (b) you can justify why SWL would realistically apply (precedent or strong fit). Otherwise match=false.\n- Step 5: Identify the service area name (one of the 8) or null if no match.\n\nHARD EXCLUSIONS (always match=false): pure graphic design only, physical manufacturing, legal services, medical services, academic writing, civil/mechanical/electrical engineering.\n\nReturn ONLY structured JSON. Keep `reason` ≤ 25 words, concrete, referencing precedent when possible."
+        }
+      },
+      "id": "agent-main",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1300, 304]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "lm-openai",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [1140, 520],
+      "credentials": {
+        "openAiApi": {
+          "id": "Y8OavhGlnZpshOwT",
+          "name": "Open AI SWL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"match\": true,\n  \"reason\": \"Brief justification referencing scope + precedent, max 25 words\",\n  \"area\": \"Corporate Advisory & Finance\"\n}"
+      },
+      "id": "output-parser",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [1280, 520]
+    },
+    {
+      "parameters": {
+        "name": "swl_services_kb",
+        "description": "Returns the SWL Consulting services knowledge base: 8 service areas (Corporate Advisory & Finance, Business Operations & Back-Office, Project Management & BI, Sales & Customer Success, Marketing & Brand, AI & Automation, System Integrations, Digital Experience & Product Dev), what SWL does NOT take, plus tools and keywords per area. Call this to verify whether a job's scope fits SWL's catalog.",
+        "language": "javaScript",
+        "jsCode": "return `SWL CONSULTING — SERVICES CATALOG (for scope qualification)\n\nTagline: \"Bigger Businesses, Stronger Teams\". 120+ projects delivered. Full-service business consulting.\n\nIndustries served: Real Estate, SaaS, Healthcare, Retail, Home Services (HVAC, Plumbing, Pumping, Gyms, Environmental, Laboratory, Clinic), E-Commerce, Private Equity, Financial Services.\n\nSWL DOES NOT TAKE (hard exclusions): pure graphic design only, physical manufacturing, legal services, medical services, academic writing, civil/mechanical/electrical engineering.\n\n============================================================\nAREA 1: CORPORATE ADVISORY & FINANCE\nServices: CFO Advisory / Fractional CFO; Financial Modeling & Valuations (P&L, cashflow, DCF, IRR, MOIC, EBITDA, sensitivity, scenario); Budgeting & Forecasting (Budget vs Actual ≤10%); Financial Reporting (income statement, balance sheet, monthly close, exec dashboards); Business Plan & Pitch Deck; M&A Support, equity analysis, private equity; Profitability & Cost Optimization; Financial Process Optimization; Startup Mentorship (unit economics, pricing strategy).\nTools: Fathom HQ, Floatapp, Baremetrics, Churnkey, Triple Whale, QuickBooks (QBO), Xero, NetSuite, Odoo, Power BI, Looker Studio, BigQuery, Google Sheets, Finmark, LivePlan.\nKeywords: CFO, Financial Analyst, Head of Finance, Finance Director, Financial Modeler, Forecast, Cashflow, P&L, Balance Sheet, Valuation, M&A, IRR, MOIC, DCF, EBITDA, Business Plan, Pitch Deck, Scenario Planning, Working Capital, Private Equity.\n\n============================================================\nAREA 2: BUSINESS OPERATIONS & BACK-OFFICE (Business Mastery)\nServices: Bookkeeping & Accounting Support (R2R, bank reconciliation, chart of accounts, invoicing); Virtual Assistance & Documentation Control; Supply Chain, Inventory, Warehouse, Demand Planning, Procurement, Vendor Management; Payroll & HR Administration (records, onboarding/offboarding); ERP Implementation (Odoo, QuickBooks, NetSuite, Xero, ServiceTitan, Xfin); Invoice Automation & Quote-to-Cash; Treasury & Revenue Management; SOPs & Process Documentation; Operational Efficiency.\nTools: Odoo, QuickBooks, Xero, NetSuite, ServiceTitan, Xfin, Notion, Google Drive, Clockify, Docusign, Wave, Float App.\nKeywords: Inventory Management, Warehouse Management, Procurement, Supply Chain, Bank Reconciliation, Treasury, Bookkeeper, Chart of Accounts, Business Operations, Business Consulting, Project Management, Notion, ClickUp, Asana, Jira.\n\n============================================================\nAREA 3: PROJECT MANAGEMENT & BUSINESS INTELLIGENCE\nServices: End-to-end PM, SOW execution, milestone management; BI Dashboards & KPI Reporting; Data Science & Analytics; Account Management & feedback intelligence; Executive insights; Operational efficiency optimization; Dashboard Development (Power BI, Looker Studio, Google Sheets); Data Pipeline & Database Management (BigQuery, SQL).\nTools: Notion, Monday, Asana, ClickUp, Jira, Miro, Power BI, Looker Studio, BigQuery, Google Sheets, Odoo, Klipfolio, Tableau.\nKeywords: Project Management, Business Intelligence, Dashboard, Reporting, KPIs, Data Analytics, Data Science, Power BI, Looker Studio, Tableau, BigQuery, SQL.\n\n============================================================\nAREA 4: SALES & CUSTOMER SUCCESS\nServices: CRM Setup & Pipeline Intelligence (GoHighLevel, Kommo, HubSpot, Salesforce); Multi-channel Outreach (email, LinkedIn, WhatsApp/SMS, cold calling); GTM Strategy, market entry, sales playbooks; Customer Success & Retention (NPS, churn, onboarding); Revenue Growth, partnerships, upsell/cross-sell; Lead Generation & Qualification (Apollo, Clay, Clearbit, ZoomInfo); Commercial Playbooks; Client Health Management.\nTools: GoHighLevel, Kommo, HubSpot, Salesforce, Instantly, Manyreach, Smartlead, Lemlist, Apollo, Clay, Clearbit, ZoomInfo, Twilio, Bounceban, Mailchimp, ConvertKit, Aircall, Gong.\nKeywords: CRM, Salesforce, HubSpot, Instantly, Apollo, Email marketing, Lead Gen, Kommo, GoHighLevel, Lemlist, Clay, LinkedIn Ads, GTM Strategy, Market Entry, Growth Strategy, Customer Success, Retention, NPS, Churn.\n\n============================================================\nAREA 5: MARKETING & BRAND STRATEGY\nServices: Social Media Management (Instagram, LinkedIn, TikTok, YouTube); Content Planning & Creative Direction; Brand Identity & Marketing Strategy; SEO/SEM & Online Presence; Digital Advertising (Google Ads, Meta, TikTok, LinkedIn); Growth Marketing; Marketing Analytics & Conversion Tracking (GA4, attribution); Social Media Automation (Metricool, Buffer, Hootsuite).\nTools: Metricool, Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads, GA4, Supermetrics, Gamma, Canva, Midjourney, Hootsuite, Buffer, SEMrush.\nKeywords: Social Media Management, Content Planning, Brand Identity, SEO, SEM, Google Ads, LinkedIn Ads, Meta Ads, TikTok Ads, Metricool, Canva, GA4, Growth Marketing, Marketing Analytics.\n\n============================================================\nAREA 6: AI & AUTOMATION\nServices: AI Consulting & Strategy; Predictive Models & ML (forecasting, classification, churn); Chatbots & LLM Fine-Tuning; AI-Driven Business Tools; Intelligent Agents (LangChain, LangGraph, AutoGen) and n8n agent workflows; RAG (knowledge bases, doc Q&A); AI training & onboarding; AI debugging/maintenance; Competitive Intelligence platforms.\nTools: n8n, Make, Zapier, LangChain, LangGraph, AutoGen, Python, Pinecone, Weaviate, ChromaDB, Supabase, AWS, Azure, FastAPI, Flask, Docker, Pandas, NumPy, Scikit-learn, Synthflow, Twilio.\nKeywords: AI, Machine Learning, LLM, NLP, Python, AI Agents, LangChain, LangGraph, RAG, Prompt Engineering, MCP, Automation, n8n, Zapier, Make.com, Chatbot, Supabase, Pinecone.\n\n============================================================\nAREA 7: SYSTEM INTEGRATIONS & AUTOMATIONS\nServices: System Architecture Design; CRM ↔ ERP ↔ BI ↔ Marketing ↔ Finance ↔ Ops integrations; Workflow Automation (n8n, Make, Zapier); Data Management & Migration; Monitoring & Maintenance; Web Scraping & Enrichment (Apify, PhantomBuster, SalesQL); Database Management (SQL, BigQuery, Supabase, Airtable); CRM & Tech Implementations.\nTools: n8n, Make, Zapier, Airtable, Softr, BigQuery, Supabase, Pinecone, Apify, PhantomBuster, SalesQL, Clearbit, ZoomInfo, Postman, Figma, Lucid, Notion, HubSpot, Salesforce, Odoo.\nKeywords: Automation, Integration, n8n, Zapier, Make.com, Scraping, Airtable, Softr, BigQuery, MySQL, SQL, Pinecone, Supabase, CRM, HubSpot, Notion, Salesforce, Odoo, System Architecture.\n\n============================================================\nAREA 8: DIGITAL EXPERIENCE & PRODUCT DEVELOPMENT\nServices: Web Development (WordPress, Webflow, Framer, Wix); E-commerce (Shopify, WooCommerce, Amazon, Magento); App Development & MVP; UX/UI Optimization (Figma); CRM Implementations (HubSpot, Notion, Salesforce, Odoo); Tech/SaaS Product Development; Digital Architecture; Automated Sales Solutions (TikTok shop, omnichannel); Performance Optimization (page speed, SEO technical).\nTools: WordPress, Webflow, Framer, Wix, Figma, Shopify, WooCommerce, Retool, Lovable, Cursor, Claude, V0, Bolt, Notion, HubSpot, Salesforce, Hotjar, Google Analytics, Supabase, n8n.\nKeywords: Web Development, Figma, Framer, Webflow, WordPress, WooCommerce, Shopify, App Development, Cursor, Claude, Lovable, V0, Bolt, UX/UI.`;\n"
+      },
+      "id": "tool-swl-kb",
+      "name": "SWL Services KB",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [1420, 520]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Returns rows from SWL's historical Upwork proposals sheet — every job SWL actually sent a proposal to in the last 60 days. Use this to learn the real applied criteria (what titles, budgets, and areas the team actually bet on). Treat 'Sent' as a positive precedent signal. Call this AFTER swl_services_kb to find 1-2 similar past jobs that justify the match decision.",
+        "documentId": {
+          "__rl": true,
+          "value": "1k-VoL8pshVVR65a-CKBTaEmnyJs7q7u8hN4k-hSleFw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "operation": "read",
+        "returnAllMatches": "all",
+        "filtersUI": {
+          "values": []
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "tool-historical-sheet",
+      "name": "Historical Sent Jobs",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [1560, 520],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aCSGdYIwBtZseOrB",
+          "name": "Google Sheets Isaac"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const parsed = $json.output || $json;\nconst src = $('Parsear Datos').item.json;\nreturn { json: { pageId: src.pageId, title: src.title, ticketMax: src.ticketMax, aiMatch: parsed.match === true, aiReason: parsed.reason || '', aiArea: parsed.area || null } };"
+      },
+      "id": "mapear-salida",
+      "name": "Mapear Salida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 304]
+    }
+  ],
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Mapear Salida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SWL Services KB": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Historical Sent Jobs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "swl-prospect-agent-block"
+  }
+}

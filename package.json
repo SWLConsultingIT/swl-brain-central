@@ -1,0 +1,15 @@
+{
+  "name": "upwork-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:connection": "node --env-file=.env.local test-connection.ts",
+    "migrate": "node --env-file=.env.local supabase/scripts/migrate-csv.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.0",
+    "@supabase/supabase-js": "^2.106.2",
+    "csv-parse": "^5.5.6"
+  }
+}
