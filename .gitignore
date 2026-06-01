@@ -19,3 +19,7 @@ d3fdde77-*/
 
 # Exports temporales
 data/exports/
+
+# n8n workflow exports (contienen credenciales en las versiones originales)
+JSON /
+JSON/
