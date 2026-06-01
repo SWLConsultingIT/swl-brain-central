@@ -1,6 +1,6 @@
-# Prospect Automation — AI Agent Block
+# Prospect Automation — AI Agent Block (spec de referencia)
 
-Contexto y notas para que cualquier sesión futura (humanos o Claude) retome el hilo sin perder nada.
+> **Nota:** este documento es **spec de referencia** para portar el Agent Block al brain. Los archivos `.json` (`agent-block.json`, `dedup-block.json`) que vivían acá fueron removidos del repo — eran scaffolds n8n superados por la versión completa que vive en `JSON /Prospect Automation - Agent Block.json` y por la auditoría en `docs/n8n-audit.md`. El workflow en la plataforma n8n sigue corriendo; este README documenta su diseño.
 
 ---
 
@@ -18,15 +18,15 @@ Schedule → Read Historical IDs (nuevo, lee sheet histórico una vez)
               ├─ true  → Descartado por Duplicado (Notion PATCH → "Discarded")
               └─ false → ¿Ticket >= $40?
                             ├─ false → Descartado por Ticket (Notion PATCH → "Discarded")
-                            └─ true  → [AI AGENT BLOCK] (agent-block.json)
+                            └─ true  → [AI AGENT BLOCK]
                                           → ¿Matchea con servicios SWL?
                                                 ├─ true  → Append "Qualified" sheet + Notion PATCH "Qualified"
                                                 └─ false → Append "Discarded" sheet + Notion PATCH "Discarded"
 ```
 
-El bloque del medio (lo que estaba como `Preparar Evaluación AI → OpenAI → Parsear Respuesta AI`) fue reemplazado por un **AI Agent con tools** (en `agent-block.json`).
+El bloque del medio (lo que estaba como `Preparar Evaluación AI → OpenAI → Parsear Respuesta AI`) fue reemplazado por un **AI Agent con tools**.
 
-El bloque de deduplicación (lee histórico una vez por run, dedupea batch + filtra ya-enviados) está en `dedup-block.json`.
+El bloque de deduplicación lee histórico una vez por run, dedupea batch + filtra ya-enviados.
 
 ---
 
@@ -42,9 +42,9 @@ El bloque de deduplicación (lee histórico una vez por run, dedupea batch + fil
 
 ---
 
-## Qué contiene `agent-block.json`
+## Qué contiene el AI Agent Block
 
-6 nodos para importar en n8n y enchufar en el hueco del canvas:
+6 nodos que conviven en el workflow n8n:
 
 | Nodo | Tipo | Función |
 |---|---|---|
@@ -54,21 +54,6 @@ El bloque de deduplicación (lee histórico una vez por run, dedupea batch + fil
 | `SWL Services KB` | `@n8n/n8n-nodes-langchain.toolCode` | **Tool 1** — devuelve el catálogo completo de servicios SWL (8 áreas + tools + keywords + exclusiones). Texto del `swl_consulting_RAG` embebido. |
 | `Historical Sent Jobs` | `n8n-nodes-base.googleSheetsTool` | **Tool 2** — lee el sheet con todas las propuestas enviadas en los últimos 60 días. Sheet ID: `1k-VoL8pshVVR65a-CKBTaEmnyJs7q7u8hN4k-hSleFw`. Read-only. |
 | `Mapear Salida` | `n8n-nodes-base.code` | Aplana el output del agent a las columnas que esperan los nodos downstream (`pageId, title, ticketMax, aiMatch, aiReason, aiArea`). |
-
----
-
-## Cómo importar en n8n
-
-1. Abrí el workflow **Prospect automation COPIA** en n8n.
-2. Botón derecho en el canvas → **Import from File** (o `Ctrl+Shift+V`) y seleccioná `agent-block.json`.
-3. Los 6 nodos caen en las posiciones X=1100–1680, Y=304–520 (justo en el hueco vacío).
-4. **Conectá manualmente**:
-   - Salida `true` de `¿Ticket >= $50?` → entrada de `AI Agent`.
-   - Salida de `Mapear Salida` → entrada de `¿Matchea con servicios SWL?`.
-5. **Re-asigná credenciales** si n8n las pide:
-   - `OpenAI Chat Model` → credencial `Open AI SWL`.
-   - `Historical Sent Jobs` → credencial `Google Sheets Isaac`.
-6. Ejecutá el workflow en modo manual con un prospect de prueba antes de activar el cron.
 
 ---
 
@@ -158,17 +143,6 @@ return {
   },
 };
 ```
-
----
-
-## Cómo importar el dedup block (`dedup-block.json`)
-
-1. Pegá los 4 nodos en el canvas (`Cmd+V` después de copiar el contenido del archivo, o `Import from File`).
-2. **Rewire la cadena principal**:
-   - Schedule Trigger → `Read Historical IDs` → Buscar Prospects (en vez de Schedule → Buscar Prospects directo).
-   - Parsear Datos → `Flag Duplicates` → `¿Es Duplicado?` → (true) `Descartado por Duplicado`; (false) `¿Ticket >= $40?`.
-3. Reasigná credenciales si n8n las pide (Google Sheets Isaac, Notion Seres Api).
-4. Actualizá el código del nodo `Parsear Datos` con el patch de arriba.
 
 ---
 
