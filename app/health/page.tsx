@@ -5,20 +5,26 @@ export const dynamic = 'force-dynamic'
 async function getCounts() {
   const supabase = getServerClient()
 
-  const [bu, proposals, prospects] = await Promise.all([
+  const [bu, proposals, prospects, jobs, jobDecisions] = await Promise.all([
     supabase.from('business_units').select('*', { count: 'exact', head: true }),
     supabase.from('proposals').select('*', { count: 'exact', head: true }),
     supabase.from('prospects').select('*', { count: 'exact', head: true }),
+    supabase.from('jobs').select('*', { count: 'exact', head: true }),
+    supabase.from('job_decisions').select('*', { count: 'exact', head: true }),
   ])
 
   return {
     business_units: bu.count ?? null,
     proposals: proposals.count ?? null,
     prospects: prospects.count ?? null,
+    jobs: jobs.count ?? null,
+    job_decisions: jobDecisions.count ?? null,
     errors: {
       business_units: bu.error?.message ?? null,
       proposals: proposals.error?.message ?? null,
       prospects: prospects.error?.message ?? null,
+      jobs: jobs.error?.message ?? null,
+      job_decisions: jobDecisions.error?.message ?? null,
     },
   }
 }
@@ -36,6 +42,8 @@ export default async function HealthPage() {
         <Row label="business_units" value={data.business_units} error={data.errors.business_units} />
         <Row label="proposals" value={data.proposals} error={data.errors.proposals} />
         <Row label="prospects" value={data.prospects} error={data.errors.prospects} />
+        <Row label="jobs" value={data.jobs} error={data.errors.jobs} />
+        <Row label="job_decisions" value={data.job_decisions} error={data.errors.job_decisions} />
       </div>
 
       <p className="text-xs opacity-50 mt-10">
