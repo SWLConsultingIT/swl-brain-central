@@ -5,40 +5,96 @@ import ClassifyButton from './classify-button'
 
 export const dynamic = 'force-dynamic'
 
-const STATUS_STYLE: Record<string, string> = {
-  new:              'bg-zinc-700 text-zinc-100',
-  prequalified:     'bg-amber-900/40 text-amber-200 border border-amber-700/40',
-  qualified:        'bg-emerald-900/40 text-emerald-200 border border-emerald-700/40',
-  proposal_drafted: 'bg-blue-900/40 text-blue-200 border border-blue-700/40',
-  ready_to_send:    'bg-violet-900/40 text-violet-200 border border-violet-700/40',
-  sent:             'bg-violet-700 text-white',
-  discarded:        'bg-zinc-800 text-zinc-500 line-through',
-  discarded_review: 'bg-orange-900/40 text-orange-200 border border-orange-700/40',
+// Mismas columnas que el Notion CRM de SWL, mismo orden y mismos emojis.
+type Column = {
+  status: string
+  label: string
+  emoji: string
+  accent: string // borde/header de la columna
 }
 
-function StatusPill({ status }: { status: string }) {
-  return (
-    <span className={`text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded ${STATUS_STYLE[status] ?? 'bg-zinc-700'}`}>
-      {status}
-    </span>
-  )
+const COLUMNS: Column[] = [
+  { status: 'new',              label: 'Prospect',          emoji: '🧲', accent: 'border-zinc-700' },
+  { status: 'prequalified',     label: 'Prequalified',      emoji: '🔒', accent: 'border-amber-700/60' },
+  { status: 'qualified',        label: 'Qualified',         emoji: '✅', accent: 'border-emerald-700/60' },
+  { status: 'proposal_drafted', label: 'Proposal',          emoji: '👀', accent: 'border-blue-700/60' },
+  { status: 'ready_to_send',    label: 'Ready to Send',     emoji: '📤', accent: 'border-violet-700/60' },
+  { status: 'sent',             label: 'Sent',              emoji: '📝', accent: 'border-violet-500/60' },
+  { status: 'discarded',        label: 'Discarded',         emoji: '💀', accent: 'border-zinc-800' },
+  { status: 'discarded_review', label: 'Revisar Discarded', emoji: '🔁', accent: 'border-orange-700/60' },
+]
+
+function shortUpworkUrl(link: string | null, upworkId: string | null): string {
+  if (!link) return ''
+  const id = upworkId ?? ''
+  const last5 = id.slice(-5)
+  return last5 ? `upwork.com/fre…${last5}/` : 'upwork.com/…'
 }
 
 function Ticket({ value, currency }: { value: number | null; currency: string | null }) {
-  if (value == null) return <span className="opacity-40">—</span>
+  if (value == null) return null
   const cur = currency ?? 'USD'
-  const bad = cur !== 'USD' || value < 40
+  const ok = cur === 'USD' && value >= 40
   return (
-    <span className={`tabular-nums ${bad ? 'text-red-400' : 'text-emerald-300'}`}>
+    <span
+      className={`inline-flex items-center text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
+        ok ? 'bg-emerald-900/40 text-emerald-200' : 'bg-zinc-800 text-zinc-400'
+      }`}
+    >
       {cur === 'USD' ? '$' : cur} {value}
     </span>
   )
 }
 
-function Score({ value }: { value: number | null }) {
-  if (value == null) return <span className="opacity-40">—</span>
-  const color = value >= 70 ? 'text-emerald-300' : value >= 40 ? 'text-amber-300' : 'text-zinc-400'
-  return <span className={`tabular-nums font-medium ${color}`}>{value}</span>
+function Card({ job }: { job: JobRow }) {
+  return (
+    <div className="bg-zinc-900/60 hover:bg-zinc-900 transition border border-white/5 rounded-lg p-3 space-y-2">
+      <div className="text-sm font-medium leading-snug">{job.title}</div>
+
+      {job.link && (
+        <a
+          href={job.link}
+          target="_blank"
+          rel="noreferrer"
+          className="block text-[11px] opacity-50 hover:opacity-100 truncate"
+        >
+          {shortUpworkUrl(job.link, job.upwork_id)}
+        </a>
+      )}
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Ticket value={job.ticket} currency={job.ticket_currency} />
+        {job.classifier_score != null && (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded tabular-nums ${
+              job.classifier_score >= 70
+                ? 'bg-emerald-900/40 text-emerald-200'
+                : job.classifier_score >= 40
+                  ? 'bg-amber-900/40 text-amber-200'
+                  : 'bg-zinc-800 text-zinc-400'
+            }`}
+          >
+            score {job.classifier_score}
+          </span>
+        )}
+        {job.classifier_area && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-200">
+            {job.classifier_area}
+          </span>
+        )}
+      </div>
+
+      {job.classifier_reason && (
+        <p className="text-[11px] opacity-60 italic leading-snug line-clamp-3">"{job.classifier_reason}"</p>
+      )}
+
+      {(job.status === 'new' || job.status === 'prequalified') && (
+        <div className="pt-1">
+          <ClassifyButton jobId={job.id} status={job.status} />
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default async function ProspectsPage() {
@@ -51,75 +107,47 @@ export default async function ProspectsPage() {
     error = (e as Error).message
   }
 
-  const byStatus = jobs.reduce<Record<string, number>>((acc, j) => {
-    acc[j.status] = (acc[j.status] ?? 0) + 1
-    return acc
-  }, {})
+  const byStatus = new Map<string, JobRow[]>()
+  for (const c of COLUMNS) byStatus.set(c.status, [])
+  for (const j of jobs) {
+    if (byStatus.has(j.status)) byStatus.get(j.status)!.push(j)
+  }
 
   return (
-    <main className="min-h-screen px-6 py-12 max-w-6xl mx-auto">
-      <header className="flex items-baseline justify-between mb-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Prospects</h1>
+    <main className="min-h-screen px-6 py-8">
+      <header className="flex items-baseline justify-between mb-6 max-w-[2400px] mx-auto">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">CRM UPWORK</h1>
+          <p className="text-xs opacity-50 mt-1">{jobs.length} jobs · Por estado</p>
+        </div>
         <Link href="/health" className="text-xs opacity-50 hover:opacity-100">/health</Link>
       </header>
-      <p className="text-sm opacity-60 mb-8">
-        Jobs scrapeados de Upwork. State machine: <span className="opacity-80">new → prequalified → qualified → proposal_drafted → ready_to_send → sent</span>
-      </p>
 
-      <div className="flex flex-wrap gap-2 mb-8 text-xs">
-        {Object.entries(byStatus).map(([s, n]) => (
-          <div key={s} className="flex items-center gap-1.5">
-            <StatusPill status={s} />
-            <span className="tabular-nums opacity-70">{n}</span>
-          </div>
-        ))}
-        {jobs.length === 0 && !error && (
-          <span className="opacity-50">No jobs yet. Run <code className="opacity-70">node --env-file=.env.local supabase/scripts/seed-sample-jobs.ts</code></span>
-        )}
-      </div>
+      {error && <p className="text-sm text-red-400 mb-6">Error: {error}</p>}
 
-      {error && (
-        <p className="text-sm text-red-400 mb-6">Error: {error}</p>
-      )}
-
-      <div className="overflow-x-auto -mx-2">
-        <table className="w-full text-sm">
-          <thead className="text-[10px] uppercase tracking-wide opacity-50">
-            <tr className="border-b border-white/10">
-              <th className="text-left font-medium py-2 px-2">Job</th>
-              <th className="text-right font-medium py-2 px-2">Ticket</th>
-              <th className="text-left font-medium py-2 px-2">Status</th>
-              <th className="text-right font-medium py-2 px-2">Score</th>
-              <th className="text-left font-medium py-2 px-2">Area</th>
-              <th className="text-left font-medium py-2 px-2">Reason</th>
-              <th className="text-right font-medium py-2 px-2 w-44">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.map(j => (
-              <tr key={j.id} className="border-b border-white/5 align-top">
-                <td className="py-3 px-2">
-                  <div className="font-medium leading-snug">{j.title}</div>
-                  <div className="text-[10px] opacity-40 mt-0.5 tabular-nums">
-                    {j.industry ? `${j.industry} · ` : ''}
-                    {j.country ?? ''}
-                    {j.upwork_id ? ` · ${j.upwork_id.slice(-8)}` : ''}
-                  </div>
-                </td>
-                <td className="py-3 px-2 text-right whitespace-nowrap">
-                  <Ticket value={j.ticket} currency={j.ticket_currency} />
-                </td>
-                <td className="py-3 px-2"><StatusPill status={j.status} /></td>
-                <td className="py-3 px-2 text-right"><Score value={j.classifier_score} /></td>
-                <td className="py-3 px-2 text-xs opacity-80">{j.classifier_area ?? <span className="opacity-30">—</span>}</td>
-                <td className="py-3 px-2 text-xs opacity-70 max-w-[280px]">{j.classifier_reason ?? <span className="opacity-30">—</span>}</td>
-                <td className="py-3 px-2 text-right">
-                  <ClassifyButton jobId={j.id} status={j.status} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="overflow-x-auto -mx-6 px-6 pb-4">
+        <div className="flex gap-4 min-w-max">
+          {COLUMNS.map(col => {
+            const items = byStatus.get(col.status) ?? []
+            return (
+              <div key={col.status} className="w-72 flex-shrink-0">
+                <div className={`flex items-center justify-between border-b-2 ${col.accent} pb-2 mb-3`}>
+                  <h2 className="text-sm font-medium">
+                    <span className="mr-1.5">{col.emoji}</span>
+                    {col.label}
+                  </h2>
+                  <span className="text-xs opacity-50 tabular-nums">{items.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {items.map(j => <Card key={j.id} job={j} />)}
+                  {items.length === 0 && (
+                    <div className="text-[11px] opacity-30 italic px-2 py-3">—</div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </main>
   )
