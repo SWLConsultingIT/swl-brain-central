@@ -31,5 +31,5 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(error.message)
-  return (data ?? []) as JobRow[]
+  return (data ?? []) as unknown as JobRow[]
 }
