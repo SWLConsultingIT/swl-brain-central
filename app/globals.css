@@ -1,25 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Financial-dashboard palette (slate-based dark) */
-  --color-bg:           #020617;
-  --color-fg:           #F8FAFC;
-  --color-card:         #0E1223;
-  --color-card-hover:   #161B30;
-  --color-muted:        #1A1E2F;
-  --color-muted-fg:     #94A3B8;
-  --color-border:       #1E293B;
-  --color-border-hover: #334155;
-  --color-accent:       #22C55E;
-  --color-destructive:  #EF4444;
-  --color-warning:      #F59E0B;
-  --color-info:         #3B82F6;
+  /* Light palette — Notion/Linear inspired */
+  --color-bg:             #FAFAFA;
+  --color-surface:        #FFFFFF;
+  --color-surface-hover:  #F9FAFB;
+  --color-fg:             #0A0A0A;
+  --color-fg-muted:       #52525B;
+  --color-fg-subtle:      #A1A1AA;
+  --color-border:         #EDEDF0;
+  --color-border-strong:  #E4E4E7;
+  --color-border-focus:   #D4D4D8;
 
-  color-scheme: dark;
+  --color-accent:         #059669;        /* emerald-600 — success / qualified */
+  --color-accent-bg:      #ECFDF5;        /* emerald-50 */
+  --color-accent-fg:      #047857;        /* emerald-700 */
+
+  --color-warning:        #B45309;        /* amber-700 */
+  --color-warning-bg:     #FFFBEB;        /* amber-50 */
+
+  --color-info:           #1D4ED8;        /* blue-700 */
+  --color-info-bg:        #EFF6FF;        /* blue-50 */
+
+  --color-destructive:    #B91C1C;        /* red-700 */
+  --color-destructive-bg: #FEF2F2;        /* red-50 */
+
+  --color-violet:         #6D28D9;        /* violet-700 */
+  --color-violet-bg:      #F5F3FF;        /* violet-50 */
+
+  --color-fuchsia:        #A21CAF;        /* fuchsia-700 */
+  --color-fuchsia-bg:     #FDF4FF;        /* fuchsia-50 */
+
+  --color-orange:         #C2410C;        /* orange-700 */
+  --color-orange-bg:      #FFF7ED;        /* orange-50 */
+
+  --color-slate:          #475569;        /* slate-600 */
+  --color-slate-bg:       #F1F5F9;        /* slate-100 */
+
+  color-scheme: light;
 }
 
 html, body {
@@ -29,15 +51,20 @@ html, body {
   font-feature-settings: 'cv11', 'ss01', 'ss03';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0;
 }
 
 ::selection {
-  background: rgba(34, 197, 94, 0.25);
-  color: var(--color-fg);
+  background: var(--color-accent-bg);
+  color: var(--color-accent-fg);
 }
 
-/* Subtle scrollbar for kanban horizontal scroll */
-.kanban-scroll::-webkit-scrollbar { height: 8px; }
+.kanban-scroll::-webkit-scrollbar { height: 10px; }
 .kanban-scroll::-webkit-scrollbar-track { background: transparent; }
-.kanban-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
-.kanban-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-border-hover); }
+.kanban-scroll::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 5px; }
+.kanban-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-border-focus); }

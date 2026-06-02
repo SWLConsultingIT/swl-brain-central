@@ -14,10 +14,10 @@ export default function ClassifyButton({ jobId, status }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   if (status !== 'new' && status !== 'prequalified') {
-    return <span className="text-xs text-muted-fg/40">—</span>
+    return <span className="text-xs text-fg-subtle">—</span>
   }
 
-  const label = status === 'new' ? 'Run ticket filter' : 'Run LLM classify →'
+  const label = status === 'new' ? 'Run ticket filter' : 'Run LLM classify'
 
   async function onClick() {
     setError(null)
@@ -31,17 +31,27 @@ export default function ClassifyButton({ jobId, status }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-stretch gap-1.5">
+    <div className="flex flex-col gap-1.5">
       <button
         type="button"
         onClick={onClick}
         disabled={pending}
-        className="text-[11px] font-medium px-3 py-1.5 rounded-md bg-muted hover:bg-border text-fg ring-1 ring-border hover:ring-border-hover transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-md bg-fg text-bg hover:bg-fg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {pending ? 'Running…' : label}
+        {pending ? (
+          <>
+            <span className="size-3 rounded-full border-2 border-bg/30 border-t-bg animate-spin" />
+            Running…
+          </>
+        ) : (
+          <>
+            {label}
+            <span aria-hidden>→</span>
+          </>
+        )}
       </button>
       {error && (
-        <span className="text-[10px] text-destructive leading-tight">
+        <span className="text-[11px] text-destructive leading-tight">
           {error}
         </span>
       )}
