@@ -144,6 +144,9 @@ wf.name = `Upwork → Supabase (${label}) v2`
 
 delete wf.id
 delete wf.versionId
+// pinData es caché de runs anteriores; inflas el JSON al pedo y es irrelevante
+// para el workflow nuevo (que va a correr fresh).
+if (wf.pinData) wf.pinData = {}
 wf.active = false
 
 fs.writeFileSync(OUTPUT, JSON.stringify(wf, null, 2))
