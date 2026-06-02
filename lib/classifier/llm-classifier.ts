@@ -5,7 +5,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const CLASSIFIER_MODEL = 'claude-sonnet-4-5'
+// Haiku 4.5 para clasificación: 3x más barato que Sonnet ($0.004 vs $0.013/call),
+// suficiente precisión para elegir 1 BU + score. Cover letter sigue en Sonnet
+// (lib/cover-letter/generator.ts) — calidad del texto importa para ganar el job.
+export const CLASSIFIER_MODEL = 'claude-haiku-4-5'
 
 const HARD_EXCLUSIONS = [
   'pure graphic design only',

@@ -18,15 +18,38 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
-import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, appendFileSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 // ── Args ────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2)
 const allFlag = argv.includes('--all')
 const limitArg = argv.includes('--limit') ? parseInt(argv[argv.indexOf('--limit') + 1] ?? '', 10) : NaN
+const offsetArg = argv.includes('--offset') ? parseInt(argv[argv.indexOf('--offset') + 1] ?? '', 10) : NaN
+const skipDoneFlag = argv.includes('--skip-done')
 const LIMIT = allFlag ? Number.MAX_SAFE_INTEGER : Number.isFinite(limitArg) ? limitArg : 20
+const OFFSET = Number.isFinite(offsetArg) ? offsetArg : 0
 const SINCE = '2026-04-02' // últimos 60 días
+
+// Set de proposal_ids ya procesados en JSONLs anteriores (cuando --skip-done).
+const alreadyDone = new Set<string>()
+if (skipDoneFlag) {
+  try {
+    const files = readdirSync('out').filter(f => f.startsWith('curator-run-') && f.endsWith('.jsonl'))
+    for (const f of files) {
+      const content = readFileSync(join('out', f), 'utf8')
+      for (const line of content.split('\n').filter(Boolean)) {
+        try {
+          const row = JSON.parse(line)
+          if (row.proposal_id) alreadyDone.add(row.proposal_id)
+        } catch {}
+      }
+    }
+    console.log(`Saltando ${alreadyDone.size} proposals ya procesados en JSONLs previos.`)
+  } catch (e) {
+    console.log(`(--skip-done sin out/ existente — skipping nothing)`)
+  }
+}
 
 const MODEL = 'claude-sonnet-4-5'
 const CONCURRENCY = 4 // paralelo razonable sin pegarle al rate limit
@@ -89,16 +112,35 @@ console.log(`  ${bus.length} BU cards cargadas.`)
 
 // ── 2. Cargar proposals últimos 60 días ────────────────────────────────
 console.log(`\nCargando proposals con sent_date >= ${SINCE}...`)
-const { data: proposalsRaw, error: pErr } = await supabase
-  .from('proposals')
-  .select('id, upwork_id, job_title, status, keyword, ai_summary, tools, business_unit_id')
-  .gte('sent_date', SINCE)
-  .not('job_title', 'is', null)
-  .order('sent_date', { ascending: false })
-  .limit(LIMIT)
-
-if (pErr || !proposalsRaw) throw new Error('cannot load proposals: ' + (pErr?.message ?? 'empty'))
-const proposals = proposalsRaw as any[]
+// Cuando --skip-done, fetcheamos pool amplio y filtramos los ya hechos hasta
+// llenar LIMIT. Si no, range directo con OFFSET/LIMIT.
+let proposals: any[] = []
+if (skipDoneFlag) {
+  const pool = Math.max(LIMIT + alreadyDone.size + 50, 500)
+  const { data, error } = await supabase
+    .from('proposals')
+    .select('id, upwork_id, job_title, status, keyword, ai_summary, tools, business_unit_id')
+    .gte('sent_date', SINCE)
+    .not('job_title', 'is', null)
+    .order('sent_date', { ascending: false })
+    .order('id', { ascending: true })
+    .range(0, pool - 1)
+  if (error || !data) throw new Error('cannot load proposals: ' + (error?.message ?? 'empty'))
+  proposals = (data as any[]).filter(p => !alreadyDone.has(p.id)).slice(0, LIMIT)
+} else {
+  const rangeEnd =
+    LIMIT === Number.MAX_SAFE_INTEGER ? OFFSET + 9999 : OFFSET + LIMIT - 1
+  const { data, error } = await supabase
+    .from('proposals')
+    .select('id, upwork_id, job_title, status, keyword, ai_summary, tools, business_unit_id')
+    .gte('sent_date', SINCE)
+    .not('job_title', 'is', null)
+    .order('sent_date', { ascending: false })
+    .order('id', { ascending: true })
+    .range(OFFSET, rangeEnd)
+  if (error || !data) throw new Error('cannot load proposals: ' + (error?.message ?? 'empty'))
+  proposals = data as any[]
+}
 console.log(`  ${proposals.length} proposals cargadas.`)
 
 // ── 3. Prompt builder ──────────────────────────────────────────────────
