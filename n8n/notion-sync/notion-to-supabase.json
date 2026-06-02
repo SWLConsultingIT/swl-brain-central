@@ -1,0 +1,166 @@
+{
+  "name": "Brain Central — Notion to Supabase Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8,
+              "triggerAtMinute": 5
+            }
+          ]
+        }
+      },
+      "id": "9b1f8c2e-1111-4aaa-9bbb-000000000001",
+      "name": "Schedule Daily 8:05",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "249d4ea8-d5a6-8071-ae52-d25f0bd5a233",
+          "mode": "id"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "filterType": "manual",
+        "matchType": "anyFilter",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Created time|created_time",
+              "condition": "after",
+              "createdTimeValue": "={{ $now.minus({hours: 26}).toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9b1f8c2e-1111-4aaa-9bbb-000000000002",
+      "name": "Notion: CRM UPWORK últimas 26h",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "Conectar credential Notion existente después de importar. DB ID es de tu CRM UPWORK."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mapea propiedades Notion → schema Supabase.jobs\n// Filtra: necesita upwork_id para idempotencia (UPSERT key).\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const page = item.json;\n  const props = page.properties || {};\n\n  // ── Title ──\n  const titleField = props['Job Tittle'] || props['Job Title'] || props['Name'] || props['title'];\n  const title =\n    titleField?.title?.[0]?.plain_text ||\n    titleField?.rich_text?.[0]?.plain_text ||\n    null;\n\n  if (!title) continue; // sin título, no procesa\n\n  // ── Description ──\n  const descField = props['description'] || props['Description'];\n  const description =\n    descField?.rich_text?.map(t => t.plain_text).join('').trim() || null;\n\n  // ── Link ──\n  const linkField = props['Link'] || props['URL'] || props['Upwork Link'];\n  const link =\n    linkField?.url ||\n    linkField?.rich_text?.[0]?.plain_text ||\n    linkField?.title?.[0]?.plain_text ||\n    null;\n\n  // ── Upwork ID (de la propiedad o extraído del link) ──\n  const upworkIdField = props['Upwork ID'] || props['UpworkID'] || props['upwork_id'];\n  let upworkId =\n    upworkIdField?.rich_text?.[0]?.plain_text ||\n    upworkIdField?.number?.toString() ||\n    upworkIdField?.title?.[0]?.plain_text ||\n    null;\n\n  if (!upworkId && link) {\n    const m =\n      link.match(/~0?(\\d{10,})/) ||\n      link.match(/jobs\\/~0?(\\d{10,})/) ||\n      link.match(/(\\d{10,})/);\n    if (m) upworkId = m[1];\n  }\n\n  if (!upworkId) continue; // sin upwork_id no podemos upsertear\n\n  // ── Ticket (parse \"$X - $Y\" o \"$X\") ──\n  const ticketField = props['Ticket'];\n  const ticketRaw =\n    ticketField?.formula?.string ||\n    ticketField?.rich_text?.[0]?.plain_text ||\n    ticketField?.select?.name ||\n    '';\n\n  let ticket = null;\n  const rangeMatch = ticketRaw.match(/\\$?\\s*([\\d.]+)\\s*[-–]\\s*\\$?\\s*([\\d.]+)/);\n  if (rangeMatch) {\n    ticket = parseFloat(rangeMatch[2]); // máximo del rango\n  } else {\n    const single = ticketRaw.match(/\\$?\\s*([\\d.]+)/);\n    if (single) ticket = parseFloat(single[1]);\n  }\n\n  // ── AI Summary ──\n  const aiField = props['AI Summary'] || props['ai_summary'];\n  const ai_summary =\n    aiField?.rich_text?.map(t => t.plain_text).join('').trim() || null;\n\n  // ── Country (si lo tenés en Notion) ──\n  const countryField = props['Country'] || props['country'];\n  const country =\n    countryField?.select?.name ||\n    countryField?.rich_text?.[0]?.plain_text ||\n    null;\n\n  out.push({\n    json: {\n      upwork_id: upworkId,\n      title,\n      description,\n      link,\n      ticket,\n      ticket_currency: ticket != null ? 'USD' : null,\n      country,\n      ai_summary,\n      status: 'new',\n      notion_page_id: page.id, // para referencia cruzada\n    },\n  });\n}\n\nreturn out;\n"
+      },
+      "id": "9b1f8c2e-1111-4aaa-9bbb-000000000003",
+      "name": "Transform: Notion → Supabase schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?on_conflict=upwork_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "9b1f8c2e-1111-4aaa-9bbb-000000000004",
+      "name": "Supabase: UPSERT jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
+      "notes": "UPSERT por upwork_id. Idempotente: si el job ya existe, lo actualiza; si no, lo inserta. El trigger Postgres jobs_brain_after_insert corre el ticket filter automáticamente para los nuevos."
+    },
+    {
+      "parameters": {
+        "content": "## Brain Central — Notion to Supabase Sync\n\n**Qué hace:** cada día a las 8:05 AM, lee los jobs nuevos de Notion CRM UPWORK (últimas 26h) y los inserta en `Supabase.jobs` con `status='new'`.\n\n**Idempotente:** UPSERT por `upwork_id`. Si corre 2 veces o un job ya existe, no duplica.\n\n**Lo que pasa DESPUÉS automáticamente:**\n1. Postgres trigger `jobs_brain_after_insert` corre el ticket filter en cada nuevo job.\n2. Si ticket ≥ $40 USD → status pasa a `prequalified`.\n3. Si no → `discarded`.\n\n**Para clasificar con LLM (Stage 2)** y generar cover letters, correr manualmente o por cron:\n```\nnode --env-file=.env.local --experimental-strip-types supabase/scripts/run-classifier-stage2.ts\nnode --env-file=.env.local --experimental-strip-types supabase/scripts/run-cover-letters.ts\n```\n\n**Sin tocar Notion:** este flujo solo LEE de Notion. El flujo original que escribe a Notion sigue corriendo intacto.",
+        "height": 400,
+        "width": 360
+      },
+      "id": "9b1f8c2e-1111-4aaa-9bbb-000000000005",
+      "name": "README",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Daily 8:05": {
+      "main": [
+        [
+          {
+            "node": "Notion: CRM UPWORK últimas 26h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: CRM UPWORK últimas 26h": {
+      "main": [
+        [
+          {
+            "node": "Transform: Notion → Supabase schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform: Notion → Supabase schema": {
+      "main": [
+        [
+          {
+            "node": "Supabase: UPSERT jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "00000000-0000-0000-0000-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

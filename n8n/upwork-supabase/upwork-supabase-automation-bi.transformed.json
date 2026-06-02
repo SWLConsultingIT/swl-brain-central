@@ -1,0 +1,1097 @@
+{
+  "name": "Upwork → Supabase (Automation BI) v2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -384
+      ],
+      "id": "3b9c73ab-5420-4d67-9961-9e40a21e29f5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d2419f3a-1137-40d8-85da-1f974cf71cc8",
+              "name": "searches",
+              "value": "[\n  { \"term\": \"Dashboard\", \"maxPage\": 4 },\n  { \"term\": \"Reporting\", \"maxPage\": 4 },\n  { \"term\": \"Business Intelligence\", \"maxPage\": 4 },\n  { \"term\": \"KPIS\", \"maxPage\": 4 },\n\n  { \"term\": \"Automation\", \"maxPage\": 4 },\n  { \"term\": \"Integration\", \"maxPage\": 4 },\n  { \"term\": \"Scrapping\", \"maxPage\": 4 },\n  { \"term\": \"LLM\", \"maxPage\": 4 },\n  { \"term\": \"AI\", \"maxPage\": 4 },\n  { \"term\": \"Python\", \"maxPage\": 4 },\n  { \"term\": \"C++\", \"maxPage\": 4 },\n  { \"term\": \"NLP\", \"maxPage\": 4 },\n  { \"term\": \"Algorithms\", \"maxPage\": 4 },\n  { \"term\": \"Git\", \"maxPage\": 4 },\n  { \"term\": \"AI Agents\", \"maxPage\": 4 },\n  { \"term\": \"LangChain\", \"maxPage\": 4 },\n  { \"term\": \"LangGraph\", \"maxPage\": 4 },\n  { \"term\": \"AI Agents\", \"maxPage\": 4 },\n  { \"term\": \"AutoGen\", \"maxPage\": 4 },\n  { \"term\": \"RAG\", \"maxPage\": 4 },\n  { \"term\": \"Prompt Engineering\", \"maxPage\": 4 },\n  { \"term\": \"MCP\", \"maxPage\": 4 },\n  \n\n  { \"term\": \"Tableau\", \"maxPage\": 4 },\n  { \"term\": \"Power BI\", \"maxPage\": 4 },\n  { \"term\": \"Looker Studio\", \"maxPage\": 4 },\n  { \"term\": \"Google Sheets\", \"maxPage\": 4 },\n\n  { \"term\": \"Low Code\", \"maxPage\": 2 },\n  { \"term\": \"None Code\", \"maxPage\": 2 },\n  { \"term\": \"Airtable\", \"maxPage\": 2 },\n  { \"term\": \"Softr\", \"maxPage\": 2 },\n\n  { \"term\": \"N8N\", \"maxPage\": 2 },\n  { \"term\": \"Zapier\", \"maxPage\": 2 },\n  { \"term\": \"Power Automate\", \"maxPage\": 2 },\n\n  { \"term\": \"Big Query\", \"maxPage\": 2 },\n  { \"term\": \"Mysql\", \"maxPage\": 2 },\n  { \"term\": \"SQL\", \"maxPage\": 2 },\n  { \"term\": \"Pinecone\", \"maxPage\": 2 },\n  { \"term\": \"Supabase\", \"maxPage\": 2 },\n  { \"term\": \"Snowflake\", \"maxPage\": 2 },\n\n  { \"term\": \"Data analyst\", \"maxPage\": 2 },\n  { \"term\": \"Data Analytics\", \"maxPage\": 2 }\n\n\n]",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        640
+      ],
+      "id": "8c1597fa-cc26-4a0a-a8f0-195acfd857d5",
+      "name": "searches"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "searches",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        640
+      ],
+      "id": "f70340ca-09c6-490c-8c80-1ba2be0ea37e",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dd98cfaa-f109-4cbd-a34f-7a5eb27e0e4f",
+              "leftValue": "={{ $json.hasNextPage }}",
+              "rightValue": "={{ $('Init pagination state').item.json.maxPage }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        448
+      ],
+      "id": "1233bc7f-8a94-4803-89db-4cd775c58a69",
+      "name": "HasNextPage and LessThan"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upwork.com/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('Edit Fields2').item.json.api }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query FindJobs($filter: MarketplaceJobPostingsSearchFilter!, $searchType: MarketplaceJobPostingSearchType!, $sort: [MarketplaceJobPostingSearchSortAttribute!]) { marketplaceJobPostingsSearch(marketPlaceJobFilter: $filter, searchType: $searchType, sortAttributes: $sort) { totalCount pageInfo { hasNextPage endCursor } edges { node { id job { id activityStat { jobActivity { lastClientActivity invitesSent totalInvitedToInterview totalHired totalUnansweredInvites totalOffered totalRecommended } } } title description ciphertext duration durationLabel engagement amount { rawValue } recordNumber experienceLevel category subcategory freelancersToHire relevance { id effectiveCandidates recommendedEffectiveCandidates uniqueImpressions publishTime hoursInactive } enterprise relevanceEncoded totalApplicants preferredFreelancerLocation preferredFreelancerLocationMandatory premium clientNotSureFields clientPrivateFields applied createdDateTime publishedDateTime renewedDateTime client { memberSinceDateTime totalHires totalPostedJobs totalSpent { rawValue } verificationStatus location { city country timezone state offsetToUTC } totalReviews totalFeedback companyRid companyName edcUserId lastContractPlatform lastContractRid lastContractTitle hasFinancialPrivacy } skills { id name prettyName highlighted } occupations { category { id prefLabel } subCategories { id prefLabel } occupationService { id prefLabel } } hourlyBudgetType hourlyBudgetMin { rawValue } hourlyBudgetMax { rawValue } localJobUserDistance weeklyBudget { rawValue } totalFreelancersToHire teamId } } } }\",\n  \"variables\": {\n    \"filter\": {\n      \"verifiedPaymentOnly_eq\": true,\n      \"clientHiresRange_eq\": { \"rangeStart\": 1 },\n      \"locations_any\": [\n        \"United States\",\n        \"Canada\",\n        \"Argentina\",\n        \"Spain\",\n        \"Mexico\",\n        \"Bahamas\",\n        \"Brazil\",\n        \"British Virgin Islands\",\n        \"Chile\",\n        \"Colombia\",\n        \"Costa Rica\",\n        \"Dominican Republic\",\n        \"Ireland\",\n        \"Italy\",\n        \"Panama\",\n        \"Peru\",\n        \"Paraguay\",\n        \"United Kingdom\",\n        \"Switzerland\",\n        \"Uruguay\",\n        \"New Zealand\",\n        \"Australia\"\n      ],\n      \"proposalRange_eq\": { \"rangeEnd\": 30 },\n      \"jobType_eq\": \"HOURLY\",\n      \"hourlyRate_eq\": { \"rangeStart\": 25 },\n        \"searchExpression_eq\":\"\\\"{{ $json.term }}\\\"\" ,\n      \"pagination_eq\": { \"first\": 50, \"after\": \"1\" }\n    },\n    \"searchType\": \"USER_JOBS_SEARCH\",\n    \"sort\": [{ \"field\": \"RECENCY\" }]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1952,
+        448
+      ],
+      "id": "cb719919-6aca-497a-88c1-9128742ba81b",
+      "name": "upwork"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build [input, term] o items paginados con afters según totalCount y maxPage\n\nconst input = $input.first().json;\nconst search = input?.data?.marketplaceJobPostingsSearch ?? {};\nconst totalCount = Number(search.totalCount ?? 0);\nconst hasNextPage = !!search.pageInfo?.hasNextPage;\nconst edges = search.edges ?? [];\nconst api = $('Edit Fields2').first().json.api;\n\n// Term y maxPage desde \"Loop Over Items1\"\nconst loopFirst = $('Loop Over Items1')?.first();\nconst term = loopFirst?.json?.term ?? $json.term ?? 'unknown';\nconst maxPageRaw = Number(loopFirst?.json?.maxPage);\nconst maxPage = Number.isFinite(maxPageRaw) && maxPageRaw > 0 ? Math.floor(maxPageRaw) : 1;\n\n// Paginación (page size 50)\nconst PAGE_SIZE = 50;\nconst pagesByCount = Math.ceil(totalCount / PAGE_SIZE);\nconst pagesToFetch = Math.min(pagesByCount, maxPage);\nconst numAfters = Math.max(0, pagesToFetch - 1);\n\n// SIN páginas extra → devolver un solo item y meter term en data\nif (numAfters === 0) {\n  const out = JSON.parse(JSON.stringify(input));   // copia segura\n  out.data = out.data ?? {};\n  out.data.term = term;                             // queda en data.term\n  // Si lo preferís adentro del bloque de la búsqueda:\n  // out.data.marketplaceJobPostingsSearch._term = term;\n  return [{ json: out }];\n}\n\n// Con páginas extra → generar afters: \"51\", \"101\", \"151\", ...\nconst afters = Array.from({ length: numAfters }, (_, i) => String((i + 1) * PAGE_SIZE + 1));\n\nreturn afters.map(after => ({\n  json: { term, after, hasNextPage, edges, api }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        448
+      ],
+      "id": "1cf01e21-c77a-4f9a-a26b-842c003bc9b9",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1728,
+        640
+      ],
+      "id": "6d6e3c0c-bb8d-4b98-8b4a-aedead078320",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "E0C9hkSITDPDkaxz",
+          "mode": "list",
+          "cachedResultName": "My Sub-Workflow 3"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2624,
+        448
+      ],
+      "id": "7f570005-5d97-45ae-b0df-06043dbe4def",
+      "name": "Execute Workflow",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d7a6c5e2-8fc0-42f1-a423-9fde8b127522",
+              "name": "term",
+              "value": "={{ $json.term }}",
+              "type": "string"
+            },
+            {
+              "id": "6e4df0dc-5975-4e9a-887a-bbe8b3cfd278",
+              "name": "maxPage",
+              "value": "={{ $json.maxPage }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        640
+      ],
+      "id": "6cbed7a8-b191-4584-9599-57273ee95373",
+      "name": "Init pagination state"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge pages' edges into the single item coming from node \"upwork\"\n// Mode: Run Once for All Items\n\n// 1) Incoming pages\nconst pages = $input.all();\nconst term = $('HasNextPage and LessThan')?.first()?.json?.term ?? null;\n\n// 2) Base JSON from the \"upwork\" node (single item with edges array)\nconst baseJson = $('upwork').first().json;\nconst baseContainer = baseJson.data?.marketplaceJobPostingsSearch ?? baseJson;\nconst baseEdges = baseContainer.edges ?? [];\n\n// 3) Collect all new edges from the pages\nconst newEdges = [];\nfor (const it of pages) {\n  const e = it.json?.data?.marketplaceJobPostingsSearch?.edges ?? it.json?.edges ?? [];\n  newEdges.push(...e);\n}\n\n// 4) Merge + dedupe by job id (preferring first occurrence)\nconst getId = (x) => x?.node?.id ?? x?.id ?? x?.job?.id;\nconst seen = new Set();\nconst merged = [];\nfor (const e of [...baseEdges, ...newEdges]) {\n  const id = getId(e);\n  if (!id || seen.has(id)) continue;\n  seen.add(id);\n  merged.push(e);\n}\nbaseContainer.edges = merged;\n\n// 5) Carry forward pageInfo/totalCount from last page\nconst last = pages.at(-1)?.json?.data?.marketplaceJobPostingsSearch;\nif (last) {\n  baseContainer.pageInfo = last.pageInfo ?? baseContainer.pageInfo;\n  baseContainer.totalCount = last.totalCount ?? baseContainer.totalCount;\n}\n\n// 5.5) Adjuntá el term dentro de `data` (o usa _term para evitar choques)\nbaseJson.data = baseJson.data ?? {};\nbaseJson.data.term = term;        // o: baseContainer._term = term;\n\n// 6) Return: un solo item con todo\nreturn [{ json: baseJson }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        592
+      ],
+      "id": "f76d33e4-57e0-4cc2-8201-33316713ce53",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const pages = $input.all();\nconst nodes = [];\n\nfor (const { json } of pages) {\n  // ⬅️ term asociado a ESA página\n  const pageTerm = json?.data?.term ?? json?.term ?? null;\n\n  const j = json?.data?.marketplaceJobPostingsSearch ?? json?.data ?? json;\n\n  if (Array.isArray(j?.edges)) {\n    for (const e of j.edges) {\n      const n = e?.node;\n      if (n && (n.id || n.jobId || n.job_id)) {\n        nodes.push({ ...n, _term: pageTerm });   // ⬅️ guardo el term acá\n      }\n    }\n    continue;\n  }\n\n  if (j?.node && (j.node.id || j.node.jobId || j.node.job_id)) {\n    nodes.push({ ...j.node, _term: pageTerm });  // ⬅️\n    continue;\n  }\n  if (j?.id || j?.jobId || j?.job_id) {\n    nodes.push({ ...j, _term: pageTerm });       // ⬅️\n  }\n}\n\n\n// Dedupe by job id\nconst getId = (r) => r.jobId ?? r.job_id ?? r.id;\nconst uniq = new Map();\nfor (const n of nodes) {\n  const id = getId(n);\n  if (id && !uniq.has(id)) uniq.set(id, n);\n}\n\n// Map to your final shape (same as before)\nconst out = [...uniq.values()].map(node => ({\n  json: {\n    id: node.id ?? node.jobId ?? node.job_id,\n    title: node.title ?? null,\n    term: node._term ?? null,\n    description: node.description ?? null,\n    ciphertext: node.ciphertext ?? null,\n\n    // Duration & Engagement\n    duration: node.duration ?? null,\n    durationLabel: node.durationLabel ?? null,\n    engagement: node.engagement ?? null,\n\n    // Budget & Financial\n    amount: node.amount?.rawValue ?? null,\n    hourlyBudgetMin: node.hourlyBudgetMin?.rawValue ?? null,\n    hourlyBudgetMax: node.hourlyBudgetMax?.rawValue ?? null,\n    weeklyBudget: node.weeklyBudget?.rawValue ?? null,\n\n    // Job Details\n    recordNumber: node.recordNumber ?? null,\n    experienceLevel: node.experienceLevel ?? null,\n    category: node.category ?? null,\n    subcategory: node.subcategory ?? null,\n    freelancersToHire: node.freelancersToHire ?? null,\n\n    // Job Status\n    enterprise: node.enterprise ?? null,\n    premium: node.premium ?? null,\n    applied: node.applied ?? null,\n    relevanceEncoded: node.relevanceEncoded ?? null,\n\n    // Timestamps\n    createdDateTime: node.createdDateTime ?? null,\n    publishedDateTime: node.publishedDateTime ?? null,\n    renewedDateTime: node.renewedDateTime ?? null,\n\n    // Client Info\n    clientMemberSinceDateTime: node?.client?.memberSinceDateTime ?? null,\n    clientTotalHires: node?.client?.totalHires ?? null,\n    clientTotalPostedJobs: node?.client?.totalPostedJobs ?? null,\n    clientTotalSpent: node?.client?.totalSpent?.rawValue ?? null,\n    clientVerification: node?.client?.verificationStatus ?? null,\n    clientTotalReviews: node?.client?.totalReviews ?? null,\n    clientTotalFeedback: node?.client?.totalFeedback ?? null,\n    clientCompanyName: node?.client?.companyName ?? null,\n    clientCompanyRid: node?.client?.companyRid ?? null,\n    clientEdcUserId: node?.client?.edcUserId ?? null,\n    clientLastContractPlatform: node?.client?.lastContractPlatform ?? null,\n    clientLastContractRid: node?.client?.lastContractRid ?? null,\n    clientLastContractTitle: node?.client?.lastContractTitle ?? null,\n    clientHasFinancialPrivacy: node?.client?.hasFinancialPrivacy ?? null,\n\n    // Client Location\n    clientCountry: node?.client?.location?.country ?? null,\n    clientCity: node?.client?.location?.city ?? null,\n    clientState: node?.client?.location?.state ?? null,\n    clientTimezone: node?.client?.location?.timezone ?? null,\n    clientOffsetToUTC: node?.client?.location?.offsetToUTC ?? null,\n\n    // Relevance & Activity\n    totalApplicants: node.totalApplicants ?? null,\n    relevanceId: node?.relevance?.id ?? null,\n    relevanceEffectiveCandidates: node?.relevance?.effectiveCandidates ?? null,\n    relevanceRecommendedCandidates: node?.relevance?.recommendedEffectiveCandidates ?? null,\n    relevanceUniqueImpressions: node?.relevance?.uniqueImpressions ?? null,\n    relevancePublishTime: node?.relevance?.publishTime ?? null,\n    relevanceHoursInactive: node?.relevance?.hoursInactive ?? null,\n\n    // Job Activity\n    lastClientActivity: node?.job?.activityStat?.jobActivity?.lastClientActivity ?? null,\n    invitesSent: node?.job?.activityStat?.jobActivity?.invitesSent ?? null,\n    totalInvitedToInterview: node?.job?.activityStat?.jobActivity?.totalInvitedToInterview ?? null,\n    totalHired: node?.job?.activityStat?.jobActivity?.totalHired ?? null,\n    totalUnansweredInvites: node?.job?.activityStat?.jobActivity?.totalUnansweredInvites ?? null,\n    totalOffered: node?.job?.activityStat?.jobActivity?.totalOffered ?? null,\n    totalRecommended: node?.job?.activityStat?.jobActivity?.totalRecommended ?? null,\n\n    // Skills & Occupations\n    skills: node?.skills?.map(s => s.name) ?? [],\n    skillsPrettyNames: node?.skills?.map(s => s.prettyName) ?? [],\n    skillsHighlighted: node?.skills?.map(s => s.highlighted) ?? [],\n    occupationsCategoryId: node?.occupations?.category?.id ?? null,\n    occupationsCategoryLabel: node?.occupations?.category?.prefLabel ?? null,\n    occupationsSubCategories: node?.occupations?.subCategories?.map(s => s?.prefLabel) ?? [],\n    occupationsServiceId: node?.occupations?.occupationService?.id ?? null,\n    occupationsServiceLabel: node?.occupations?.occupationService?.prefLabel ?? null,\n\n    // Extras\n    preferredFreelancerLocation: node.preferredFreelancerLocation ?? [],\n    preferredFreelancerLocationMandatory: node.preferredFreelancerLocationMandatory ?? null,\n    clientNotSureFields: node.clientNotSureFields ?? [],\n    clientPrivateFields: node.clientPrivateFields ?? [],\n    hourlyBudgetType: node.hourlyBudgetType ?? null,\n    localJobUserDistance: node.localJobUserDistance ?? null,\n    totalFreelancersToHire: node.totalFreelancersToHire ?? null,\n    teamId: node.teamId ?? null,\n\n    _raw: node,\n  }\n}));\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        256
+      ],
+      "id": "02fafab1-99ec-49ec-b2c8-0b24f35e9f67",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const startIndex = 0;\nconst allItems = $input.all();\nconst filteredItems = allItems.slice(startIndex);\nreturn filteredItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2624,
+        256
+      ],
+      "id": "ba8cd257-7d6e-4091-a8f8-42c910edfff8",
+      "name": "Filtrar por indice"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract jobs from input (already flattened)\nconst jobs = $input.all();\n\n// Process each job to generate URL\nconst processedJobs = jobs.map(job => {\n  // Generate correct job URL format with proper casing and ID prefix\n  const jobTitleSlug = job.json.title\n    .replace(/[^a-zA-Z0-9\\s-]/g, '') // Remove special characters but keep letters\n    .replace(/\\s+/g, '-') // Replace spaces with hyphens\n    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen\n    .trim();\n  \n  // Add \"02\" prefix to the job ID if it doesn't have it\n  const jobIdWithPrefix = job.json.id.startsWith('02') ? job.json.id : `02${job.json.id}`;\n  \n  const jobUrl = `https://www.upwork.com/freelance-jobs/apply/${jobTitleSlug}_~${jobIdWithPrefix}/`;\n  \n  return {\n    jobId: job.json.id,\n    jobTitle: job.json.title,\n    jobUrl: jobUrl\n  };\n});\n\n// Return each job as a separate item\nreturn processedJobs.map(job => ({\n  json: job\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3968,
+        16
+      ],
+      "id": "d33fbd94-9ec8-4deb-89cf-0678bc992394",
+      "name": "URL"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7aded4e4-6ab2-4c15-a9a7-275ff9f2c716",
+              "name": "=id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "ae5ae4f0-0ad0-4654-9715-ae1405b62872",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "59f08ee4-684a-4d10-8ae5-a83aa0dee017",
+              "name": "description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "ff1a5785-6a85-42cd-9843-6a21fdf07673",
+              "name": "duration",
+              "value": "={{ $json.durationLabel }}",
+              "type": "string"
+            },
+            {
+              "id": "6bb95b5a-09eb-4856-b196-4926a6adb8af",
+              "name": "hours",
+              "value": "={{ $json.engagement }}",
+              "type": "string"
+            },
+            {
+              "id": "8ccb73be-e883-4c8c-b556-3d992e46066d",
+              "name": "ticket",
+              "value": "=${{ $json.hourlyBudgetMin }} - ${{ $json.hourlyBudgetMax }}",
+              "type": "string"
+            },
+            {
+              "id": "6b8ff0b2-3bd2-4299-8fb6-cbd4f7046fa2",
+              "name": "talentType",
+              "value": "={{ $json.experienceLevel.toSentenceCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "e6bcfbb0-07ef-42de-9d31-b488a4cb7f59",
+              "name": "clientVerification",
+              "value": "={{ $json.clientVerification.toSentenceCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "4758c8ef-5bab-4173-a2b1-6af3dc0adcea",
+              "name": "clientTotalHires",
+              "value": "={{ $json.clientTotalHires }}",
+              "type": "number"
+            },
+            {
+              "id": "d412dd34-24f8-46ee-803c-4f96d5b3491c",
+              "name": "proposals",
+              "value": "={{ $json.totalApplicants }}",
+              "type": "number"
+            },
+            {
+              "id": "4bb1b909-e184-42bf-b814-918500b692d6",
+              "name": "clientTotalSpent",
+              "value": "={{ $json.clientTotalSpent }}",
+              "type": "string"
+            },
+            {
+              "id": "65a8bd7e-d3ca-483e-a28c-f822f3c23bdf",
+              "name": "country",
+              "value": "={{ $json._raw.client.location.country }}",
+              "type": "string"
+            },
+            {
+              "id": "b72679ab-c4fa-49ba-a28a-47de947aa4c5",
+              "name": "city",
+              "value": "={{ $json._raw.client.location.city }}",
+              "type": "string"
+            },
+            {
+              "id": "20e73b95-44eb-47cf-95da-5f6ed7c32ac9",
+              "name": "reviews",
+              "value": "={{ $json._raw.client.totalFeedback }}",
+              "type": "number"
+            },
+            {
+              "id": "5a83c80c-a52a-4171-9fd4-3babd134d249",
+              "name": "occupationsCategory",
+              "value": "={{ $json.occupationsCategoryLabel }}",
+              "type": "string"
+            },
+            {
+              "id": "81b2e879-fda2-45e3-943a-39bbae1c06a6",
+              "name": "skills",
+              "value": "={{ $json.skills }}",
+              "type": "array"
+            },
+            {
+              "id": "63097a9a-b394-4cae-a4da-6e7269e34548",
+              "name": "Current State",
+              "value": "={{ $json.totalHired }}",
+              "type": "number"
+            },
+            {
+              "id": "01929b58-daa7-4bfc-bf3c-94454b30f59b",
+              "name": "invitesSent",
+              "value": "={{ $json.invitesSent }}",
+              "type": "number"
+            },
+            {
+              "id": "afe880d5-e9ee-440d-9ee3-64accc2bd073",
+              "name": "Interviewing",
+              "value": "={{ $json.totalInvitedToInterview }}",
+              "type": "number"
+            },
+            {
+              "id": "5c26e7c1-c74a-4c01-98eb-ff99425d229d",
+              "name": "UnansweredInvites",
+              "value": "={{ $json.totalUnansweredInvites }}",
+              "type": "number"
+            },
+            {
+              "id": "e4fe0024-770a-44e6-a54c-4506c7f14e58",
+              "name": "lastClientActivity",
+              "value": "={{ $json._raw.job.activityStat.jobActivity.lastClientActivity }}",
+              "type": "string"
+            },
+            {
+              "id": "c6d4ad25-3b38-413f-baca-6ad99b9443fe",
+              "name": "createdDateTime",
+              "value": "={{ $json.createdDateTime }}",
+              "type": "string"
+            },
+            {
+              "id": "daa45c69-8c04-4b38-8e69-9224dfb46ca4",
+              "name": "preferredFreelancerLocation",
+              "value": "={{ $json.preferredFreelancerLocation }}",
+              "type": "string"
+            },
+            {
+              "id": "b898d5aa-9f86-4d40-8129-56a32535c362",
+              "name": "Keyword",
+              "value": "={{ $json.term }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3744,
+        16
+      ],
+      "id": "2d891c25-4161-4a3c-aed8-cbfbccdac013",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3520,
+        240
+      ],
+      "id": "b9c52e71-5b5e-4b08-a3fb-ace3cea39543",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_CALLS = 90;\n\nconst items = $input.all();\n\n// Normalizo y guardo original\nfor (const it of items) {\n  const v = Number(it.json?.maxPage);\n  it.json.maxPage = Number.isFinite(v) && v > 0 ? Math.floor(v) : 1;\n  if (it.json._maxPageOriginal === undefined) {\n    it.json._maxPageOriginal = it.json.maxPage;\n  }\n}\n\nconst totalBefore = items.reduce((acc, it) => acc + it.json.maxPage, 0);\nif (totalBefore <= MAX_CALLS) {\n  return items;\n}\n\nlet toCut = totalBefore - MAX_CALLS;\n\n// Round-robin: de atrás hacia adelante, restando de a 1\nwhile (toCut > 0) {\n  let reduced = false;\n  for (let i = items.length - 1; i >= 0 && toCut > 0; i--) {\n    const mp = items[i].json.maxPage;\n    if (mp > 1) {\n      items[i].json.maxPage = mp - 1;\n      toCut -= 1;\n      reduced = true;\n    }\n  }\n  if (!reduced) break; // todos están en 1\n}\n\n// Salvaguarda: si aún excede, ELIMINO ítems del final\nif (toCut > 0) {\n  for (let i = items.length - 1; i >= 0 && toCut > 0; i--) {\n    // eliminar este item reduce el total en items[i].json.maxPage (normalmente 1 acá)\n    toCut -= items[i].json.maxPage;\n    items.splice(i, 1); // lo saco de la lista\n  }\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        640
+      ],
+      "id": "16729888-b9c2-4979-b696-0ab6b28ca0c6",
+      "name": "Filter max 90 calls"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bd33ada8-faa0-4135-afbd-204fa3c990ee",
+              "leftValue": "={{ new Date($json.createdDateTime) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }}",
+              "rightValue": "=2025-08-18T13:24:49",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        256
+      ],
+      "id": "a550803e-4bde-4c49-b708-7a3ebb863900",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $getWorkflowStaticData('global');\nconst item = items[0].json;\n\n// If we came from the token call, item contains the token response.\n// If we skipped the call, item already has headers from step 1.\nif (item.access_token) {\n  // Token exchange/refresh response\n  data.access_token = item.access_token;\n  if (item.refresh_token) data.refresh_token = item.refresh_token; // may not be returned on every refresh\n  const now = Math.floor(Date.now() / 1000);\n  const ttl = typeof item.expires_in === 'number' ? item.expires_in : 3600;\n  data.expires_at = now + ttl - 60; // refresh 1 min early\n  return [{ json: { headers: { Authorization: `Bearer ${data.access_token}` } } }];\n}\n\nif (item.headers?.Authorization) {\n  // No refresh was needed; just forward existing header\n  return [{ json: { headers: item.headers } }];\n}\n\nthrow new Error('SaveToken node: no access token or headers found. Check previous nodes.');\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        640
+      ],
+      "id": "01a07c5d-2b9c-4b94-9a9f-8d9cf49f88b4",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3a519a50-0321-4187-b3c8-eeea66e5934b",
+              "name": "api",
+              "value": "={{ $json.headers.Authorization }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        640
+      ],
+      "id": "c53188d0-238b-43ed-a667-a745f7734374",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction norm(s) {\n  return String(s ?? '')\n    .toLowerCase()\n    .replace(/[-_]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction isAllowedLocation(loc) {\n  // No preference provided → keep\n  if (loc == null) return true;\n\n  const arr = Array.isArray(loc) ? loc : [loc];\n  if (arr.length === 0) return true;\n\n  // Allowed buckets\n  const ok = (s) =>\n    s.includes('argentina') ||\n    s.includes('south america') ||\n    s.includes('latin america') ||\n    s.includes('latam') ||\n    s.includes('america latina') ||   // ES variants\n    s.includes('sudamerica') ||\n    s.includes('america del sur') ||\n    s.includes('worldwide') ||\n    s.includes('global') ||\n    s.includes('anywhere') ||\n    s.includes('any country') ||\n    s.includes('international');\n\n  return arr.some(v => ok(norm(v)));\n}\n\nreturn items.filter(({ json }) => isAllowedLocation(json.preferredFreelancerLocation));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        256
+      ],
+      "id": "1c5ad4aa-1f96-41a2-ba2d-ece5b6eee840",
+      "name": "Filtro por location"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Gu2rylWyscuCsgGrTwOjUSidduNVcMFVJYGCPzmWr6k",
+          "mode": "list",
+          "cachedResultName": "Upwork autorizacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Gu2rylWyscuCsgGrTwOjUSidduNVcMFVJYGCPzmWr6k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Gu2rylWyscuCsgGrTwOjUSidduNVcMFVJYGCPzmWr6k/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -288,
+        640
+      ],
+      "id": "52eb9cff-9c1e-4367-b6ba-32a8a8f87586",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2-23/4 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        640
+      ],
+      "id": "dab9f35b-6236-4813-98a8-0c83adb01b90",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.upwork.com/api/v3/oauth2/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.refresh_token }}"
+            },
+            {
+              "name": "client_id",
+              "value": "f85bbf939ca3c26480f5c0400cfe2eab"
+            },
+            {
+              "name": "client_secret",
+              "value": "e6422b3904538bbb"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        640
+      ],
+      "id": "22ed6121-b864-47ab-bd63-2a8bbdf38562",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Gu2rylWyscuCsgGrTwOjUSidduNVcMFVJYGCPzmWr6k",
+          "mode": "list",
+          "cachedResultName": "Upwork autorizacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Gu2rylWyscuCsgGrTwOjUSidduNVcMFVJYGCPzmWr6k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Gu2rylWyscuCsgGrTwOjUSidduNVcMFVJYGCPzmWr6k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "access_token": "={{ $json.access_token }}",
+            "refresh_token": "={{ $json.refresh_token }}",
+            "token_type": "={{ $json.token_type }}",
+            "expires_in": "={{ $json.expires_in }}",
+            "row_number": 2
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "access_token",
+              "displayName": "access_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "refresh_token",
+              "displayName": "refresh_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "token_type",
+              "displayName": "token_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "expires_in",
+              "displayName": "expires_in",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        160,
+        640
+      ],
+      "id": "770bcff7-bcc6-4fc9-80bc-4b7b7ecfba80",
+      "name": "Update row in sheet"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- CONFIG ---\nconst EN = new Set([\n  'the','and','for','with','you','your','are','from','this','that','have','has',\n  'will','can','need','work','hours','hour','week','weekly','project','looking',\n  'experience','development','developer','data','analysis','build','testing',\n  'we','our','us','to','of','in','on','is','as','at','by','be','or','not',\n  'requirements','responsibilities','deliverables','scope','budget','timeline'\n]);\n\nconst ES = new Set([\n  'de','la','el','y','en','para','por','con','que','los','las','del','al','una','un',\n  'como','más','también','será','trabajo','experiencia','desarrollo','desarrollador',\n  'datos','análisis','construir','pruebas','requisitos','responsabilidades',\n  'entregables','alcance','presupuesto','plazo','horas','semanales','proyecto','buscamos'\n]);\n\n// regex: permitimos solo caracteres latinos + tildes/ñ/ü\nconst allowedRE = /^[a-zA-Z0-9 áéíóúÁÉÍÓÚñÑüÜ¿¡.,;:!?()\"'$/\\-&%+\\[\\]{}#*@]|\\\\r|\\\\n|\\\\t]+$/;\n\nfunction scoreLang(tokens) {\n  let enHits = 0, esHits = 0;\n  for (const t of tokens) {\n    if (EN.has(t)) enHits++;\n    if (ES.has(t)) esHits++;\n  }\n  const n = Math.max(tokens.length, 1);\n  return { en: enHits / n, es: esHits / n };\n}\n\n// --- MAIN ---\nreturn items\n  .map(item => {\n    const raw = (item.json.title || '') + ' ' + (item.json.description || '');\n    const lower = raw.toLowerCase();\n\n    const alphabetOk = allowedRE.test(raw);\n    const tokens = (lower.match(/[a-záéíóúüñ]+/gi) || []).map(t => t.toLowerCase());\n    const { en, es } = scoreLang(tokens);\n\n    const hasSpanishDiacritics = /[áéíóúñü¿¡]/i.test(lower);\n    const esScore = es + (hasSpanishDiacritics ? 0.02 : 0);\n\n    // Decisión\n    let lang = 'other';\n    if (alphabetOk) {\n      if (en >= 0.02 || esScore >= 0.02) {\n        lang = en >= esScore ? 'en' : 'es';\n      }\n    }\n\n    return { json: { ...item.json, lang } };\n  })\n  // filtrar: solo inglés o español\n  .filter(item => item.json.lang === 'en' || item.json.lang === 'es');\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        256
+      ],
+      "id": "9ed95c0e-1b37-4ee3-a2f1-88cab7d24fd9",
+      "name": "Filter by language"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Palabras/frases que NO querés\nconst BLOCKLIST = [\n  \"ugc content\",\n  \"ugc program manager\",\n  \"ai video editor\",\n  \"graphic design\",\n  \"virtual assistant\",\n  \"mechanical engineer\",\n  \"video editor\",\n  \"youtuber\",\n  \"instructor\",\n  \"tour coordinator\",\n  \"tiktoker\",\n  \"reels editor\",\n  \"tutor\",\n  \"teacher\",\n  \"instagrammer\",\n  \"voiceover artist\",\n  \"ad video creator\",\n  \"executive assistant\"\n];\n\n// Normaliza texto (lowercase + sin acentos)\nfunction normalize(str) {\n  return String(str || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .trim();\n}\n\nreturn items.filter(item => {\n  const title = normalize(item.json.title);\n\n  // true → lo dejamos pasar\n  // false → lo filtramos (bloqueado)\n  const isBlocked = BLOCKLIST.some(word =>\n    title.includes(word)\n  );\n\n  return !isBlocked;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3184,
+        128
+      ],
+      "id": "ae6752a6-d637-4edf-a06e-a8b62f6509a5",
+      "name": "filtro keywords"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?on_conflict=upwork_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"upwork_id\": \"{{ $('Edit Fields').item.json.id }}\",\n  \"link\": \"{{ $json.jobUrl }}\",\n  \"title\": {{ JSON.stringify($('Edit Fields').item.json.title || '') }},\n  \"description\": {{ JSON.stringify($('Edit Fields').item.json.description || '') }},\n  \"ticket_raw\": \"{{ $('Edit Fields').item.json.ticket }}\",\n  \"ticket\": {{ (() => { const min = Number($('Loop Over Items').item.json.hourlyBudgetMin); const max = Number($('Loop Over Items').item.json.hourlyBudgetMax); const amt = Number($('Loop Over Items').item.json.amount); if (min && max) return (min + max) / 2; if (min) return min; if (max) return max; if (amt) return amt; return null; })() }},\n  \"hourly_average\": {{ (() => { const min = Number($('Loop Over Items').item.json.hourlyBudgetMin); const max = Number($('Loop Over Items').item.json.hourlyBudgetMax); if (min && max) return (min + max) / 2; if (min) return min; if (max) return max; return null; })() }},\n  \"duration\": \"{{ $('Edit Fields').item.json.duration }}\",\n  \"talent_type\": \"{{ $('Edit Fields').item.json.talentType }}\",\n  \"country\": \"{{ $('Edit Fields').item.json.country }}\",\n  \"city_region\": \"{{ $('Edit Fields').item.json.city }}\",\n  \"proposals_count\": {{ Number($('Edit Fields').item.json.proposals) || null }},\n  \"post_date\": \"{{ $('Edit Fields').item.json.createdDateTime }}\",\n  \"industry\": {{ JSON.stringify($('Edit Fields').item.json.occupationsCategory || null) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4416,
+        16
+      ],
+      "id": "11111111-2222-3333-4444-555555555555",
+      "name": "Supabase Upsert",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "searches": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Filter max 90 calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasNextPage and LessThan": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upwork": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "HasNextPage and LessThan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "upwork",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init pagination state": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Filter by language",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar por indice": {
+      "main": [
+        [
+          {
+            "node": "Filtro por location",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "URL": {
+      "main": [
+        [
+          {
+            "node": "Supabase Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter max 90 calls": {
+      "main": [
+        [
+          {
+            "node": "Init pagination state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Filtrar por indice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "searches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro por location": {
+      "main": [
+        [
+          {
+            "node": "filtro keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter by language": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtro keywords": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Upsert": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "250f37a53250736be8af461c3752e7652027cf011896ba5176c1c6100ed4f0a0"
+  },
+  "tags": []
+}
