@@ -1,19 +1,27 @@
 // Cover letter generator — Paso 7
 // Genera una propuesta personalizada para un job qualified usando:
-//   - El job (title, description, industry, ticket)
-//   - La BU card (scope, decision_logic, keywords)
+//   - El job (title, description, industry, ticket, country, duration)
+//   - La BU card (scope, decision_logic, keywords) = "List of Services" para esa BU
 //   - Precedente histórico: hasta N proposals Sent en la misma BU con su
 //     cover_letter real (cuando exista) — sino solo títulos.
+//   - El Master Prompt fijo (./master-prompt.md) — estructura + voz + autoridad.
 //
-// El generator NO escribe a Supabase. Eso es responsabilidad del route.
+// El generator NO escribe a Supabase. Eso es responsabilidad del route/script.
 
 import Anthropic from '@anthropic-ai/sdk'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const COVER_LETTER_MODEL = 'claude-sonnet-4-5'
 
 const PRECEDENT_LIMIT = 5
-const MAX_PRECEDENT_CL_CHARS = 600 // truncamos cartas históricas para no inflar prompt
+const MAX_PRECEDENT_CL_CHARS = 600
+
+// Master prompt cargado en build-time (no depende del cwd del runtime).
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const MASTER_PROMPT = readFileSync(join(__dirname, 'master-prompt.md'), 'utf8')
 
 export type GeneratorJob = {
   title: string
@@ -53,7 +61,7 @@ export async function generateCoverLetter(
   supabase: SupabaseClient,
   anthropic: Anthropic,
 ): Promise<CoverLetterResult> {
-  // 1. Cargar BU card
+  // 1. Cargar BU card (sirve como "List of Services" para esta BU)
   const { data: bu, error: buErr } = await supabase
     .from('business_units')
     .select('id, name, description, scopes, keywords, good_fit_signals, decision_logic')
@@ -75,7 +83,6 @@ export async function generateCoverLetter(
   const precedent: Precedent[] = (precedentRaw as Precedent[]) ?? []
   const withCL = precedent.filter(p => !!p.cover_letter).length
 
-  // 3. Bloque de precedente para el prompt
   const precedentBlock = precedent
     .map((p, i) => {
       const header = `### Precedent ${i + 1}: ${p.job_title}`
@@ -86,23 +93,15 @@ export async function generateCoverLetter(
     })
     .join('\n\n')
 
-  // 4. System prompt — la "voz SWL" + instrucciones de estructura
+  // 3. System prompt: master prompt verbatim + contexto BU + precedente
   const systemPrompt = [
-    `You are SWL Consulting's senior proposal writer. Generate a tailored Upwork cover letter for the job below.`,
+    MASTER_PROMPT,
     ``,
-    `About SWL Consulting:`,
-    `- 120+ projects delivered across SaaS, Real Estate, Healthcare, Home Services, E-commerce, Private Equity, Financial Services.`,
-    `- Tagline: "Bigger Businesses, Stronger Teams."`,
-    `- Philosophy: "Ideas created by people. Systems powered by AI."`,
+    `---`,
     ``,
-    `Voice & tone:`,
-    `- Professional but warm. First-person plural ("we", "our team").`,
-    `- Concrete: name specific tools, methods, deliverables. No generic claims.`,
-    `- Brief: 150-220 words MAX. Clients skim — don't waste their time.`,
-    `- No filler ("I am writing to express my interest…"), no over-promising ("guaranteed results"), no emojis.`,
-    `- Structure: (1) Hook — 1-2 sentences acknowledging the client's specific need. (2) Approach — 2-3 sentences on how SWL would tackle it, citing relevant tools/methods. (3) Proof — 1-2 sentences referencing similar precedent or SWL's track record. (4) CTA — invite to a short call.`,
+    `## Context for this specific job`,
     ``,
-    `This proposal belongs to SWL's "${bu.name}" business unit:`,
+    `### LIST OF SERVICES (the SWL "${bu.name}" business unit)`,
     bu.description,
     ``,
     `Relevant scopes: ${bu.scopes.join(' · ')}`,
@@ -111,15 +110,20 @@ export async function generateCoverLetter(
     `Decision logic: ${bu.decision_logic}`,
     ``,
     precedent.length > 0
-      ? `## Recent Sent precedent (${precedent.length} similar jobs SWL applied to${withCL > 0 ? `, ${withCL} with cover letter text` : ''}):\n\n${precedentBlock}`
-      : `## Recent Sent precedent\n(none in this BU yet)`,
+      ? `### Recent Sent precedent (${precedent.length} similar SWL applications${
+          withCL > 0 ? `, ${withCL} with full cover letter text` : ''
+        })\n\nUse these as reference for tone, depth, and what worked in similar pitches. Do not copy verbatim.\n\n${precedentBlock}`
+      : `### Recent Sent precedent\n(none in this BU yet — rely on the master prompt structure)`,
     ``,
-    `Output: ONLY the cover letter text (Markdown). No preamble, no "Here's a draft:", no closing tags.`,
+    `### Specific Comments for the Job Post`,
+    `(none provided)`,
   ].join('\n')
 
-  // 5. User prompt — el job concreto
+  // 4. User prompt: el job concreto
   const userPrompt = [
-    `Job title: ${job.title}`,
+    `## JOB POST`,
+    ``,
+    `Title: ${job.title}`,
     `Industry: ${job.industry ?? 'n/a'}`,
     `Client location: ${job.country ?? 'n/a'}`,
     `Duration: ${job.duration ?? 'n/a'}`,
@@ -129,11 +133,12 @@ export async function generateCoverLetter(
     job.description ?? '(no description)',
   ].join('\n')
 
-  // 6. Llamada al LLM
+  // 5. Llamada al LLM
+  // max_tokens más alto porque ahora apuntamos a 300-350 palabras (~500-600 tokens).
   const response = await anthropic.messages.create({
     model: COVER_LETTER_MODEL,
-    max_tokens: 700,
-    temperature: 0.6, // un poco de variedad pero sin alucinar
+    max_tokens: 1200,
+    temperature: 0.5,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   })

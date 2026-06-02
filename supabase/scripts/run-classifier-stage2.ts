@@ -68,14 +68,21 @@ for (const job of jobsList) {
     continue
   }
 
-  const newStatus = result.match ? 'qualified' : 'discarded'
+  // Regla de negocio (decidida 2026-06-02): si el job pasó el prefilter (ticket ≥$40)
+  // y el classifier le asignó una BU (area != null), va a qualified independiente del
+  // score/match del LLM. El prefilter ya garantiza ticket viable, el match con BU
+  // confirma scope. Razonamiento de "ticket bajo para seniority" del LLM se ignora.
+  const hasArea = !!result.area
+  const ticketViable = (job.ticket ?? 0) >= 40
+  const finalMatch = result.match || (hasArea && ticketViable)
+  const newStatus = finalMatch ? 'qualified' : 'discarded'
   const now = new Date().toISOString()
 
   const upd = await supabase
     .from('jobs')
     .update({
       status: newStatus,
-      classifier_match: result.match,
+      classifier_match: finalMatch,
       classifier_score: result.score,
       classifier_area: result.area,
       classifier_reason: result.reason,
@@ -96,8 +103,10 @@ for (const job of jobsList) {
     to_status: newStatus,
     actor: 'brain_classifier',
     actor_detail: CLASSIFIER_MODEL,
-    reason: result.reason,
-    classifier_match: result.match,
+    reason: finalMatch && !result.match
+      ? `[override: ticket $${job.ticket}+ area ${result.area}] ${result.reason}`
+      : result.reason,
+    classifier_match: finalMatch,
     classifier_score: result.score,
     classifier_area: result.area,
   })
@@ -106,11 +115,12 @@ for (const job of jobsList) {
     console.log(`   ⚠ decision insert failed: ${dec.error.message}`)
   }
 
-  console.log(`   ${result.match ? '✓ QUALIFIED' : '✗ DISCARDED'} (score=${result.score})`)
+  const overrideMark = finalMatch && !result.match ? ' [overridden]' : ''
+  console.log(`   ${finalMatch ? '✓ QUALIFIED' : '✗ DISCARDED'}${overrideMark} (score=${result.score})`)
   console.log(`     area: ${result.area ?? 'null'}`)
   console.log(`     reason: ${result.reason}`)
 
-  if (result.match) qualified++
+  if (finalMatch) qualified++
   else discarded++
 }
 

@@ -30,8 +30,30 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
-const INPUT = path.join(__dirname, 'upwork-supabase-automation-bi.json')
-const OUTPUT = path.join(__dirname, 'upwork-supabase-automation-bi.transformed.json')
+// Uso:
+//   node transform.cjs                          # default: automation-bi
+//   node transform.cjs financial                # procesa upwork-supabase-financial.json
+//   node transform.cjs business
+//   node transform.cjs market
+const vertical = process.argv[2] ?? 'automation-bi'
+
+// Cómo se muestra el nombre del vertical en el workflow renombrado
+const VERTICAL_LABELS = {
+  'automation-bi': 'Automation BI',
+  financial: 'Financial',
+  business: 'Business',
+  market: 'Market',
+}
+const label = VERTICAL_LABELS[vertical] ?? vertical
+
+const INPUT = path.join(__dirname, `upwork-supabase-${vertical}.json`)
+const OUTPUT = path.join(__dirname, `upwork-supabase-${vertical}.transformed.json`)
+
+if (!fs.existsSync(INPUT)) {
+  console.error(`✗ No existe ${INPUT}`)
+  console.error(`  Bajá el JSON del workflow desde n8n con ese nombre antes de correr esto.`)
+  process.exit(1)
+}
 
 const wf = JSON.parse(fs.readFileSync(INPUT, 'utf8'))
 
@@ -118,7 +140,7 @@ wf.nodes.push(SUPABASE_NODE)
 wf.connections['URL'] = { main: [[{ node: 'Supabase Upsert', type: 'main', index: 0 }]] }
 wf.connections['Supabase Upsert'] = { main: [[{ node: 'Loop Over Items', type: 'main', index: 0 }]] }
 
-wf.name = 'Upwork → Supabase (Automation BI) v2'
+wf.name = `Upwork → Supabase (${label}) v2`
 
 delete wf.id
 delete wf.versionId
