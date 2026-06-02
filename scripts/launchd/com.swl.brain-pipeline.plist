@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd job para correr el Brain Pipeline diario a las 11:00 AM.
+  Después de que los 4 scrapers de n8n terminan (10:00 / 10:15 / 10:30 / 10:45).
+
+  Instalar:
+    cp scripts/launchd/com.swl.brain-pipeline.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.swl.brain-pipeline.plist
+
+  Verificar que está cargado:
+    launchctl list | grep swl.brain
+
+  Forzar ejecución ahora (para testear):
+    launchctl start com.swl.brain-pipeline
+
+  Desactivar:
+    launchctl unload ~/Library/LaunchAgents/com.swl.brain-pipeline.plist
+
+  Ver los logs:
+    tail -f /Users/priscillaarslan/Proyectos/Upwork\ APP/out/brain-pipeline.stdout.log
+    tail -f /Users/priscillaarslan/Proyectos/Upwork\ APP/out/brain-pipeline.stderr.log
+
+  Requiere que la Mac esté encendida a las 11 AM. Si la Mac está dormida o
+  apagada, launchd encolará el job y lo ejecutará apenas se despierte (con
+  StartCalendarInterval esto es automático).
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.swl.brain-pipeline</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd "/Users/priscillaarslan/Proyectos/Upwork APP" && /opt/homebrew/bin/node --env-file=.env.local --experimental-strip-types supabase/scripts/run-brain-pipeline.ts</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>11</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/priscillaarslan/Proyectos/Upwork APP/out/brain-pipeline.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/priscillaarslan/Proyectos/Upwork APP/out/brain-pipeline.stderr.log</string>
+</dict>
+</plist>
