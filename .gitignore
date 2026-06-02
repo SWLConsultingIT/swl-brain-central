@@ -24,6 +24,9 @@ data/exports/
 JSON /
 JSON/
 
+# Brain pipeline generado por build-workflow.cjs (hardcodea SUPABASE_SECRET_KEY)
+n8n/brain-pipeline/brain-pipeline.json
+
 # Personal Claude skills toolkit (no es del proyecto)
 MCP Y SKILLS copy/
 out/

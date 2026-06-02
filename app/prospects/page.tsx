@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getServerClient } from '@/lib/supabase/server'
 import { listJobs, type JobRow } from '@/lib/jobs/list'
 import ClassifyButton from './classify-button'
+import CoverLetterButton from './cover-letter-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,6 +102,12 @@ function Card({ job }: { job: JobRow }) {
       {(job.status === 'new' || job.status === 'prequalified') && (
         <div className="mt-3 pt-3 border-t border-border">
           <ClassifyButton jobId={job.id} status={job.status} />
+        </div>
+      )}
+
+      {job.status === 'qualified' && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <CoverLetterButton jobId={job.id} status={job.status} />
         </div>
       )}
     </div>
