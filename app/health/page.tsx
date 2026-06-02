@@ -35,10 +35,13 @@ export default async function HealthPage() {
 
   return (
     <main className="min-h-screen px-6 py-16 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold tracking-tight mb-1">Health check</h1>
-      <p className="text-sm opacity-60 mb-10">Brain Central · Supabase connectivity</p>
+      <div className="flex items-center gap-3 mb-1">
+        <div className={`size-2 rounded-full ${hasErrors ? 'bg-destructive' : 'bg-accent'}`} />
+        <h1 className="text-2xl font-bold tracking-tight">Health check</h1>
+      </div>
+      <p className="text-sm text-muted-fg mb-10">Brain Central · Supabase connectivity</p>
 
-      <div className="space-y-3">
+      <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
         <Row label="business_units" value={data.business_units} error={data.errors.business_units} />
         <Row label="proposals" value={data.proposals} error={data.errors.proposals} />
         <Row label="prospects" value={data.prospects} error={data.errors.prospects} />
@@ -46,7 +49,7 @@ export default async function HealthPage() {
         <Row label="job_decisions" value={data.job_decisions} error={data.errors.job_decisions} />
       </div>
 
-      <p className="text-xs opacity-50 mt-10">
+      <p className="text-xs text-muted-fg mt-6">
         {hasErrors ? '⚠ at least one query failed' : '✓ all queries succeeded'}
       </p>
     </main>
@@ -55,12 +58,12 @@ export default async function HealthPage() {
 
 function Row({ label, value, error }: { label: string; value: number | null; error: string | null }) {
   return (
-    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-      <span className="text-sm opacity-80">{label}</span>
+    <div className="flex items-center justify-between px-5 py-3.5">
+      <span className="text-sm font-medium text-muted-fg font-mono">{label}</span>
       {error ? (
-        <span className="text-sm text-red-400">{error}</span>
+        <span className="text-sm text-destructive">{error}</span>
       ) : (
-        <span className="text-sm tabular-nums font-medium">{value?.toLocaleString() ?? '—'}</span>
+        <span className="text-sm tabular-nums font-semibold text-fg">{value?.toLocaleString() ?? '—'}</span>
       )}
     </div>
   )

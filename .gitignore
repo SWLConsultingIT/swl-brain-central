@@ -23,3 +23,6 @@ data/exports/
 # n8n workflow exports (contienen credenciales en las versiones originales)
 JSON /
 JSON/
+
+# Personal Claude skills toolkit (no es del proyecto)
+MCP Y SKILLS copy/

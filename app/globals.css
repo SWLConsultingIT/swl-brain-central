@@ -1,13 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  /* Financial-dashboard palette (slate-based dark) */
+  --color-bg:           #020617;
+  --color-fg:           #F8FAFC;
+  --color-card:         #0E1223;
+  --color-card-hover:   #161B30;
+  --color-muted:        #1A1E2F;
+  --color-muted-fg:     #94A3B8;
+  --color-border:       #1E293B;
+  --color-border-hover: #334155;
+  --color-accent:       #22C55E;
+  --color-destructive:  #EF4444;
+  --color-warning:      #F59E0B;
+  --color-info:         #3B82F6;
+
+  color-scheme: dark;
 }
 
 html, body {
-  background: #0a0a0a;
-  color: #ededed;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+::selection {
+  background: rgba(34, 197, 94, 0.25);
+  color: var(--color-fg);
+}
+
+/* Subtle scrollbar for kanban horizontal scroll */
+.kanban-scroll::-webkit-scrollbar { height: 8px; }
+.kanban-scroll::-webkit-scrollbar-track { background: transparent; }
+.kanban-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+.kanban-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-border-hover); }
