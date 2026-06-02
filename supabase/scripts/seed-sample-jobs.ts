@@ -12,8 +12,11 @@ const supabase = createClient(url, secretKey, { auth: { persistSession: false, a
 
 const CSV_PATH = 'CRM UPWORK 249d4ea8d5a68071ae52d25f0bd5a233_all.csv'
 
-// 5 keywords variadas para asegurar diversidad de BU al testear el classifier
+// Keywords variadas para asegurar diversidad de BU al testear el classifier.
+// Por cada keyword tomamos el primer job que tenga ticket >= $40 USD
+// (sino el ticket filter lo descarta antes del LLM).
 const TARGET_KEYWORDS = ['CFO', 'Financial Modeler', 'CRM', 'AI', 'Web Development']
+const MIN_TICKET = 40
 
 function extractUpworkId(link: string): string | null {
   // Upwork links: https://www.upwork.com/jobs/~021954021081756458844?...
@@ -49,15 +52,25 @@ const rows: any[] = parse(csv, {
 console.log(`Filas totales en CSV: ${rows.length}`)
 
 // Selecciona 1 job representativo por cada keyword target.
-// Requiere Link válido (de ahí extraemos el upwork_id real — el campo
-// "Upwork ID" del CSV viene redondeado por export de Notion como number).
+// Requiere: Link válido (de ahí extraemos el upwork_id real porque el
+// campo "Upwork ID" del CSV viene redondeado por export de Notion como
+// number) Y ticket parseado en USD >= MIN_TICKET (así los jobs pasan el
+// ticket filter y llegan al LLM).
 const samples: any[] = []
 for (const kw of TARGET_KEYWORDS) {
   const match = rows.find(r => {
     const rowKw = (r['Keyword'] ?? '').toString()
     const link = (r['Link'] ?? '').toString().trim()
     const title = (r['Job Tittle'] ?? '').toString().trim()
-    return rowKw.toLowerCase().includes(kw.toLowerCase()) && extractUpworkId(link) && title
+    const { ticket, currency } = parseTicketRaw((r['Ticket'] ?? '').toString().trim())
+    return (
+      rowKw.toLowerCase().includes(kw.toLowerCase()) &&
+      extractUpworkId(link) &&
+      title &&
+      currency === 'USD' &&
+      ticket != null &&
+      ticket >= MIN_TICKET
+    )
   })
   if (match) samples.push(match)
 }
