@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { getServerClient } from '@/lib/supabase/server'
 import { generateCoverLetter } from '@/lib/cover-letter/generator'
 
@@ -46,11 +46,11 @@ export async function POST(
     )
   }
 
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return NextResponse.json({ error: 'OPENAI_API_KEY missing in env' }, { status: 503 })
+    return NextResponse.json({ error: 'ANTHROPIC_API_KEY missing in env' }, { status: 503 })
   }
-  const openai = new OpenAI({ apiKey })
+  const anthropic = new Anthropic({ apiKey })
 
   let result
   try {
@@ -65,7 +65,7 @@ export async function POST(
       },
       job.business_unit_id,
       supabase,
-      openai,
+      anthropic,
     )
   } catch (e) {
     return NextResponse.json(

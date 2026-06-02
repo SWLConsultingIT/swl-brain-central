@@ -7,10 +7,10 @@
 //
 // El generator NO escribe a Supabase. Eso es responsabilidad del route.
 
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const COVER_LETTER_MODEL = 'gpt-4o-mini'
+export const COVER_LETTER_MODEL = 'claude-sonnet-4-5'
 
 const PRECEDENT_LIMIT = 5
 const MAX_PRECEDENT_CL_CHARS = 600 // truncamos cartas históricas para no inflar prompt
@@ -51,7 +51,7 @@ export async function generateCoverLetter(
   job: GeneratorJob,
   businessUnitId: string,
   supabase: SupabaseClient,
-  openai: OpenAI,
+  anthropic: Anthropic,
 ): Promise<CoverLetterResult> {
   // 1. Cargar BU card
   const { data: bu, error: buErr } = await supabase
@@ -130,18 +130,17 @@ export async function generateCoverLetter(
   ].join('\n')
 
   // 6. Llamada al LLM
-  const completion = await openai.chat.completions.create({
+  const response = await anthropic.messages.create({
     model: COVER_LETTER_MODEL,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
+    max_tokens: 700,
     temperature: 0.6, // un poco de variedad pero sin alucinar
-    max_tokens: 500,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }],
   })
 
-  const text = completion.choices[0]?.message?.content?.trim()
-  if (!text) throw new Error('empty response from OpenAI')
+  const block = response.content.find(b => b.type === 'text')
+  if (!block || block.type !== 'text') throw new Error('empty response from Anthropic')
+  const text = block.text.trim()
 
   return {
     cover_letter: text,

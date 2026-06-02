@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { getServerClient } from '@/lib/supabase/server'
 import { ticketFilter } from '@/lib/classifier/ticket-filter'
 import { llmClassify, CLASSIFIER_MODEL } from '@/lib/classifier/llm-classifier'
@@ -57,14 +57,14 @@ export async function POST(
 
   // ── Stage 2: LLM classifier (prequalified → qualified | discarded) ─────
   if (job.status === 'prequalified') {
-    const apiKey = process.env.OPENAI_API_KEY
+    const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OPENAI_API_KEY missing in env' },
+        { error: 'ANTHROPIC_API_KEY missing in env' },
         { status: 503 },
       )
     }
-    const openai = new OpenAI({ apiKey })
+    const anthropic = new Anthropic({ apiKey })
 
     let llmResult
     try {
@@ -76,7 +76,7 @@ export async function POST(
           industry: job.industry,
         },
         supabase,
-        openai,
+        anthropic,
       )
     } catch (e) {
       return NextResponse.json(

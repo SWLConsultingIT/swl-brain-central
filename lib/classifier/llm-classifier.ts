@@ -2,10 +2,10 @@
 // Inputs: job + 8 BU cards de Supabase + precedente histórico (proposals Sent).
 // Output: match (bool), score (0-100), area (BU name | null), reason.
 
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const CLASSIFIER_MODEL = 'gpt-4o-mini'
+export const CLASSIFIER_MODEL = 'claude-sonnet-4-5'
 
 const HARD_EXCLUSIONS = [
   'pure graphic design only',
@@ -48,7 +48,7 @@ export type LLMClassifierResult = {
 export async function llmClassify(
   job: Job,
   supabase: SupabaseClient,
-  openai: OpenAI,
+  anthropic: Anthropic,
 ): Promise<LLMClassifierResult> {
   // 1. Cargar las 8 BU cards activas
   const { data: bus, error: buErr } = await supabase
@@ -120,7 +120,7 @@ export async function llmClassify(
     `5. Assign score: 0=clear miss · 30=weak/no precedent · 60=plausible · 85+=strong fit with precedent.`,
     `6. reason ≤ 25 words, concrete, cite signals or precedent.`,
     ``,
-    `Return ONLY valid JSON: { "match": bool, "score": 0-100, "area": <one of the BU names above> | null, "reason": "..." }`,
+    `Return ONLY valid JSON, no markdown fences, no prose: { "match": bool, "score": 0-100, "area": <one of the BU names above> | null, "reason": "..." }`,
   ].join('\n')
 
   // 5. Llamada al LLM
@@ -133,24 +133,29 @@ export async function llmClassify(
     job.description ?? '(no description)',
   ].join('\n')
 
-  const completion = await openai.chat.completions.create({
+  const response = await anthropic.messages.create({
     model: CLASSIFIER_MODEL,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    response_format: { type: 'json_object' },
+    max_tokens: 1024,
     temperature: 0,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }],
   })
 
-  const raw = completion.choices[0]?.message?.content
-  if (!raw) throw new Error('empty response from OpenAI')
+  const block = response.content.find(b => b.type === 'text')
+  if (!block || block.type !== 'text') throw new Error('empty response from Anthropic')
+  const raw = block.text
+
+  const cleaned = raw
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/g, '')
+    .trim()
 
   let parsed: any
   try {
-    parsed = JSON.parse(raw)
-  } catch (e) {
-    throw new Error(`invalid JSON from OpenAI: ${raw.slice(0, 200)}`)
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error(`invalid JSON from Anthropic: ${raw.slice(0, 200)}`)
   }
 
   const area = typeof parsed.area === 'string' && parsed.area.length > 0 ? parsed.area : null

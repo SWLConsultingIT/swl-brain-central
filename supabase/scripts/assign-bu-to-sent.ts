@@ -1,11 +1,17 @@
-// Asigna business_unit_id a las proposals Sent históricas usando keyword
-// matching contra las 8 BU cards (que vienen del PDF SWL_Consulting_RAG).
-// Determinístico, sin LLM. Sirve de precedente real para el classifier.
+// Asigna business_unit_id a TODAS las proposals históricas (Sent + Lost +
+// Closed + Client Reply + Under Revision) usando keyword matching contra
+// las 8 BU cards. Determinístico, sin LLM.
+//
+// Por qué a todas: el win rate por BU (v_bu_winrate) necesita ambos lados —
+// Sent y Lost — para calcular bien. Si solo asignamos a Sent, el ratio es
+// engañoso (100% en todo).
 //
 // Lógica por proposal:
 //   1. Score por BU = matches de la BU.keywords[] en (proposal.keyword + job_title)
-//   2. Pick la BU con score más alto (no empate trivial)
-//   3. Si score = 0 → leave NULL (esos requieren LLM o revisión humana)
+//   2. Pick la BU con score más alto
+//   3. Si score = 0 → leave NULL
+//
+// Idempotente: re-asigna a todas, sobrescribe valores previos.
 //
 // Run: node --env-file=.env.local supabase/scripts/assign-bu-to-sent.ts
 
@@ -44,15 +50,15 @@ if (buErr || !busData) throw new Error('cannot load BUs: ' + (buErr?.message ?? 
 const bus: BU[] = busData as BU[]
 console.log(`  ${bus.length} BU cards cargadas.`)
 
-console.log('\nCargando proposals Sent (todas, paginado)...')
+console.log('\nCargando TODAS las proposals (Sent + Lost + Closed + ClientReply + UnderRevision)...')
 const PAGE = 1000
 let from = 0
 const proposals: Proposal[] = []
 while (true) {
   const { data, error } = await supabase
     .from('proposals')
-    .select('id, keyword, job_title')
-    .eq('status', 'Sent')
+    .select('id, keyword, job_title, status')
+    .in('status', ['Sent', 'Lost', 'Closed', 'Client Reply', 'Under Revision'])
     .range(from, from + PAGE - 1)
   if (error) throw new Error(error.message)
   if (!data || data.length === 0) break
@@ -60,7 +66,7 @@ while (true) {
   if (data.length < PAGE) break
   from += PAGE
 }
-console.log(`  ${proposals.length} proposals Sent cargadas.`)
+console.log(`  ${proposals.length} proposals cargadas (todos los status del histórico).`)
 
 console.log('\nClasificando...')
 const buCounts = new Map<string, number>()
