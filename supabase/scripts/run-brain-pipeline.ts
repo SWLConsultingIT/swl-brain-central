@@ -86,34 +86,22 @@ for (const job of preList) {
     const ticketViable = (job.ticket ?? 0) >= 40
     const finalMatch = result.match || (hasArea && ticketViable)
     const newStatus = finalMatch ? 'qualified' : 'discarded'
-    const now = new Date().toISOString()
+    const reasonText = finalMatch && !result.match
+      ? `[override: ticket $${job.ticket}+ area ${result.area}] ${result.reason}`
+      : result.reason
 
-    await supabase
-      .from('jobs')
-      .update({
-        status: newStatus,
-        classifier_match: finalMatch,
-        classifier_score: result.score,
-        classifier_area: result.area,
-        classifier_reason: result.reason,
-        classifier_run_at: now,
-        business_unit_id: result.business_unit_id,
-      })
-      .eq('id', job.id)
-
-    await supabase.from('job_decisions').insert({
-      job_id: job.id,
-      from_status: 'prequalified',
-      to_status: newStatus,
-      actor: 'brain_classifier',
-      actor_detail: CLASSIFIER_MODEL,
-      reason: finalMatch && !result.match
-        ? `[override: ticket $${job.ticket}+ area ${result.area}] ${result.reason}`
-        : result.reason,
-      classifier_match: finalMatch,
-      classifier_score: result.score,
-      classifier_area: result.area,
+    const { error: rpcErr } = await supabase.rpc('brain_transition_job', {
+      p_job_id: job.id,
+      p_to_status: newStatus,
+      p_actor: 'brain_classifier',
+      p_actor_detail: CLASSIFIER_MODEL,
+      p_reason: reasonText,
+      p_classifier_match: finalMatch,
+      p_classifier_score: result.score,
+      p_classifier_area: result.area,
+      p_business_unit_id: result.business_unit_id,
     })
+    if (rpcErr) throw new Error(`transition failed: ${rpcErr.message}`)
 
     log(`  ${finalMatch ? '✓ QUALIFIED' : '✗ DISCARDED'} (score=${result.score}, area=${result.area ?? 'null'}) — ${job.title.slice(0, 60)}`)
     if (finalMatch) classifierQualified++
@@ -136,6 +124,7 @@ const { data: qualified, error: errQ } = await supabase
   .select('id, title, description, ticket, industry, country, duration, business_unit_id')
   .eq('status', 'qualified')
   .not('business_unit_id', 'is', null)
+  .is('cover_letter_draft', null)
 
 if (errQ) {
   log(`  ✗ ERROR loading qualified: ${errQ.message}`)
@@ -174,25 +163,15 @@ for (const job of qList) {
       anthropic,
     )
 
-    const now = new Date().toISOString()
-
-    await supabase
-      .from('jobs')
-      .update({
-        status: 'proposal_drafted',
-        cover_letter_draft: result.cover_letter,
-        cover_letter_generated_at: now,
-      })
-      .eq('id', job.id)
-
-    await supabase.from('job_decisions').insert({
-      job_id: job.id,
-      from_status: 'qualified',
-      to_status: 'proposal_drafted',
-      actor: 'brain_cover_letter',
-      actor_detail: COVER_LETTER_MODEL,
-      reason: `cover letter drafted (${result.cover_letter.length} chars, ${result.precedent_count} precedent)`,
+    const { error: rpcErr } = await supabase.rpc('brain_transition_job', {
+      p_job_id: job.id,
+      p_to_status: 'proposal_drafted',
+      p_actor: 'brain_cover_letter',
+      p_actor_detail: COVER_LETTER_MODEL,
+      p_reason: `cover letter drafted (${result.cover_letter.length} chars, ${result.precedent_count} precedent)`,
+      p_cover_letter_draft: result.cover_letter,
     })
+    if (rpcErr) throw new Error(`transition failed: ${rpcErr.message}`)
 
     log(`  ✓ DRAFTED (${result.cover_letter.length} chars) — ${job.title.slice(0, 60)}`)
     coverDrafted++

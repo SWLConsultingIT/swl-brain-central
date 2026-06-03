@@ -38,19 +38,16 @@ export async function POST(
     const result = ticketFilter({ ticket: job.ticket, ticket_currency: job.ticket_currency })
     const newStatus = result.passes ? 'prequalified' : 'discarded'
 
-    const upd = await supabase.from('jobs').update({ status: newStatus }).eq('id', id)
-    if (upd.error) {
-      return NextResponse.json({ error: `update failed: ${upd.error.message}` }, { status: 500 })
-    }
-
-    await supabase.from('job_decisions').insert({
-      job_id: id,
-      from_status: 'new',
-      to_status: newStatus,
-      actor: 'brain_ticket_filter',
-      actor_detail: 'v1',
-      reason: result.reason,
+    const { error: rpcErr } = await supabase.rpc('brain_transition_job', {
+      p_job_id: id,
+      p_to_status: newStatus,
+      p_actor: 'brain_ticket_filter',
+      p_actor_detail: 'v1',
+      p_reason: result.reason,
     })
+    if (rpcErr) {
+      return NextResponse.json({ error: `transition failed: ${rpcErr.message}` }, { status: 500 })
+    }
 
     return NextResponse.json({ stage: 'ticket', status: newStatus, reason: result.reason })
   }
@@ -86,36 +83,21 @@ export async function POST(
     }
 
     const newStatus = llmResult.match ? 'qualified' : 'discarded'
-    const now = new Date().toISOString()
 
-    const upd = await supabase
-      .from('jobs')
-      .update({
-        status: newStatus,
-        classifier_match: llmResult.match,
-        classifier_score: llmResult.score,
-        classifier_area: llmResult.area,
-        classifier_reason: llmResult.reason,
-        classifier_run_at: now,
-        business_unit_id: llmResult.business_unit_id,
-      })
-      .eq('id', id)
-
-    if (upd.error) {
-      return NextResponse.json({ error: `update failed: ${upd.error.message}` }, { status: 500 })
-    }
-
-    await supabase.from('job_decisions').insert({
-      job_id: id,
-      from_status: 'prequalified',
-      to_status: newStatus,
-      actor: 'brain_classifier',
-      actor_detail: CLASSIFIER_MODEL,
-      reason: llmResult.reason,
-      classifier_match: llmResult.match,
-      classifier_score: llmResult.score,
-      classifier_area: llmResult.area,
+    const { error: rpcErr } = await supabase.rpc('brain_transition_job', {
+      p_job_id: id,
+      p_to_status: newStatus,
+      p_actor: 'brain_classifier',
+      p_actor_detail: CLASSIFIER_MODEL,
+      p_reason: llmResult.reason,
+      p_classifier_match: llmResult.match,
+      p_classifier_score: llmResult.score,
+      p_classifier_area: llmResult.area,
+      p_business_unit_id: llmResult.business_unit_id,
     })
+    if (rpcErr) {
+      return NextResponse.json({ error: `transition failed: ${rpcErr.message}` }, { status: 500 })
+    }
 
     return NextResponse.json({
       stage: 'llm',

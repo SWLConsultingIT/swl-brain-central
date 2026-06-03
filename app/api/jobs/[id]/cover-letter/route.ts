@@ -74,31 +74,17 @@ export async function POST(
     )
   }
 
-  const now = new Date().toISOString()
-
-  // Persistir el draft + avanzar status
-  const upd = await supabase
-    .from('jobs')
-    .update({
-      cover_letter_draft: result.cover_letter,
-      cover_letter_generated_at: now,
-      status: 'proposal_drafted',
-    })
-    .eq('id', id)
-
-  if (upd.error) {
-    return NextResponse.json({ error: `update failed: ${upd.error.message}` }, { status: 500 })
-  }
-
-  // Audit trail
-  await supabase.from('job_decisions').insert({
-    job_id: id,
-    from_status: 'qualified',
-    to_status: 'proposal_drafted',
-    actor: 'brain_cover_letter',
-    actor_detail: result.model,
-    reason: `cover letter generated using BU card + ${result.precedent_count} precedent (${result.precedent_with_cl} with full text)`,
+  const { error: rpcErr } = await supabase.rpc('brain_transition_job', {
+    p_job_id: id,
+    p_to_status: 'proposal_drafted',
+    p_actor: 'brain_cover_letter',
+    p_actor_detail: result.model,
+    p_reason: `cover letter generated using BU card + ${result.precedent_count} precedent (${result.precedent_with_cl} with full text)`,
+    p_cover_letter_draft: result.cover_letter,
   })
+  if (rpcErr) {
+    return NextResponse.json({ error: `transition failed: ${rpcErr.message}` }, { status: 500 })
+  }
 
   return NextResponse.json({
     status: 'proposal_drafted',
