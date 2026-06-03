@@ -82,29 +82,27 @@ for (const job of preList) {
     )
 
     // Regla override: ticket≥$40 + area asignada → qualified
-    const hasArea = !!result.area
-    const ticketViable = (job.ticket ?? 0) >= 40
-    const finalMatch = result.match || (hasArea && ticketViable)
-    const newStatus = finalMatch ? 'qualified' : 'discarded'
-    const reasonText = finalMatch && !result.match
-      ? `[override: ticket $${job.ticket}+ area ${result.area}] ${result.reason}`
-      : result.reason
+    // Confiamos en la decisión del LLM. Capa 7 (en llmClassify) ya maneja
+    // los casos donde el LLM rechaza por budget — esa override específica
+    // sigue activa. La override genérica anterior (area+ticket≥$40) generaba
+    // falsos positivos (LLM dudaba con score bajo pero quedaba qualified).
+    const newStatus = result.match ? 'qualified' : 'discarded'
 
     const { error: rpcErr } = await supabase.rpc('brain_transition_job', {
       p_job_id: job.id,
       p_to_status: newStatus,
       p_actor: 'brain_classifier',
       p_actor_detail: CLASSIFIER_MODEL,
-      p_reason: reasonText,
-      p_classifier_match: finalMatch,
+      p_reason: result.reason,
+      p_classifier_match: result.match,
       p_classifier_score: result.score,
       p_classifier_area: result.area,
       p_business_unit_id: result.business_unit_id,
     })
     if (rpcErr) throw new Error(`transition failed: ${rpcErr.message}`)
 
-    log(`  ${finalMatch ? '✓ QUALIFIED' : '✗ DISCARDED'} (score=${result.score}, area=${result.area ?? 'null'}) — ${job.title.slice(0, 60)}`)
-    if (finalMatch) classifierQualified++
+    log(`  ${result.match ? '✓ QUALIFIED' : '✗ DISCARDED'} (score=${result.score}, area=${result.area ?? 'null'}) — ${job.title.slice(0, 60)}`)
+    if (result.match) classifierQualified++
     else classifierDiscarded++
   } catch (e) {
     log(`  ✗ ERROR classifier ${job.id}: ${(e as Error).message}`)

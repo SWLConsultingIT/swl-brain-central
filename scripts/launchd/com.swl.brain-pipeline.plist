@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd job para correr el Brain Pipeline diario a las 11:00 AM.
-  Después de que los 4 scrapers de n8n terminan (10:00 / 10:15 / 10:30 / 10:45).
+  launchd job para correr el Brain Pipeline diario a las 7:00 AM.
+  Los scrapers de n8n deben terminar antes (a las 6:30 AM).
 
   Instalar:
     cp scripts/launchd/com.swl.brain-pipeline.plist ~/Library/LaunchAgents/
@@ -40,7 +40,7 @@
   <key>StartCalendarInterval</key>
   <dict>
     <key>Hour</key>
-    <integer>11</integer>
+    <integer>7</integer>
     <key>Minute</key>
     <integer>0</integer>
   </dict>

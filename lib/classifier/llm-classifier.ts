@@ -115,21 +115,31 @@ export async function llmClassify(
     ``,
     `HARD EXCLUSIONS (always match=false, score≤10): ${HARD_EXCLUSIONS.join(' · ')}.`,
     ``,
+    `CRITICAL — TICKET POLICY:`,
+    `Jobs reach you ONLY after passing the official SQL filter: ticket ≥ $40 USD, posted ≤ 48h, ≤ 50 existing proposals. These thresholds are validated by SWL leadership. DO NOT apply your own intuition about "engagement minimums", "below market rates", or "budget insufficient". Even $40-$200 tickets are viable for SWL — don't reject them on budget grounds. Your job is scope fit, not budget.`,
+    ``,
+    `CRITICAL — AREA ASSIGNMENT:`,
+    `Whenever the job scope plausibly fits one of the 8 BUs, set "area" to that BU name (exactly as listed above), EVEN IF you set match=false for other reasons. Only return area=null when the scope clearly fits NONE of the 8 BUs.`,
+    ``,
     `Decision protocol:`,
     `1. Read job title + description.`,
-    `2. Identify which BU (if any) fits.`,
-    `3. Weigh against good-fit signals, red flags, decision logic, and precedent.`,
-    `4. Decide match=true ONLY when there is a clear scope fit + realistic precedent.`,
-    `5. Assign score: 0=clear miss · 30=weak/no precedent · 60=plausible · 85+=strong fit with precedent.`,
-    `6. reason ≤ 25 words, concrete, cite signals or precedent.`,
+    `2. Identify which BU (if any) fits → set "area" accordingly.`,
+    `3. Check hard exclusions → if any apply, match=false, score≤10.`,
+    `4. Otherwise, weigh good-fit signals, red flags, decision logic, and precedent.`,
+    `5. Decide match=true when there is a clear scope fit + realistic precedent.`,
+    `6. Assign score: 0=clear miss · 30=weak/no precedent · 60=plausible · 85+=strong fit with precedent.`,
+    `7. reason ≤ 25 words, concrete, cite signals or precedent. NEVER cite ticket/budget as the reason — that's not your call.`,
     ``,
     `Return ONLY valid JSON, no markdown fences, no prose: { "match": bool, "score": 0-100, "area": <one of the BU names above> | null, "reason": "..." }`,
   ].join('\n')
 
-  // 5. Llamada al LLM
+  // 5. Llamada al LLM — INTENCIONALMENTE NO le pasamos el ticket.
+  //    El ticket lo decide el SQL filter upstream ($40 USD) y el override rule
+  //    downstream (ticket≥$40 + area). El LLM solo decide scope fit.
+  //    Si le mostramos el ticket, inventa thresholds ("$60 es bajo para CFO")
+  //    aunque el prompt le diga que no. Best defense: que no vea el número.
   const userPrompt = [
     `Job title: ${job.title}`,
-    `Ticket: ${job.ticket != null ? '$' + job.ticket + ' USD' : 'n/a'}`,
     `Industry: ${job.industry ?? 'n/a'}`,
     ``,
     `Description:`,
@@ -162,11 +172,38 @@ export async function llmClassify(
   }
 
   const area = typeof parsed.area === 'string' && parsed.area.length > 0 ? parsed.area : null
+  let match = !!parsed.match
+  let score = typeof parsed.score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.score))) : 0
+  let reason = typeof parsed.reason === 'string' ? parsed.reason : ''
+
+  // ── Capa 7: budget-reject override ───────────────────────────────────
+  // Si el LLM rechazó pero la razón menciona presupuesto/ticket Y el area
+  // está asignada Y el ticket pasa el threshold real ($40), revertir a
+  // match=true. El LLM no tiene autoridad sobre el ticket — eso ya lo
+  // decidió el SQL filter.
+  const BUDGET_REJECT_PHRASES = [
+    /below\s+(swl|the|its)?\s*(minimum|engagement|threshold|viable)/i,
+    /budget\s+(insufficient|non.?viable|prohibitive|incompatible|too\s+low)/i,
+    /ticket\s+(too\s+low|below|insufficient|non.?viable)/i,
+    /far\s+below/i,
+    /too\s+low\s+for/i,
+    /unrealistic\s+budget/i,
+    /severely\s+underpriced/i,
+    /engagement\s+minimum/i,
+    /\$\d+\s+(USD)?\s*(is|far)\s+below/i,
+  ]
+  const ticketViable = (job.ticket ?? 0) >= 40
+  if (!match && area && ticketViable && BUDGET_REJECT_PHRASES.some(re => re.test(reason))) {
+    match = true
+    reason = `[layer7: budget-reject override] originally: ${reason}`
+    if (score < 30) score = 30
+  }
+
   return {
-    match: !!parsed.match,
-    score: typeof parsed.score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.score))) : 0,
+    match,
+    score,
     area,
     business_unit_id: area ? (buNameToId.get(area) ?? null) : null,
-    reason: typeof parsed.reason === 'string' ? parsed.reason : '',
+    reason,
   }
 }
