@@ -153,8 +153,7 @@
     "Loop Prequalified": { "main": [[{ "node": "Build Classifier User Prompt", "type": "main", "index": 0 }]] },
     "Build Classifier User Prompt": { "main": [[{ "node": "Anthropic Classifier", "type": "main", "index": 0 }]] },
     "Anthropic Classifier": { "main": [[{ "node": "Parse Classifier", "type": "main", "index": 0 }]] },
-    "Parse Classifier": { "main": [[{ "node": "Transition (classifier)", "type": "main", "index": 0 }]] },
-    "Transition (classifier)": { "main": [[{ "node": "Loop Prequalified", "type": "main", "index": 0 }]] }
+    "Parse Classifier": { "main": [[{ "node": "Transition (classifier)", "type": "main", "index": 0 }]] }
   },
   "active": true,
   "settings": { "executionOrder": "v1", "binaryMode": "separate", "timezone": "America/Argentina/Buenos_Aires" },
