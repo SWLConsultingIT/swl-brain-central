@@ -8,7 +8,7 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [240, 400],
-      "id": "58cdaeb0-088c-43f2-a572-50f7977ce1c1",
+      "id": "schedule-trigger",
       "name": "Daily 7:00 AM"
     },
     {
@@ -24,7 +24,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [460, 400],
-      "id": "00e23870-3613-4abf-a741-2c05734416a8",
+      "id": "fetch-bu-cards",
       "name": "Fetch BU cards"
     },
     {
@@ -40,22 +40,22 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [680, 400],
-      "id": "8965f3e4-d2e1-4816-bae4-6da677496e23",
+      "id": "fetch-precedent",
       "name": "Fetch Sent precedent"
     },
     {
       "parameters": {
-        "jsCode": "function asArray(nodeName) {\n  const items = $(nodeName).all();\n  if (!items || items.length === 0) return [];\n  if (items.length > 1) return items.map(it => it.json);\n  const j = items[0].json;\n  if (Array.isArray(j)) return j;\n  return [j];\n}\n\nconst bus = asArray('Fetch BU cards');\nconst precedent = asArray('Fetch Sent precedent');\n\nconst precByBU = new Map();\nfor (const p of (precedent || [])) {\n  if (!p.business_unit_id) continue;\n  if (!precByBU.has(p.business_unit_id)) precByBU.set(p.business_unit_id, []);\n  if (precByBU.get(p.business_unit_id).length < 5) {\n    precByBU.get(p.business_unit_id).push(p.job_title);\n  }\n}\n\nconst buSection = bus.map(bu => {\n  const prec = precByBU.get(bu.id) || [];\n  return [\n    `## ${bu.name}`,\n    bu.description,\n    `Scopes: ${(bu.scopes || []).join(' · ')}`,\n    `Keywords: ${(bu.keywords || []).slice(0, 30).join(', ')}`,\n    `Good fit: ${bu.good_fit_signals || ''}`,\n    `Red flags: ${bu.red_flags || ''}`,\n    `Decision: ${bu.decision_logic || ''}`,\n    prec.length > 0 ? `Recent Sent precedent: ${prec.join(' · ')}` : 'Recent Sent precedent: (none yet)',\n  ].join('\\n');\n}).join('\\n\\n---\\n\\n');\n\nconst HARD_EXCLUSIONS = [\n  'pure graphic design only (no strategy)',\n  'physical product manufacturing',\n  'legal services (lawyers, customs/tariff compliance, immigration, contracts)',\n  'medical services (clinical, MD, nursing)',\n  'academic writing, grant writing for non-profits, non-profit work',\n  'civil / mechanical / electrical / aerospace / hardware engineering',\n  'embedded systems, firmware, DSP (digital signal processing), radar, RF, IoT hardware',\n  'COACHING / TRAINING ROLES (STRICT): if the job title or scope mentions Coach, Trainer, Coaching, Training, Mentor, Enablement, Workshop, Bootcamp, even if it mentions teams, projects, or implementation, IT IS COACHING and must be DISCARDED. The presence of \"team\", \"project\", or \"implementation\" does NOT make it a project job — it is still teaching/coaching.',\n  'MICROSOFT ECOSYSTEM (STRICT): Any job involving Microsoft 365, Office 365, Dynamics (any version: 365, NAV, AX, CRM, GP), SharePoint, Power Platform (Power Apps, Power Automate, Power BI as Microsoft admin), Outlook, Teams, Azure AD admin. EVEN IF the integration uses Claude/OpenAI/n8n to connect TO Microsoft, the Microsoft side is the disqualifier. EXCEPTION: Power BI used purely as a dashboarding tool (no Microsoft admin) is OK for Project Management & BI.',\n  'SAP INTERNAL (STRICT): Any job involving SAP ABAP, SAP customization, SAP NCo, RFC/BAPI, SAP development inside the platform. EXCEPTION: pulling data FROM SAP to external systems via standard APIs is OK.',\n  'PR / MEDIA RELATIONS (STRICT): publicity, press releases, media pitching, journalist outreach, brand ambassador work. The presence of \"marketing\" or \"brand\" in the title does NOT override this — if the core work is PR/publicity, DISCARD.',\n  'CPA TACTICAL (STRICT): US tax filings, IRS, federal/state tax, audit, late filing, Delaware C-Corp filings, SBA loans, bookkeeping. Even if it mentions financial modeling, if the deliverable is tax compliance work, DISCARD. EXCEPTION: strategic CFO advisory or fundraising-related modeling is OK.',\n  'TOOL-SPECIFIC EXCLUSIONS (STRICT): Framer (any mention), Figma (ANY mention — primary or secondary, as deliverable or as tool, even if just listed alongside others), Klaviyo execution-only operator, Etsy listing/SEO optimization, Smartsheet formula help, Shopify theme customization, Wix.',\n  'ONE-TIME TACTICAL: single formula fix, urgent quick help, single-day jobs, one-shot audits without strategy.',\n  'BROKERAGE / NETWORKING / RELATIONSHIP roles without technical scope (business development manager pure relationship sales, capital markets brokers, M&A intermediaries).',\n  'RECRUITING: talent acquisition, HR sourcing, headhunting.',\n  'CRYPTO/WEB3 SPECIALIST: blockchain game backend, smart contract dev (unless paired with broader SaaS work).',\n  'PURE 3D/VFX/ANIMATION: Blender simulation, VFX production, motion graphics as core deliverable.',\n];\n\nconst buNameToId = {};\nfor (const bu of bus) buNameToId[bu.name] = bu.id;\n\nconst systemPrompt = [\n  'You are a senior qualification analyst for SWL Consulting, an AI-native consulting firm.',\n  '',\n  'Your job: decide if an incoming Upwork job is a MATCH for SWL.',\n  '',\n  `Below are SWL's 8 business units. Each card includes scope, keywords, good-fit signals, red flags, decision logic, and recent precedent (real proposals SWL has sent).`,\n  '',\n  buSection,\n  '',\n  '---',\n  '',\n  'HARD EXCLUSIONS (always match=false, score<=10):',\n  ...HARD_EXCLUSIONS.map(e => `- ${e}`),\n  '',\n  'BU-SPECIFIC RULES (always qualify if scope matches, regardless of ticket):',\n  '- Power BI / Tableau / Looker dashboard engineering → Project Management & BI',\n  '- n8n / Zapier / Make automation → System Integrations or AI & Automation',\n  '- Meta Ads / Google Ads / paid social strategy + funnel → Marketing & Brand',\n  '- Fractional CFO / COO / GM for SaaS/startups → Finance & Accounting or Business Operations',\n  '- Brand design with strategy (not pure execution) → Marketing & Brand',\n  '',\n  'CRITICAL TICKET POLICY:',\n  'Jobs reach you ONLY after passing SQL filter (hourly>$40/h, posted <24h, <=50 proposals). Budget is already validated.',\n  'NEVER mention ticket, budget, engagement minimum, hourly rate, underpriced, far below, or pricing in your \"reason\".',\n  'If the scope fits a BU and no hard exclusion applies, you MUST set match=true. Budget is NOT your concern.',\n  'If your reason contains any of these forbidden phrases, the output is INVALID and will be rejected.',\n  '',\n  'AREA ASSIGNMENT: Whenever the job scope plausibly fits one of the 8 BUs, set \"area\" to that BU name (exactly as listed above), EVEN IF match=false. Only return area=null when scope clearly fits NONE.',\n  '',\n  'Decision protocol:',\n  '1. Read job title + description.',\n  '2. Identify BU (if any) -> set area.',\n  '3. Check hard exclusions strictly -> if any apply, match=false.',\n  '4. Otherwise, weigh good-fit signals, red flags, decision logic, precedent — SCOPE ONLY.',\n  '5. match=true when scope fit + no exclusion + plausible precedent.',\n  '6. score: 0=miss, 30=weak, 60=plausible, 85+=strong fit with precedent.',\n  '7. reason <= 25 words, concrete. Cite signals or precedent. NEVER cite budget/ticket.',\n  '',\n  'Return ONLY valid JSON, no markdown fences, no prose: { \"match\": bool, \"score\": 0-100, \"area\": <one of the BU names above> | null, \"reason\": \"...\" }',\n].join('\\n');\n\nreturn { json: { systemPrompt, buNameToId } };"
+        "jsCode": "function asArray(nodeName) {\n  const items = $(nodeName).all();\n  if (!items || items.length === 0) return [];\n  if (items.length > 1) return items.map(it => it.json);\n  const j = items[0].json;\n  if (Array.isArray(j)) return j;\n  return [j];\n}\n\nconst bus = asArray('Fetch BU cards');\nconst precedent = asArray('Fetch Sent precedent');\n\nconst precByBU = new Map();\nfor (const p of (precedent || [])) {\n  if (!p.business_unit_id) continue;\n  if (!precByBU.has(p.business_unit_id)) precByBU.set(p.business_unit_id, []);\n  if (precByBU.get(p.business_unit_id).length < 5) precByBU.get(p.business_unit_id).push(p.job_title);\n}\n\nconst buSection = bus.map(bu => {\n  const prec = precByBU.get(bu.id) || [];\n  return [\n    `## ${bu.name}`,\n    bu.description,\n    `Scopes: ${(bu.scopes || []).join(' · ')}`,\n    `Keywords: ${(bu.keywords || []).slice(0, 30).join(', ')}`,\n    `Good fit: ${bu.good_fit_signals || ''}`,\n    `Red flags: ${bu.red_flags || ''}`,\n    `Decision: ${bu.decision_logic || ''}`,\n    prec.length > 0 ? `Recent Sent precedent: ${prec.join(' · ')}` : 'Recent Sent precedent: (none yet)',\n  ].join('\\n');\n}).join('\\n\\n---\\n\\n');\n\nconst HARD_EXCLUSIONS = [\n  'pure graphic design only',\n  'physical product manufacturing',\n  'legal services',\n  'medical services',\n  'academic writing, grant writing for non-profits',\n  'civil/mechanical/electrical/aerospace/hardware engineering',\n  'embedded/firmware/DSP/radar/RF/IoT hardware',\n  'COACHING/TRAINING ROLES (STRICT): Coach, Trainer, Mentor, Enablement, Workshop, Bootcamp - strict',\n  'MICROSOFT ECOSYSTEM (STRICT): M365, Dynamics, SharePoint, Power Platform admin. EXCEPTION: Power BI dashboarding OK',\n  'SAP INTERNAL. EXCEPTION: external API pulls OK',\n  'PR/MEDIA RELATIONS (STRICT)',\n  'CPA TACTICAL (STRICT): US tax, IRS, Delaware C-Corp, SBA, bookkeeping',\n  'TOOL-SPECIFIC (STRICT): Framer, Figma (ANY mention), Klaviyo operator, Etsy listing, Smartsheet, Shopify theme, Wix',\n  'ONE-TIME TACTICAL',\n  'BROKERAGE/NETWORKING without technical scope',\n  'RECRUITING, CRYPTO/WEB3, 3D/VFX',\n];\n\nconst buNameToId = {};\nfor (const bu of bus) buNameToId[bu.name] = bu.id;\n\nconst systemPrompt = [\n  'You are a senior qualification analyst for SWL Consulting.',\n  '',\n  `Below are SWL's 8 business units.`,\n  '',\n  buSection,\n  '',\n  '---',\n  '',\n  'HARD EXCLUSIONS (match=false, score<=10):',\n  ...HARD_EXCLUSIONS.map(e => `- ${e}`),\n  '',\n  'BU-SPECIFIC: Power BI→PM&BI; n8n/Zapier→SI/AI&A; Meta/Google Ads→M&B; Fractional CFO/COO→F&A; Brand+strategy→M&B',\n  '',\n  'NEVER mention ticket/budget/hourly rate in reason. If scope fits and no hard exclusion, match=true.',\n  '',\n  'Return ONLY valid JSON: { \"match\": bool, \"score\": 0-100, \"area\": <BU name>|null, \"reason\": \"...\" }',\n].join('\\n');\n\nreturn { json: { systemPrompt, buNameToId } };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [900, 400],
-      "id": "6e45e427-63af-454b-a326-ecfb613013e6",
+      "id": "build-system",
       "name": "Build Classifier System Prompt"
     },
     {
       "parameters": {
-        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?status=eq.prequalified&select=id,title,description,ticket,industry,hourly_average",
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?status=eq.prequalified&select=id,title,description,industry,hourly_average",
         "sendHeaders": true,
         "headerParameters": { "parameters": [
           { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
@@ -66,26 +66,26 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1120, 400],
-      "id": "6d98ed2e-a2f0-4edd-a59e-19289e79e8cd",
+      "id": "fetch-prequalified",
       "name": "Fetch prequalified jobs"
     },
     {
-      "parameters": { "options": {} },
+      "parameters": { "batchSize": 1, "options": {} },
       "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
+      "typeVersion": 1,
       "position": [240, 600],
-      "id": "aff3a945-87b6-4e35-ad43-3fd2f6010abe",
+      "id": "loop",
       "name": "Loop Prequalified"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const job = $json;\nconst systemPrompt = $('Build Classifier System Prompt').first().json.systemPrompt;\nconst userPrompt = [\n  `Job title: ${job.title}`,\n  `Industry: ${job.industry || 'n/a'}`,\n  '',\n  'Description:',\n  job.description || '(no description)',\n].join('\\n');\n\nreturn { json: { ...job, systemPrompt, userPrompt } };"
+        "jsCode": "const job = $json;\nconst systemPrompt = $('Build Classifier System Prompt').first().json.systemPrompt;\nconst userPrompt = [\n  `Job title: ${job.title}`,\n  `Industry: ${job.industry || 'n/a'}`,\n  '',\n  'Description:',\n  job.description || '(no description)',\n].join('\\n');\nreturn { json: { ...job, systemPrompt, userPrompt } };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [460, 600],
-      "id": "1c4424dc-e724-4a7f-996c-020f806d077c",
+      "id": "build-user",
       "name": "Build Classifier User Prompt"
     },
     {
@@ -106,19 +106,19 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [680, 600],
-      "id": "4bc2dfeb-4b12-4aaf-b530-de701772d93b",
+      "id": "anthropic",
       "name": "Anthropic Classifier",
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const job = $('Build Classifier User Prompt').item.json;\nconst ai = $json;\nconst buNameToId = $('Build Classifier System Prompt').first().json.buNameToId;\n\nlet parsed;\ntry {\n  const text = (ai.content && ai.content[0] && ai.content[0].text) || '{}';\n  const clean = text.replace(/^```(?:json)?\\s*/i, '').replace(/```\\s*$/, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parsed = { match: false, score: 0, area: null, reason: 'parse_error: ' + e.message };\n}\n\nconst area = (typeof parsed.area === 'string' && parsed.area.length > 0) ? parsed.area : null;\nlet score = typeof parsed.score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.score))) : 0;\nlet match = !!parsed.match;\nlet reason = parsed.reason || '';\nconst businessUnitId = area ? (buNameToId[area] || null) : null;\n\n// FORBIDDEN PHRASES: if LLM cites budget/ticket as reason for rejecting,\n// the rejection is invalid — auto-qualify when area is assigned.\nconst FORBIDDEN_BUDGET = [\n  /\\bticket\\b/i,\n  /\\bbudget\\b/i,\n  /\\bunderpriced\\b/i,\n  /\\bfar\\s+below\\b/i,\n  /\\btoo\\s+low\\b/i,\n  /\\bengagement\\s+minimum/i,\n  /\\bnon.?viable\\b/i,\n  /\\bunrealistic\\s+budget/i,\n  /\\bhourly\\s+rate/i,\n  /\\bpricing\\b/i,\n  /\\bsub-?\\$[0-9]/i,\n  /\\$[0-9]+\\s*(USD|hour|hr|month|week)/i,\n];\nconst forbiddenViolation = FORBIDDEN_BUDGET.some(re => re.test(reason));\nif (!match && area && forbiddenViolation) {\n  match = true;\n  reason = '[forbidden-phrase rescue: LLM cited budget; forced match by scope+area] orig: ' + reason.slice(0, 150);\n  if (score < 50) score = 50;\n}\n\nconst newStatus = match ? 'qualified' : 'discarded';\n\nreturn { json: {\n  job_id: job.id,\n  newStatus,\n  match,\n  score,\n  area,\n  reason,\n  businessUnitId,\n}};"
+        "jsCode": "const job = $('Build Classifier User Prompt').item.json;\nconst ai = $json;\nconst buNameToId = $('Build Classifier System Prompt').first().json.buNameToId;\n\nlet parsed;\ntry {\n  const text = (ai.content && ai.content[0] && ai.content[0].text) || '{}';\n  const clean = text.replace(/^```(?:json)?\\s*/i, '').replace(/```\\s*$/, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parsed = { match: false, score: 0, area: null, reason: 'parse_error' };\n}\n\nconst area = (typeof parsed.area === 'string' && parsed.area.length > 0) ? parsed.area : null;\nlet score = typeof parsed.score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.score))) : 0;\nlet match = !!parsed.match;\nlet reason = parsed.reason || '';\nconst businessUnitId = area ? (buNameToId[area] || null) : null;\n\nconst FORBIDDEN = [/\\bticket\\b/i,/\\bbudget\\b/i,/\\bunderpriced\\b/i,/\\bfar\\s+below\\b/i,/\\btoo\\s+low\\b/i,/\\bengagement\\s+minimum/i,/\\bhourly\\s+rate/i,/\\$[0-9]+\\s*(USD|hour|hr)/i];\nif (!match && area && FORBIDDEN.some(re => re.test(reason))) {\n  match = true;\n  reason = '[forbidden-phrase rescue] ' + reason.slice(0,120);\n  if (score < 50) score = 50;\n}\n\nconst newStatus = match ? 'qualified' : 'discarded';\nreturn { json: { job_id: job.id, newStatus, match, score, area, reason, businessUnitId } };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [900, 600],
-      "id": "e46bb0ad-c943-4d73-ba73-ed6bd3260be2",
+      "id": "parse",
       "name": "Parse Classifier"
     },
     {
@@ -139,7 +139,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1120, 600],
-      "id": "eef5e87f-2dcc-4017-bb98-1c229d7d1af3",
+      "id": "transition",
       "name": "Transition (classifier)",
       "onError": "continueRegularOutput"
     }
@@ -153,9 +153,10 @@
     "Loop Prequalified": { "main": [[{ "node": "Build Classifier User Prompt", "type": "main", "index": 0 }]] },
     "Build Classifier User Prompt": { "main": [[{ "node": "Anthropic Classifier", "type": "main", "index": 0 }]] },
     "Anthropic Classifier": { "main": [[{ "node": "Parse Classifier", "type": "main", "index": 0 }]] },
-    "Parse Classifier": { "main": [[{ "node": "Transition (classifier)", "type": "main", "index": 0 }]] }
+    "Parse Classifier": { "main": [[{ "node": "Transition (classifier)", "type": "main", "index": 0 }]] },
+    "Transition (classifier)": { "main": [[{ "node": "Loop Prequalified", "type": "main", "index": 0 }]] }
   },
-  "active": true,
+  "active": false,
   "settings": { "executionOrder": "v1", "binaryMode": "separate", "timezone": "America/Argentina/Buenos_Aires" },
   "pinData": {},
   "meta": {}
