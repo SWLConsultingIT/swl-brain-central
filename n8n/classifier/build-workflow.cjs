@@ -1,39 +1,27 @@
 #!/usr/bin/env node
 /**
- * Genera el workflow n8n "Brain Pipeline v2" — OpenAI + RPC + Capa 1/2/7.
+ * Genera el workflow n8n "Classifier".
  *
- * El workflow lee jobs de Supabase, los clasifica con OpenAI gpt-4o-mini,
- * y para los qualified genera cover letter con gpt-4o usando el Master Prompt SWL.
+ * QUÉ HACE:
+ *   - Cada 30 min lee jobs WHERE status='prequalified' de Supabase
+ *   - Para cada job, llama OpenAI gpt-4o-mini con las 8 BU cards + precedent
+ *   - Decide qualified o discarded
+ *   - Guarda via RPC brain_transition_job (atómico)
  *
- * Cambios vs v1 (Anthropic):
- *  - LLM: OpenAI gpt-4o-mini (classifier) + gpt-4o (cover letter)
- *  - Capa 1: LLM no recibe ticket (evita inventar thresholds)
- *  - Capa 2: prompt explícito anti-budget + siempre asignar area
- *  - Capa 7: budget-reject phrases en parse code (defensa adicional)
- *  - Sin override genérico (LLM decide, no se fuerza qualified si match=false)
- *  - Idempotencia: query qualified filtra cover_letter_draft is null
- *  - RPC: usa brain_transition_job (atómica) en lugar de UPDATE + INSERT separados
+ * NO HACE:
+ *   - No genera cover letters (eso es otro workflow)
  *
  * Uso:
  *   node build-workflow.cjs
  *
  * Output:
- *   brain-pipeline.json — para importar en n8n
- *
- * Credenciales hardcodeadas (mismo patrón que scrapers):
- *   - SUPABASE_SECRET_KEY (de .env.local)
- *   - OPENAI_API_KEY (de .env.local)
- * El JSON resultante se gitignorea — solo se commitea este generador.
+ *   classifier.json — para importar en n8n
  */
 
 const fs = require('node:fs')
 const path = require('node:path')
 
 const SUPABASE_URL = 'https://uaefxpewxmvmhxpgehuv.supabase.co'
-const MASTER_PROMPT = fs.readFileSync(
-  path.join(__dirname, '..', '..', 'lib', 'cover-letter', 'master-prompt.md'),
-  'utf8',
-)
 
 const envContent = fs.readFileSync(
   path.join(__dirname, '..', '..', '.env.local'),
@@ -45,7 +33,6 @@ if (!SUPABASE_SECRET_KEY) throw new Error('No SUPABASE_SECRET_KEY in .env.local'
 if (!OPENAI_API_KEY) throw new Error('No OPENAI_API_KEY in .env.local')
 
 const CLASSIFIER_MODEL = 'gpt-4o-mini'
-const COVER_LETTER_MODEL = 'gpt-4o'
 
 // ── Helpers ─────────────────────────────────────────────────────
 let nodeCounter = 0
@@ -73,19 +60,20 @@ function addConnection(from, to, outputIndex = 0) {
   connections[from].main[outputIndex].push({ node: to, type: 'main', index: 0 })
 }
 
-// ── Node builders ─────────────────────────────────────────────────
+// ── Node builders ────────────────────────────────────────────────
 function nScheduleTrigger() {
+  // 7:15 AM Argentina daily
   const n = {
     parameters: {
       rule: {
-        interval: [{ field: 'days', triggerAtHour: 7, triggerAtMinute: 0 }],
+        interval: [{ field: 'cronExpression', expression: '15 7 * * *' }],
       },
     },
     type: 'n8n-nodes-base.scheduleTrigger',
     typeVersion: 1.2,
     position: bumpX(),
     id: id(),
-    name: 'Daily 7AM',
+    name: 'Daily 7:15 AM',
   }
   nodes.push(n)
   return n.name
@@ -171,8 +159,7 @@ function nSplitInBatches(name) {
 }
 
 function nHttpOpenAI(name, model, opts = {}) {
-  const { jsonMode = false, maxTokens = 1024, temperature = 0, batchInterval = 1500 } = opts
-  // Body construido en runtime con expresiones n8n
+  const { jsonMode = false, maxTokens = 512, temperature = 0, batchInterval = 1500 } = opts
   const body = jsonMode
     ? `={{ JSON.stringify({
   model: "${model}",
@@ -208,9 +195,6 @@ function nHttpOpenAI(name, model, opts = {}) {
       sendBody: true,
       specifyBody: 'json',
       jsonBody: body,
-      // Batching para evitar rate limit (429):
-      //   mini → 1500ms (40 RPM, holgado bajo 200K TPM)
-      //   gpt-4o → 12000ms (5 RPM, holgado bajo 30K TPM tier 1)
       options: {
         batching: {
           batch: {
@@ -232,7 +216,6 @@ function nHttpOpenAI(name, model, opts = {}) {
   return n.name
 }
 
-// RPC call → atomic transition (decision + status) via brain_transition_job
 function nHttpRpcTransition(name, bodyExpression) {
   const n = {
     parameters: {
@@ -263,7 +246,7 @@ function nHttpRpcTransition(name, bodyExpression) {
   return n.name
 }
 
-// ── ROW 1: Triggers + Merge + Load context ───────────────────────
+// ── ROW 1: Triggers + Load context ──────────────────────────────
 resetRow(300)
 const scheduleName = nScheduleTrigger()
 const manualName = nManualTrigger()
@@ -285,7 +268,6 @@ const fetchPrecedentName = nHttpGetSupabase(
 )
 addConnection(fetchBUsName, fetchPrecedentName)
 
-// Build classifier system prompt (once, using BU cards + precedent)
 const buildClassifierSystemName = nCode(
   'Build Classifier System Prompt',
   `
@@ -366,7 +348,6 @@ return { json: { systemPrompt, buNameToId } };
 )
 addConnection(fetchPrecedentName, buildClassifierSystemName)
 
-// Fetch prequalified jobs (NOTA: no incluimos ticket en lo que devolvemos al LLM)
 const fetchPrequalifiedName = nHttpGetSupabase(
   'Fetch prequalified jobs',
   'jobs',
@@ -384,7 +365,7 @@ const buildUserPromptName = nCode(
   `
 const job = $json;
 const systemPrompt = $('Build Classifier System Prompt').first().json.systemPrompt;
-// Capa 1: NO le pasamos el ticket al LLM. Imposible inventar threshold sobre número invisible.
+// Capa 1: NO le pasamos el ticket al LLM
 const userPrompt = [
   \`Job title: \${job.title}\`,
   \`Industry: \${job.industry || 'n/a'}\`,
@@ -401,7 +382,7 @@ addConnection(splitClassifierName, buildUserPromptName)
 const openaiClassifierName = nHttpOpenAI(
   'OpenAI Classifier',
   CLASSIFIER_MODEL,
-  { jsonMode: true, maxTokens: 512, temperature: 0 },
+  { jsonMode: true, maxTokens: 512, temperature: 0, batchInterval: 1500 },
 )
 addConnection(buildUserPromptName, openaiClassifierName)
 
@@ -426,7 +407,7 @@ let match = !!parsed.match;
 let reason = parsed.reason || '';
 const businessUnitId = area ? (buNameToId[area] || null) : null;
 
-// Capa 7: budget-reject override en código
+// Capa 7: budget-reject override
 const BUDGET_REJECT = [
   /below\\s+(swl|the|its)?\\s*(minimum|engagement|threshold|viable)/i,
   /budget\\s+(insufficient|non.?viable|prohibitive|incompatible|too\\s+low)/i,
@@ -459,7 +440,6 @@ return { json: {
 )
 addConnection(openaiClassifierName, parseClassifierName)
 
-// Una sola llamada RPC: atomic transition (decision + update jobs)
 const transitionClassifierName = nHttpRpcTransition(
   'Transition (classifier)',
   `={{ JSON.stringify({
@@ -477,144 +457,9 @@ const transitionClassifierName = nHttpRpcTransition(
 addConnection(parseClassifierName, transitionClassifierName)
 addConnection(transitionClassifierName, splitClassifierName) // loop back
 
-// ── ROW 3: Cover letter loop ────────────────────────────────────
-resetRow(800)
-// Idempotency: solo qualified SIN draft existente
-const fetchQualifiedName = nHttpGetSupabase(
-  'Fetch qualified jobs',
-  'jobs',
-  'status=eq.qualified&cover_letter_draft=is.null&business_unit_id=not.is.null&select=id,title,description,ticket,industry,country,duration,business_unit_id',
-)
-addConnection(splitClassifierName, fetchQualifiedName, 1) // done branch (outputIndex=1) → solo dispara al final del loop
-
-const splitCoverName = nSplitInBatches('Loop Qualified')
-addConnection(fetchQualifiedName, splitCoverName)
-
-// Fetch BU para este job en particular
-const fetchBUForCoverName = nHttpGetSupabase(
-  'Fetch BU for this job',
-  'business_units',
-  'placeholder',
-)
-nodes[nodes.length - 1].parameters.url = `=${SUPABASE_URL}/rest/v1/business_units?id=eq.{{ $json.business_unit_id }}&select=id,name,description,scopes,keywords,good_fit_signals,decision_logic`
-addConnection(splitCoverName, fetchBUForCoverName)
-
-const fetchPrecBUName = nHttpGetSupabase(
-  'Fetch precedent for this BU',
-  'proposals',
-  'placeholder',
-)
-nodes[nodes.length - 1].parameters.url = `=${SUPABASE_URL}/rest/v1/proposals?status=eq.Sent&business_unit_id=eq.{{ $('Loop Qualified').item.json.business_unit_id }}&order=sent_date.desc&limit=5&select=job_title,cover_letter,sent_date`
-addConnection(fetchBUForCoverName, fetchPrecBUName)
-
-// Build cover letter prompt con master prompt embedded
-const masterPromptEscaped = JSON.stringify(MASTER_PROMPT)
-const buildCoverPromptName = nCode(
-  'Build Cover Letter Prompt',
-  `
-function asArray(nodeName) {
-  const items = $(nodeName).all();
-  if (!items || items.length === 0) return [];
-  if (items.length > 1) return items.map(it => it.json);
-  const j = items[0].json;
-  if (Array.isArray(j)) return j;
-  return [j];
-}
-
-const job = $('Loop Qualified').item.json;
-const buArr = asArray('Fetch BU for this job');
-const bu = buArr[0] || {};
-const precedent = asArray('Fetch precedent for this BU');
-
-const MAX_PRECEDENT_CL_CHARS = 600;
-const precedentBlock = precedent.map((p, i) => {
-  const header = \`### Precedent \${i+1}: \${p.job_title}\`;
-  const cl = p.cover_letter
-    ? '\\n' + p.cover_letter.slice(0, MAX_PRECEDENT_CL_CHARS) + (p.cover_letter.length > MAX_PRECEDENT_CL_CHARS ? '…' : '')
-    : '\\n(no cover letter text on record — use as title-level inspiration only)';
-  return header + cl;
-}).join('\\n\\n');
-
-const MASTER_PROMPT = ${masterPromptEscaped};
-
-const systemPrompt = [
-  MASTER_PROMPT,
-  '',
-  \`---\`,
-  '',
-  \`## Context for this specific job\`,
-  '',
-  \`### LIST OF SERVICES (the SWL "\${bu.name}" business unit)\`,
-  bu.description || '',
-  '',
-  \`Relevant scopes: \${(bu.scopes || []).join(' · ')}\`,
-  \`Relevant tools/keywords: \${(bu.keywords || []).slice(0, 25).join(', ')}\`,
-  \`Good-fit signals: \${bu.good_fit_signals || ''}\`,
-  \`Decision logic: \${bu.decision_logic || ''}\`,
-  '',
-  precedent.length > 0
-    ? \`### Recent Sent precedent (\${precedent.length} similar SWL applications)\\n\\nUse these as reference for tone, depth, and what worked in similar pitches. Do not copy verbatim.\\n\\n\${precedentBlock}\`
-    : \`### Recent Sent precedent\\n(none in this BU yet — rely on the master prompt structure)\`,
-  '',
-  \`### Specific Comments for the Job Post\`,
-  \`(none provided)\`,
-].join('\\n');
-
-const userPrompt = [
-  \`## JOB POST\`,
-  '',
-  \`Title: \${job.title}\`,
-  \`Industry: \${job.industry || 'n/a'}\`,
-  \`Client location: \${job.country || 'n/a'}\`,
-  \`Duration: \${job.duration || 'n/a'}\`,
-  \`Ticket: \${job.ticket != null ? '$' + job.ticket + ' USD' : 'n/a'}\`,
-  '',
-  \`Description:\`,
-  job.description || '(no description)',
-].join('\\n');
-
-return { json: { ...job, systemPrompt, userPrompt } };
-`,
-)
-addConnection(fetchPrecBUName, buildCoverPromptName)
-
-const openaiCoverName = nHttpOpenAI(
-  'OpenAI Cover Letter',
-  COVER_LETTER_MODEL,
-  // gpt-4o tiene TPM bajo (30K en tier 1) — 12s entre calls evita 429
-  { jsonMode: false, maxTokens: 1500, temperature: 0.5, batchInterval: 12000 },
-)
-addConnection(buildCoverPromptName, openaiCoverName)
-
-const parseCoverName = nCode(
-  'Extract Cover Letter Text',
-  `
-const ai = $json;
-const job = $('Build Cover Letter Prompt').item.json;
-const text = (ai.choices && ai.choices[0] && ai.choices[0].message && ai.choices[0].message.content) || '';
-return { json: { job_id: job.id, cover_letter: text.trim(), chars: text.length } };
-`,
-)
-addConnection(openaiCoverName, parseCoverName)
-
-// RPC atomic transition con cover letter
-const transitionCoverName = nHttpRpcTransition(
-  'Transition (cover letter)',
-  `={{ JSON.stringify({
-  p_job_id: $json.job_id,
-  p_to_status: 'proposal_drafted',
-  p_actor: 'brain_cover_letter',
-  p_actor_detail: '${COVER_LETTER_MODEL}',
-  p_reason: 'cover letter drafted (' + $json.chars + ' chars)',
-  p_cover_letter_draft: $json.cover_letter
-}) }}`,
-)
-addConnection(parseCoverName, transitionCoverName)
-addConnection(transitionCoverName, splitCoverName) // loop back
-
 // ── Final workflow object ──────────────────────────────────────
 const workflow = {
-  name: 'Brain Pipeline v2',
+  name: 'Brain Classifier',
   nodes,
   connections,
   active: true,
@@ -623,9 +468,8 @@ const workflow = {
   meta: {},
 }
 
-const output = path.join(__dirname, 'brain-pipeline.json')
+const output = path.join(__dirname, 'classifier.json')
 fs.writeFileSync(output, JSON.stringify(workflow, null, 2))
 console.log(`✓ Escrito ${output}`)
 console.log(`  Nodos: ${nodes.length}`)
-console.log(`  Conexiones: ${Object.keys(connections).length}`)
-console.log(`  Modelos: classifier=${CLASSIFIER_MODEL}, cover_letter=${COVER_LETTER_MODEL}`)
+console.log(`  Modelo: ${CLASSIFIER_MODEL}`)

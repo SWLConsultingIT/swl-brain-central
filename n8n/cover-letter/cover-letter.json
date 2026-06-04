@@ -1,0 +1,144 @@
+{
+  "name": "Brain Cover Letter",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "brain-cover-letter", "responseMode": "onReceived", "options": {} },
+      "id": "cover-letter-webhook",
+      "name": "Webhook: Job Qualified",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "webhookId": "brain-cover-letter-wh"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?id=eq.{{ $json.body.job_id }}&select=id,title,description,ticket,industry,country,duration,business_unit_id,hourly_average,proposals_count",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Accept", "value": "application/vnd.pgrst.object+json" }
+        ] },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 400],
+      "id": "aaaa0004-bbbb-cccc-dddd-eeeeeeee0004",
+      "name": "Fetch this job"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/business_units?id=eq.{{ $json.business_unit_id }}&select=id,name,description,scopes,keywords,good_fit_signals,decision_logic",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Accept", "value": "application/vnd.pgrst.object+json" }
+        ] },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400],
+      "id": "aaaa0006-bbbb-cccc-dddd-eeeeeeee0006",
+      "name": "Fetch BU"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/proposals?status=eq.Sent&business_unit_id=eq.{{ $('Fetch this job').item.json.business_unit_id }}&order=sent_date.desc&limit=5&select=job_title,cover_letter,sent_date",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" }
+        ] },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 400],
+      "id": "aaaa0007-bbbb-cccc-dddd-eeeeeeee0007",
+      "name": "Fetch precedent"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $('Fetch this job').item.json;\nconst bu = $('Fetch BU').item.json;\nconst precedentRaw = $json;\nconst precedent = Array.isArray(precedentRaw) ? precedentRaw : (Array.isArray(precedentRaw?.body) ? precedentRaw.body : []);\n\nconst MAX = 600;\nconst precedentBlock = precedent.map((p, i) => {\n  const cl = p.cover_letter ? '\\n' + p.cover_letter.slice(0, MAX) + (p.cover_letter.length > MAX ? '…' : '') : '\\n(no text)';\n  return `### Precedent ${i+1}: ${p.job_title}` + cl;\n}).join('\\n\\n');\n\nconst systemPrompt = [\n  'You write professional cover letters for SWL Consulting on Upwork. 300-350 words, English unless job is Spanish. Tone: professional, strategic, direct. Sign with \"Juan\". No hyphens or em dashes. Output only the cover letter, no preamble.',\n  '',\n  '## Structure (in this exact order):',\n  '1. Welcome greeting (2 sentences, 50-60 words, reference one specific job detail, use \"we\")',\n  '2. Initial hook (empathy + client pain)',\n  '3. Authority paragraph: MBA + Master Finance + FMVA from CFI Canada + at least one of Juan\\'s roles (Managing Director Latam consulting, Head of Investments LA media fund, CFO European SaaS) with measurable examples. 8-10 lines.',\n  '4. 3-5 bullet points starting with action verbs about what we bring',\n  '5. SWL intro: boutique advisory firm, 20+ pros, AI-powered solutions in finance/strategy/ops/sales, link one service from BU scope. 5-6 lines.',\n  '6. Call to action (one of the 3 standard sentences)',\n  '7. Closing line + \"Juan\" signature',\n  '',\n  `## SWL Business Unit: ${bu.name || 'unknown'}`,\n  bu.description || '',\n  `Scopes: ${(bu.scopes || []).join(' · ')}`,\n  `Keywords: ${(bu.keywords || []).slice(0, 25).join(', ')}`,\n  `Good-fit signals: ${bu.good_fit_signals || ''}`,\n  '',\n  precedent.length ? `## Recent Sent precedent\\n\\n${precedentBlock}` : '## Recent Sent precedent\\n(none yet)',\n].join('\\n');\n\nconst userPrompt = [\n  '## JOB POST',\n  `Title: ${job.title}`,\n  `Industry: ${job.industry || 'n/a'}`,\n  `Client location: ${job.country || 'n/a'}`,\n  `Duration: ${job.duration || 'n/a'}`,\n  `Hourly rate: $${job.hourly_average}/h`,\n  '',\n  'Description:',\n  job.description || '(no description)',\n].join('\\n');\n\nreturn { json: { job_id: job.id, systemPrompt, userPrompt } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400],
+      "id": "aaaa0008-bbbb-cccc-dddd-eeeeeeee0008",
+      "name": "Build Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "x-api-key", "value": "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" },
+          { "name": "anthropic-version", "value": "2023-06-01" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-5\",\n  max_tokens: 1500,\n  system: $json.systemPrompt,\n  messages: [ { role: \"user\", content: $json.userPrompt } ]\n}) }}",
+        "options": { "timeout": 90000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 400],
+      "id": "aaaa0009-bbbb-cccc-dddd-eeeeeeee0009",
+      "name": "Anthropic"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ai = $json;\nconst job_id = $('Build Prompt').item.json.job_id;\nconst text = (ai.content && ai.content[0] && ai.content[0].text) || '';\nreturn { json: { job_id, cover_letter: text.trim(), chars: text.length } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 400],
+      "id": "aaaa0010-bbbb-cccc-dddd-eeeeeeee0010",
+      "name": "Extract Text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/rpc/brain_transition_job",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  p_job_id: $json.job_id,\n  p_to_status: 'proposal_drafted',\n  p_actor: 'brain_cover_letter',\n  p_actor_detail: 'claude-sonnet-4-5',\n  p_reason: 'cover letter drafted (' + $json.chars + ' chars)',\n  p_cover_letter_draft: $json.cover_letter\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 400],
+      "id": "aaaa0011-bbbb-cccc-dddd-eeeeeeee0011",
+      "name": "Save to Supabase"
+    }
+  ],
+  "connections": {
+    "Webhook: Job Qualified": { "main": [[{ "node": "Fetch this job", "type": "main", "index": 0 }]] },
+    "Fetch this job": { "main": [[{ "node": "Fetch BU", "type": "main", "index": 0 }]] },
+    "Fetch BU": { "main": [[{ "node": "Fetch precedent", "type": "main", "index": 0 }]] },
+    "Fetch precedent": { "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]] },
+    "Build Prompt": { "main": [[{ "node": "Anthropic", "type": "main", "index": 0 }]] },
+    "Anthropic": { "main": [[{ "node": "Extract Text", "type": "main", "index": 0 }]] },
+    "Extract Text": { "main": [[{ "node": "Save to Supabase", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "timezone": "America/Argentina/Buenos_Aires" },
+  "pinData": {},
+  "meta": {}
+}

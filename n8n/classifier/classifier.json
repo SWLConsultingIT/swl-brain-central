@@ -1,0 +1,163 @@
+{
+  "name": "Brain Classifier",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 7 * * *" } ] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400],
+      "id": "58cdaeb0-088c-43f2-a572-50f7977ce1c1",
+      "name": "Daily 7:00 AM"
+    },
+    {
+      "parameters": {
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/business_units?is_active=eq.true&select=id,name,description,scopes,keywords,good_fit_signals,red_flags,decision_logic",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" }
+        ] },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 400],
+      "id": "00e23870-3613-4abf-a741-2c05734416a8",
+      "name": "Fetch BU cards"
+    },
+    {
+      "parameters": {
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/proposals?status=eq.Sent&business_unit_id=not.is.null&order=sent_date.desc&limit=160&select=business_unit_id,job_title",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" }
+        ] },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400],
+      "id": "8965f3e4-d2e1-4816-bae4-6da677496e23",
+      "name": "Fetch Sent precedent"
+    },
+    {
+      "parameters": {
+        "jsCode": "function asArray(nodeName) {\n  const items = $(nodeName).all();\n  if (!items || items.length === 0) return [];\n  if (items.length > 1) return items.map(it => it.json);\n  const j = items[0].json;\n  if (Array.isArray(j)) return j;\n  return [j];\n}\n\nconst bus = asArray('Fetch BU cards');\nconst precedent = asArray('Fetch Sent precedent');\n\nconst precByBU = new Map();\nfor (const p of (precedent || [])) {\n  if (!p.business_unit_id) continue;\n  if (!precByBU.has(p.business_unit_id)) precByBU.set(p.business_unit_id, []);\n  if (precByBU.get(p.business_unit_id).length < 5) {\n    precByBU.get(p.business_unit_id).push(p.job_title);\n  }\n}\n\nconst buSection = bus.map(bu => {\n  const prec = precByBU.get(bu.id) || [];\n  return [\n    `## ${bu.name}`,\n    bu.description,\n    `Scopes: ${(bu.scopes || []).join(' · ')}`,\n    `Keywords: ${(bu.keywords || []).slice(0, 30).join(', ')}`,\n    `Good fit: ${bu.good_fit_signals || ''}`,\n    `Red flags: ${bu.red_flags || ''}`,\n    `Decision: ${bu.decision_logic || ''}`,\n    prec.length > 0 ? `Recent Sent precedent: ${prec.join(' · ')}` : 'Recent Sent precedent: (none yet)',\n  ].join('\\n');\n}).join('\\n\\n---\\n\\n');\n\nconst HARD_EXCLUSIONS = ['pure graphic design only', 'physical product manufacturing', 'legal services', 'medical services', 'academic writing', 'civil / mechanical / electrical engineering'];\n\nconst buNameToId = {};\nfor (const bu of bus) buNameToId[bu.name] = bu.id;\n\nconst systemPrompt = [\n  'You are a senior qualification analyst for SWL Consulting, an AI-native consulting firm.',\n  '',\n  'Your job: decide if an incoming Upwork job is a MATCH for SWL.',\n  '',\n  `Below are SWL's 8 business units. Each card includes scope, keywords, good-fit signals, red flags, decision logic, and recent precedent (real proposals SWL has sent).`,\n  '',\n  buSection,\n  '',\n  '---',\n  '',\n  `HARD EXCLUSIONS (always match=false, score<=10): ${HARD_EXCLUSIONS.join(' · ')}.`,\n  '',\n  'TICKET POLICY: Jobs only reach you after passing SQL filter (hourly>$40/h, posted <24h, <=50 proposals). Do NOT reject on budget grounds. Your job is scope fit, not budget.',\n  '',\n  'AREA ASSIGNMENT: Whenever the job scope plausibly fits one of the 8 BUs, set \"area\" to that BU name (exactly as listed above), EVEN IF you set match=false. Only return area=null when scope clearly fits NONE.',\n  '',\n  'Decision protocol:',\n  '1. Read job title + description.',\n  '2. Identify BU (if any) -> set area.',\n  '3. Check hard exclusions.',\n  '4. Weigh signals, red flags, decision logic, precedent.',\n  '5. match=true when clear scope fit + realistic precedent.',\n  '6. score: 0=miss, 30=weak, 60=plausible, 85+=strong fit with precedent.',\n  '7. reason <= 25 words, concrete. NEVER cite budget.',\n  '',\n  'Return ONLY valid JSON, no markdown fences, no prose: { \"match\": bool, \"score\": 0-100, \"area\": <one of the BU names above> | null, \"reason\": \"...\" }',\n].join('\\n');\n\nreturn { json: { systemPrompt, buNameToId } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400],
+      "id": "6e45e427-63af-454b-a326-ecfb613013e6",
+      "name": "Build Classifier System Prompt"
+    },
+    {
+      "parameters": {
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?status=eq.prequalified&select=id,title,description,ticket,industry,hourly_average",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" }
+        ] },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 400],
+      "id": "6d98ed2e-a2f0-4edd-a59e-19289e79e8cd",
+      "name": "Fetch prequalified jobs"
+    },
+    {
+      "parameters": { "options": {} },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [240, 600],
+      "id": "aff3a945-87b6-4e35-ad43-3fd2f6010abe",
+      "name": "Loop Prequalified"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $json;\nconst systemPrompt = $('Build Classifier System Prompt').first().json.systemPrompt;\nconst userPrompt = [\n  `Job title: ${job.title}`,\n  `Industry: ${job.industry || 'n/a'}`,\n  '',\n  'Description:',\n  job.description || '(no description)',\n].join('\\n');\n\nreturn { json: { ...job, systemPrompt, userPrompt } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 600],
+      "id": "1c4424dc-e724-4a7f-996c-020f806d077c",
+      "name": "Build Classifier User Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "x-api-key", "value": "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" },
+          { "name": "anthropic-version", "value": "2023-06-01" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"claude-haiku-4-5\",\n  max_tokens: 512,\n  system: $json.systemPrompt,\n  messages: [ { role: \"user\", content: $json.userPrompt } ]\n}) }}",
+        "options": { "timeout": 60000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 600],
+      "id": "4bc2dfeb-4b12-4aaf-b530-de701772d93b",
+      "name": "Anthropic Classifier",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $('Build Classifier User Prompt').item.json;\nconst ai = $json;\nconst buNameToId = $('Build Classifier System Prompt').first().json.buNameToId;\n\nlet parsed;\ntry {\n  const text = (ai.content && ai.content[0] && ai.content[0].text) || '{}';\n  const clean = text.replace(/^```(?:json)?\\s*/i, '').replace(/```\\s*$/, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parsed = { match: false, score: 0, area: null, reason: 'parse_error: ' + e.message };\n}\n\nconst area = (typeof parsed.area === 'string' && parsed.area.length > 0) ? parsed.area : null;\nlet score = typeof parsed.score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.score))) : 0;\nlet match = !!parsed.match;\nlet reason = parsed.reason || '';\nconst businessUnitId = area ? (buNameToId[area] || null) : null;\n\nconst BUDGET_REJECT = [\n  /below\\s+(swl|the|its)?\\s*(minimum|engagement|threshold|viable)/i,\n  /budget\\s+(insufficient|non.?viable|prohibitive|incompatible|too\\s+low)/i,\n  /ticket\\s+(too\\s+low|below|insufficient|non.?viable)/i,\n  /far\\s+below/i,\n  /too\\s+low\\s+for/i,\n  /unrealistic\\s+budget/i,\n  /severely\\s+underpriced/i,\n  /engagement\\s+minimum/i\n];\nconst ticketViable = (job.hourly_average || 0) > 40;\nif (!match && area && ticketViable && BUDGET_REJECT.some(re => re.test(reason))) {\n  match = true;\n  reason = '[layer7: budget-reject override] originally: ' + reason;\n  if (score < 30) score = 30;\n}\n\nconst newStatus = match ? 'qualified' : 'discarded';\n\nreturn { json: {\n  job_id: job.id,\n  newStatus,\n  match,\n  score,\n  area,\n  reason,\n  businessUnitId,\n}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 600],
+      "id": "e46bb0ad-c943-4d73-ba73-ed6bd3260be2",
+      "name": "Parse Classifier"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/rpc/brain_transition_job",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  p_job_id: $json.job_id,\n  p_to_status: $json.newStatus,\n  p_actor: 'brain_classifier',\n  p_actor_detail: 'claude-haiku-4-5',\n  p_reason: $json.reason,\n  p_classifier_match: $json.match,\n  p_classifier_score: $json.score,\n  p_classifier_area: $json.area,\n  p_business_unit_id: $json.businessUnitId\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 600],
+      "id": "eef5e87f-2dcc-4017-bb98-1c229d7d1af3",
+      "name": "Transition (classifier)",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Daily 7:00 AM": { "main": [[{ "node": "Fetch BU cards", "type": "main", "index": 0 }]] },
+    "Fetch BU cards": { "main": [[{ "node": "Fetch Sent precedent", "type": "main", "index": 0 }]] },
+    "Fetch Sent precedent": { "main": [[{ "node": "Build Classifier System Prompt", "type": "main", "index": 0 }]] },
+    "Build Classifier System Prompt": { "main": [[{ "node": "Fetch prequalified jobs", "type": "main", "index": 0 }]] },
+    "Fetch prequalified jobs": { "main": [[{ "node": "Loop Prequalified", "type": "main", "index": 0 }]] },
+    "Loop Prequalified": { "main": [[{ "node": "Build Classifier User Prompt", "type": "main", "index": 0 }]] },
+    "Build Classifier User Prompt": { "main": [[{ "node": "Anthropic Classifier", "type": "main", "index": 0 }]] },
+    "Anthropic Classifier": { "main": [[{ "node": "Parse Classifier", "type": "main", "index": 0 }]] },
+    "Parse Classifier": { "main": [[{ "node": "Transition (classifier)", "type": "main", "index": 0 }]] },
+    "Transition (classifier)": { "main": [[{ "node": "Loop Prequalified", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1", "binaryMode": "separate", "timezone": "America/Argentina/Buenos_Aires" },
+  "pinData": {},
+  "meta": {}
+}
