@@ -770,7 +770,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV"
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
             }
           ]
         },

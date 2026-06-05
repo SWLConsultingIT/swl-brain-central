@@ -16,8 +16,8 @@
         "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?id=eq.{{ $json.body.job_id }}&select=id,title,description,ticket,industry,country,duration,business_unit_id,hourly_average,proposals_count",
         "sendHeaders": true,
         "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
-          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
+          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" },
           { "name": "Accept", "value": "application/vnd.pgrst.object+json" }
         ] },
         "options": { "response": { "response": { "responseFormat": "json" } } }
@@ -34,8 +34,8 @@
         "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/business_units?id=eq.{{ $json.business_unit_id }}&select=id,name,description,scopes,keywords,good_fit_signals,decision_logic",
         "sendHeaders": true,
         "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
-          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
+          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" },
           { "name": "Accept", "value": "application/vnd.pgrst.object+json" }
         ] },
         "options": { "response": { "response": { "responseFormat": "json" } } }
@@ -52,8 +52,8 @@
         "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/proposals?status=eq.Sent&business_unit_id=eq.{{ $('Fetch this job').item.json.business_unit_id }}&order=sent_date.desc&limit=5&select=job_title,cover_letter,sent_date",
         "sendHeaders": true,
         "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
-          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" }
+          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
+          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" }
         ] },
         "options": { "response": { "response": { "responseFormat": "json" } } }
       },
@@ -80,7 +80,7 @@
         "url": "https://api.anthropic.com/v1/messages",
         "sendHeaders": true,
         "headerParameters": { "parameters": [
-          { "name": "x-api-key", "value": "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" },
+          { "name": "x-api-key", "value": "<REPLACE_WITH_ANTHROPIC_API_KEY>" },
           { "name": "anthropic-version", "value": "2023-06-01" },
           { "name": "Content-Type", "value": "application/json" }
         ] },
@@ -112,8 +112,8 @@
         "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/rpc/brain_transition_job",
         "sendHeaders": true,
         "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
-          { "name": "apikey", "value": "sb_secret_bbeGFuGGTJfP1dmUxRBQ1w_6GGAxFVV" },
+          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
+          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" },
           { "name": "Content-Type", "value": "application/json" }
         ] },
         "sendBody": true,
