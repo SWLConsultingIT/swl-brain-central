@@ -1,0 +1,161 @@
+{
+  "name": "Pinecone Loader - Master Prompt",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "a1b2c3d4-trigger",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1SgXPH1yV9lDX5vkRWXGRL6ljqblUn66IGVwx1TsEzuQ/edit"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "id": "b2c3d4e5-docs",
+      "name": "Get Master Prompt Doc"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer todo el texto del Google Doc\nconst items = $input.all();\nlet fullText = '';\n\nfor (const item of items) {\n  const content = item.json?.body?.content || [];\n  for (const block of content) {\n    if (block.paragraph?.elements) {\n      for (const elem of block.paragraph.elements) {\n        if (elem.textRun?.content) {\n          fullText += elem.textRun.content;\n        }\n      }\n    }\n  }\n}\n\n// Si el approach anterior no funciona (otra estructura), fallback\nif (!fullText && items[0]?.json) {\n  fullText = JSON.stringify(items[0].json).slice(0, 50000);\n}\n\nreturn { json: { text: fullText, length: fullText.length } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "id": "c3d4e5f6-code",
+      "name": "Extract Text"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "swl-cover-letter-prompt",
+          "mode": "list",
+          "cachedResultName": "swl-cover-letter-prompt"
+        },
+        "options": {
+          "clearNamespace": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [660, 0],
+      "id": "d4e5f6g7-pinecone",
+      "name": "Pinecone Vector Store"
+    },
+    {
+      "parameters": {
+        "dataType": "json",
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [660, 240],
+      "id": "e5f6g7h8-loader",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 800,
+        "chunkOverlap": 100
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [540, 440],
+      "id": "f6g7h8i9-splitter",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [780, 240],
+      "id": "g7h8i9j0-embeddings",
+      "name": "OpenAI Embeddings"
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Get Master Prompt Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Master Prompt Doc": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

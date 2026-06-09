@@ -13,12 +13,18 @@ export default function Home() {
             AI-native prospecting brain for SWL Consulting
           </p>
         </div>
-        <div className="flex items-center justify-center gap-3 pt-2">
+        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
           <Link
             href="/prospects"
             className="text-sm font-medium px-4 py-2 rounded-lg bg-accent text-bg hover:opacity-90 transition"
           >
             Open Prospects →
+          </Link>
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-muted hover:bg-border text-fg ring-1 ring-border transition"
+          >
+            Dashboard
           </Link>
           <Link
             href="/health"

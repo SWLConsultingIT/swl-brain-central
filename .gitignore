@@ -27,7 +27,22 @@ JSON/
 # Brain pipeline generado por build-workflow.cjs (hardcodea SUPABASE_SECRET_KEY)
 n8n/brain-pipeline/brain-pipeline.json
 
+# n8n workflow JSON exports en raíz (contienen API keys de Anthropic + Supabase)
+/Brain*.json
+/Notion*.json
+
+# R history (irrelevante)
+docs/.Rhistory
+
+# Master Prompt PDFs (documentos internos de Juan, no versionar)
+/Master Prompt*.pdf
+
+# Excel reports temporales en raíz
+/Reporte_*.xlsx
+/Test_del_*.xlsx
+
 # Personal Claude skills toolkit (no es del proyecto)
 MCP Y SKILLS copy/
 out/
 tsconfig.tsbuildinfo
+.vercel

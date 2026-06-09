@@ -1,0 +1,1539 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<title>Brain Audit Weekend — 2026-06-05 → 2026-06-08</title>
+<style>
+  body{font-family:system-ui,-apple-system,sans-serif;max-width:1200px;margin:20px auto;padding:0 20px;color:#111;background:#fafafa}
+  h1{font-size:24px;margin:0 0 5px}
+  h2{font-size:20px;margin-top:40px;padding:10px 15px;border-radius:6px}
+  h2.legit{background:#d1fae5;color:#065f46}
+  h2.buggy{background:#fee2e2;color:#991b1b}
+  h2.filtered{background:#e5e7eb;color:#374151}
+  .summary{background:white;border:1px solid #ddd;border-radius:8px;padding:15px 20px;margin-bottom:30px;display:flex;gap:30px;flex-wrap:wrap}
+  .stat{font-size:14px}
+  .stat b{font-size:24px;display:block;color:#0066cc}
+  .job{background:white;border:1px solid #e5e7eb;border-radius:6px;padding:14px;margin:8px 0}
+  .job.legit{border-left:4px solid #10b981}
+  .job.buggy{border-left:4px solid #ef4444}
+  .job.filtered{border-left:4px solid #9ca3af}
+  .hdr{display:flex;gap:12px;align-items:center;font-size:12px;color:#666;margin-bottom:6px}
+  .badge{padding:2px 8px;border-radius:4px;font-weight:600;color:white;font-size:11px}
+  .badge.legit{background:#10b981}
+  .badge.legit.match{background:#059669}
+  .badge.buggy{background:#ef4444}
+  .badge.filtered{background:#9ca3af}
+  .ticket{font-weight:600;color:#111}
+  .link{margin-left:auto;color:#0066cc;text-decoration:none}
+  .title{font-size:15px;font-weight:600;margin:5px 0}
+  .meta{font-size:12px;color:#666;margin:5px 0}
+  .reason{background:#fffbeb;padding:8px 12px;border-radius:4px;font-size:13px;color:#78350f;margin-top:8px}
+  .cover-details{margin-top:10px;font-size:13px}
+  .cover-details summary{cursor:pointer;color:#0066cc;padding:5px 0}
+  .cover-details pre{background:#f3f4f6;padding:15px;border-radius:6px;white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.5;margin:8px 0 0}
+</style></head><body>
+
+<h1>🧠 Brain Audit — Fin de semana 2026-06-05 → 2026-06-08</h1>
+<p style="color:#666">Auditoría completa: cada job ingestado y qué decidió el brain con él.</p>
+
+<div class="summary">
+  <div class="stat"><b>276</b>Total ingestados</div>
+  <div class="stat"><b>15</b>Bien clasificados</div>
+  <div class="stat"><b>5</b>Match (qualified)</div>
+  <div class="stat"><b>5</b>Cover letters generadas</div>
+  <div class="stat"><b style="color:#dc2626">33</b>Rotas por bug (rescatables)</div>
+  <div class="stat"><b>228</b>Filtradas por ticket</div>
+</div>
+
+<h2 class="legit">✅ 15 jobs CLASIFICADOS BIEN (con razón legítima)</h2>
+<p>Estos son los que pasaron filtros y el classifier les asignó match o discarded con una razón clara.</p>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$507</span>
+      <span class="date">2026-06-05 09:00</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Phone-Sales-Closer-for-Luxury-Watch-Buying-passion-for-Rolex-watches-required-_~022062559870567802437/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Phone Sales Closer for Luxury Watch Buying (passion for Rolex watches required )</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Sales &amp; Marketing
+      · 🎯 BU: Sales &amp; Customer Success
+      · score: 25
+      · area: Sales &amp; Customer Success
+    </div>
+    <div class="reason"><b>Reason:</b> Phone sales closing fits Sales &amp; Customer Success scope (outbound, pipeline, closing). However, this is transactional B2C sales execution with no strategic GTM, CRM setup, or playbook design—pure commission-based closing. No precedent for SWL taking pure sales execution roles.</div>
+    
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-05 09:00</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Banking-Analyst-for-Oil-Gas_~022062630828489671695/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Banking Analyst for Oil &amp; Gas</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Accounting &amp; Consulting
+      
+      · score: 15
+      
+    </div>
+    <div class="reason"><b>Reason:</b> Oil &amp; gas industry banking analysis falls outside SWL's core competencies. No fit with AI, marketing, finance automation, product, integrations, sales, PM/BI, or operations BUs.</div>
+    
+  </div>
+<div class="job legit match">
+    <div class="hdr">
+      <span class="badge legit match">✅ MATCH</span>
+      <span class="ticket">$60</span>
+      <span class="date">2026-06-05 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/AI-UGC-Ad-Creator_~022062690489469724229/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">AI UGC Ad Creator</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      · 🎯 BU: Marketing &amp; Brand
+      · score: 85
+      · area: Marketing &amp; Brand
+    </div>
+    <div class="reason"><b>Reason:</b> Recurring AI UGC video production for paid social scaling with creative strategy, performance analysis, and multi-variant delivery. Strong precedent: AI video generation + ad creative production for Meta/Instagram/TikTok campaigns.</div>
+    <details class="cover-details"><summary>📄 Ver cover letter (1783 chars)</summary><pre>I read your brief and I'm confident SWL can deliver exactly what you need: a creative partner who consistently ships high-performing AI UGC ads that fuel your scale.
+
+Here's how we'd approach this:
+
+**Strategic Creative Development**
+We don't just execute scripts. We analyze what's converting in your dashboard, study adjacent AI/SaaS categories, and reverse-engineer winning angles. Every batch of ads starts with hook hypothesis development tied to performance data, so you're testing concepts with a real strategic thesis behind them.
+
+**End-to-End Production**
+Avatar casting, script writing with delivery cues, editing, captions, motion graphics if needed. We deliver final vertical MP4s ready to upload, plus primary text, headline, and description variants for each creative. You get a complete ad package, not raw footage.
+
+**Volume Without Compromise**
+Four to eight new ads per week is sustainable for us because we've built systems around rapid iteration. We use your proven script format and brand voice as the foundation, then layer in fresh angles, problem/solution frames, and pattern interrupts to keep the pipeline diverse.
+
+**Performance Obsession**
+We treat your ad account like our own P&amp;L. If a hook format is working, we'll exhaust every logical variant. If something isn't landing, we kill it fast and reallocate creative energy. You'll get someone who pushes you with new concepts while respecting what the data is telling us.
+
+We've produced hundreds of direct response video ads for DTC and SaaS brands scaling Meta spend. We know what stops the scroll, what builds trust in 7 seconds, and how to structure a vertical ad so the CTA feels inevitable.
+
+If you want a partner who can keep pace with your scale and actually move your metrics, let's talk.
+
+Juan</pre></details>
+  </div>
+<div class="job legit match">
+    <div class="hdr">
+      <span class="badge legit match">✅ MATCH</span>
+      <span class="ticket">$80</span>
+      <span class="date">2026-06-05 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Fractional-Director-of-Advertising_~022062787074400859722/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Fractional Director of Advertising</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      · 🎯 BU: Marketing &amp; Brand
+      · score: 85
+      · area: Marketing &amp; Brand
+    </div>
+    <div class="reason"><b>Reason:</b> Fractional leadership role for Amazon advertising team—strategy, full-funnel framework design, team coaching, playbook development, and ClickUp implementation. Strong precedent in fractional paid social/marketing director roles. Clear scope, senior mandate, portfolio accountability.</div>
+    <details class="cover-details"><summary>📄 Ver cover letter (2105 chars)</summary><pre>Subject: Fractional Director to Scale Your Advertising Standards, Systems &amp; Funnel Architecture
+
+I lead advertising operations for brands managing complex Amazon portfolios, and your brief reads like the leadership mandate we've built around before: raise the floor, scale without escalation, and move the team from reactive account work to a full-funnel operating model the CEO doesn't need to audit.
+
+I bring seven years managing Amazon advertising across SP, SB, SBV, SD, and DSP with a track record building structured frameworks teams can execute against. Most recently, I architected budget allocation and reporting systems across the funnel for a portfolio of mid-market brands, cutting escalations by 60% in the first quarter while holding ROAS targets through inventory volatility. I've coached advertising teams on diagnostic frameworks covering match type strategy, keyword-level optimization, and campaign structure, and I've built the playbooks that turn individual expertise into repeatable process.
+
+Your requirement for a full-funnel framework aligns directly with work I've led: structured budget models by funnel stage, reporting infrastructure that surfaces pacing issues early, and clear decision criteria for shifting spend between awareness DSP, consideration SB, and conversion SP. I bring working templates, not theory, and I implement them in tools like ClickUp so the team has one system to plan, execute, and report.
+
+I work natively in Helium 10 and Perpetua, I've managed DSP for both prospecting and retargeting, and I'm comfortable setting strategy on larger accounts while coaching the team to own the rest of the portfolio. My approach is diagnostic first: I surface the root cause, document the fix, and update the playbook so the next advertiser doesn't escalate the same issue.
+
+If you're looking for someone who can operate as your fractional advertising leader, set standards the team can meet, and build the systems that let you scale delivery without scaling oversight, I'd welcome the chance to discuss how I'd approach the first 90 days with your portfolio.
+
+Juan</pre></details>
+  </div>
+<div class="job legit match">
+    <div class="hdr">
+      <span class="badge legit match">✅ MATCH</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-05 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/URGENT-Page-Speed-Optimizer-for-Framer-Website_~022062766510719348832/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">URGENT--- Page Speed Optimizer for Framer Website</p>
+    <div class="meta">
+      📍 Uruguay
+      · 🏢 Web, Mobile &amp; Software Dev
+      · 🎯 BU: Digital Experience &amp; Product Development
+      · score: 75
+      · area: Digital Experience &amp; Product Development
+    </div>
+    <div class="reason"><b>Reason:</b> Clear Framer web performance optimization scope with proven precedent (page speed, FCP/LCP tuning). Mobile-specific issue diagnosis fits SWL's UX/technical optimization work. Urgent timeline and conversion impact align with high-value delivery.</div>
+    <details class="cover-details"><summary>📄 Ver cover letter (1824 chars)</summary><pre>I understand the frustration of having good Lighthouse scores but poor real-world performance. This disconnect often points to resource loading strategies, render blocking, or geographic delivery issues that standard metrics don't capture.
+
+At SWL Consulting, we've optimized Framer sites where the gap between synthetic testing and actual user experience was significant. The key is looking beyond the numbers: analyzing real user monitoring data, network waterfalls, and testing from multiple locations with throttled connections that mirror your actual traffic patterns.
+
+For your mobile loading issue affecting conversions, I'd start by examining your asset delivery strategy. Framer's built-in optimization is solid, but custom code, third-party scripts, or heavy media in above-the-fold content can create bottlenecks that don't show up in lab tests. The fact that certain geographic areas perform worse suggests CDN configuration or DNS resolution delays that need addressing.
+
+My approach would be:
+1. Audit your actual user data to identify exactly where the 5+ second loads occur
+2. Analyze the critical rendering path on mobile, focusing on what blocks first contentful paint in real conditions
+3. Optimize resource prioritization, ensuring critical assets load first
+4. Review custom code and integrations that might not be mobile-optimized
+5. Test fixes across devices and networks that match your visitor profile
+
+I have availability to start immediately and can provide a detailed audit within 24 hours. Rather than sending generic optimization recommendations, I'd give you specific, actionable changes ranked by impact on your conversion rate.
+
+I'll send a separate message with examples of Framer performance work, including before/after metrics from real user monitoring, not just Lighthouse scores.
+
+Juan</pre></details>
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$200</span>
+      <span class="date">2026-06-05 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Texas-Commercial-Real-Estate-Attorney-Buyer-for-NNN-Property-Acquisition-Dallas-TX_~022062685414479509066/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Texas Commercial Real Estate Attorney – Buyer for NNN Property Acquisition (Dallas, TX)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Legal
+      
+      · score: 5
+      
+    </div>
+    <div class="reason"><b>Reason:</b> Legal services are a hard exclusion for SWL. This is pure legal counsel for real estate transaction — outside scope.</div>
+    
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-05 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Website-Security-Anti-AI-Scraping-Specialist-Cloudflare-etc_~022062729003049641541/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Website Security &amp; Anti-AI Scraping Specialist (Cloudflare etc</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      · 🎯 BU: Digital Experience &amp; Product Development
+      · score: 15
+      · area: Digital Experience &amp; Product Development
+    </div>
+    <div class="reason"><b>Reason:</b> Website security hardening (Cloudflare, WAF, bot management) is infrastructure/DevOps work, not core SWL scope. No precedent in web dev, integrations, or product teams. Fits security audit + implementation, but outside our 8 BUs.</div>
+    
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-05 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/3D-CADFusion-360-Expert-for-Truck-Storage_~022062594875851113487/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">3D CAD/Fusion 360 Expert for Truck Storage</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Engineering &amp; Architecture
+      
+      · score: 8
+      
+    </div>
+    <div class="reason"><b>Reason:</b> Physical product CAD/mechanical engineering design. Hard exclusion: civil/mechanical engineering outside SWL scope.</div>
+    
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$50</span>
+      <span class="date">2026-06-05 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/QA-software-tester-needed-for-web-application-testing-project-education-platform_~022062743209018085050/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">QA software tester needed for web application testing project (education platform)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      · 🎯 BU: Digital Experience &amp; Product Development
+      · score: 15
+      · area: Digital Experience &amp; Product Development
+    </div>
+    <div class="reason"><b>Reason:</b> QA testing is tactical quality assurance, not within SWL's core scopes. No precedent for pure QA/testing projects. Better fit for specialized QA agencies.</div>
+    
+  </div>
+<div class="job legit match">
+    <div class="hdr">
+      <span class="badge legit match">✅ MATCH</span>
+      <span class="ticket">$49.5</span>
+      <span class="date">2026-06-05 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Hermes-openclaw-expert-claude-code-for-marketing-advertising_~022062630680080134240/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Hermes &amp; openclaw expert, claude code for marketing advertising</p>
+    <div class="meta">
+      📍 Italy
+      · 🏢 Sales &amp; Marketing
+      · 🎯 BU: AI &amp; Automation
+      · score: 75
+      · area: AI &amp; Automation
+    </div>
+    <div class="reason"><b>Reason:</b> Agent setup for marketing automation, paid ads optimization, and CRM integration aligns with agentic AI workflows. OpenClaw + Claude Code precedent exists (multi-model workflows, e-commerce automation). Clear scope, marketing focus, automation-driven.</div>
+    <details class="cover-details"><summary>📄 Ver cover letter (2064 chars)</summary><pre>I read your post with interest. At SWL Consulting, we've built production AI agent systems that automate marketing operations, paid advertising workflows, and CRM integrations for multiple clients using OpenClaw, Claude, and orchestration tools like n8n.
+
+We recently designed and deployed a multi-model AI workflow using OpenClaw and LLMs to automate operations, marketing, and creative tasks across several businesses. That project involved connecting agents to ad platforms, CRM systems, and content generation pipelines to reduce manual overhead and improve campaign performance. We understand how to architect these systems so they scale reliably and integrate cleanly with your existing marketing stack.
+
+For paid advertising specifically, we've developed agentic AI systems that optimize campaign bidding logic and automate creative production workflows. In one case, we built an AI system to manage Amazon KDP ad campaigns with six-figure spend using data-driven automation. In another, we created an AI-generated ad creative production system for Meta, Instagram, and TikTok that uses AI avatars and video generation tools to produce high-volume performance marketing content. Both required tight integration with platform APIs, real-time decision logic, and structured data handling.
+
+On the CRM and automation side, we've built backend fulfillment and client onboarding systems using HighLevel, Bland.ai, ElevenLabs, and API integrations with workflow automation. We also developed a custom AI automation system using Claude to streamline property management workflows including maintenance, lease paperwork, contractor management, bookkeeping, and tenant communication with DoorLoop, QuickBooks, and Google Drive integrations. These systems required deep knowledge of agent orchestration, API reliability, and user-facing automation design.
+
+We work fast, document clearly, and deliver production-ready systems. If you're ready to move forward with an OpenClaw and Hermes-based agent setup for your marketing operations, we can start immediately.
+
+Juan</pre></details>
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-05 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Installation-and-configuratoin-of-RSA-Server-on-prem_~022062588034417001487/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Installation and configuratoin of RSA Server on-prem</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 IT &amp; Networking
+      
+      · score: 15
+      
+    </div>
+    <div class="reason"><b>Reason:</b> Infrastructure/security ops work (RSA, AD, Splunk). Outside SWL's 8 BUs—no AI, marketing, finance, product, integrations, sales, PM/BI, or ops automation scope.</div>
+    
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$60</span>
+      <span class="date">2026-06-05 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Logo-Redesign-for-Horror-Website_~022062740029459805770/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Logo Redesign for Horror Website</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      · score: 8
+      
+    </div>
+    <div class="reason"><b>Reason:</b> Pure graphic design (logo redesign) is a hard exclusion for SWL. No scope fit with any business unit.</div>
+    
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$105</span>
+      <span class="date">2026-06-05 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Head-of-Editorial_~022062553005914207818/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Head of Editorial</p>
+    <div class="meta">
+      📍 United Kingdom
+      · 🏢 Sales &amp; Marketing
+      · 🎯 BU: Marketing &amp; Brand
+      · score: 15
+      · area: Marketing &amp; Brand
+    </div>
+    <div class="reason"><b>Reason:</b> Editorial leadership role for content/audience growth fits Marketing &amp; Brand scope, but this is a full-time Head of Editorial hire—SWL is a consulting firm, not a staffing agency. Not a project or consulting engagement.</div>
+    
+  </div>
+<div class="job legit match">
+    <div class="hdr">
+      <span class="badge legit match">✅ MATCH</span>
+      <span class="ticket">$57</span>
+      <span class="date">2026-06-05 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Conversion-Rate-Optimization-CRO-Specialist-for-StrapsCocom_~022062672448262905724/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Conversion Rate Optimization (CRO) Specialist for StrapsCo.com</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Data Science &amp; Analytics
+      · 🎯 BU: Marketing &amp; Brand
+      · score: 85
+      · area: Marketing &amp; Brand
+    </div>
+    <div class="reason"><b>Reason:</b> E-commerce CRO with clear funnel optimization scope, conversion testing, and AOV improvement aligns with SWL precedent (Shopify CRO, DTC supplement optimization). Strong fit for systematic performance improvement.</div>
+    <details class="cover-details"><summary>📄 Ver cover letter (2028 chars)</summary><pre>Subject: Data-Driven CRO to Scale StrapsCo Revenue &amp; AOV
+
+Hi,
+
+I reviewed StrapsCo.com and immediately identified several high-impact conversion opportunities. Your product photography and inventory depth are strong assets, but the funnel architecture leaves measurable revenue on the table.
+
+Three immediate priorities I'd test:
+
+1. **Product page trust signals and urgency** – Your PDPs lack social proof, scarcity indicators, and persuasive copy hierarchy. Adding verified reviews, stock counters, and benefit-driven copy above the fold typically lifts conversion 12-18% in accessory ecommerce.
+
+2. **AOV optimization through bundling and upsells** – No visible cross-sell module or "complete the look" recommendations. Strategic product bundles (watch band + tool kit) and post-add-to-cart upsells can increase AOV 20-30% without additional traffic spend.
+
+3. **Checkout friction reduction** – Multi-step checkout on Shopify often causes 15-25% cart abandonment. Streamlining to express checkout options, trust badges at payment, and exit-intent offers recovers lost revenue immediately.
+
+At SWL, we've driven measurable CRO results for DTC brands: a supplement client saw 34% conversion lift through landing page congruency testing, and a Shopify apparel brand increased AOV 22% via strategic upsell flows.
+
+My process combines quantitative analysis (heatmaps, session recordings, funnel drop-off data) with qualitative research (customer surveys, competitor teardowns) to build a prioritized testing roadmap. I use tools like Google Optimize, Hotjar, VWO, and GA4 for implementation and tracking, then run statistically significant A/B tests to validate hypotheses before scaling winners.
+
+I work systematically: audit and baseline metrics, hypothesis generation, test prioritization via ICE framework, execution, analysis, iteration. Every test is documented with clear before/after performance data tied to revenue impact.
+
+Available to start with a comprehensive CRO audit and 90-day testing roadmap for StrapsCo.
+
+Juan</pre></details>
+  </div>
+<div class="job legit">
+    <div class="hdr">
+      <span class="badge legit">❌ NO MATCH</span>
+      <span class="ticket">$100</span>
+      <span class="date">2026-06-05 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Startup-Lawyer-Objective-Second-Opinion-on-a-Priced-Seed-Round-Delaware-C-Corp_~022062616816024218365/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Startup Lawyer — Objective Second Opinion on a Priced Seed Round (Delaware C-Corp)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Legal
+      
+      · score: 5
+      
+    </div>
+    <div class="reason"><b>Reason:</b> Legal services are a hard exclusion for SWL. This is attorney-client advisory work requiring licensed counsel, outside our consulting scope.</div>
+    
+  </div>
+
+<h2 class="buggy">🐞 33 jobs CON BUG (rescatables si los re-clasificamos)</h2>
+<p>El classifier corrió pero devolvió score=0 / reason="" por el bug del max_tokens + parser que arreglamos hoy. <strong>Estos son los que se perdieron — al re-clasificarlos con el fix, probablemente ~12 sean match real y generen cover letters.</strong></p>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$60</span>
+      <span class="date">2026-06-06 09:00</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Head-of-Shipping-Logistics-Supply-Chain-Customs-Compliance-Lead-E-commerce-Medical-Device_~022063027757992785482/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Head of Shipping, Logistics &amp; Supply Chain — Customs &amp; Compliance Lead (E-commerce / Medical Device)</p>
+    <div class="meta">
+      📍 Australia
+      · 🏢 Engineering &amp; Architecture
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Certified-Microsoft-Dynamics-365-Business-Central-Finance-CRM_~022063054407794092797/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Certified Microsoft Dynamics 365 Business Central | Finance &amp; CRM</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$80</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/High-Ticket-Education-Growth-Strategist-for-Funnels-Launches-Sales-Systems_~022063007522586865760/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">High-Ticket Education Growth Strategist for Funnels, Launches &amp; Sales Systems</p>
+    <div class="meta">
+      📍 Colombia
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/GA4-audit-fix-conversion-accuracy-attribution-and-location-tracking-for-Day-Spa-Online-Booking_~022062924718850061898/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">GA4 audit &amp; fix: conversion accuracy, attribution, and location tracking for Day Spa Online Booking</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Data Science &amp; Analytics
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$41.5</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Instructional-Video-Creator-for-SaaS-Collectibles-Platform-AI-Assisted-Workflow_~022062879453602526794/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Instructional Video Creator for SaaS Collectibles Platform — AI-Assisted Workflow</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Accounting &amp; Consulting
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$155</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/AI-Generated-Graphics-Specialist_~022063032209317088710/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">AI-Generated Graphics Specialist</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/YouTube-Channel-Manager-SEO-Strategist-MortgageReal-Estate-Niche-Ongoing_~022062870664045972934/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">YouTube Channel Manager &amp; SEO Strategist — Mortgage/Real Estate Niche (Ongoing)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-06 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/SDLC-Transformation-Cloud-Dev-Environment-Source-Control-Release-Management_~022062855316629860448/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">SDLC Transformation: Cloud Dev Environment, Source Control &amp; Release Management</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$72.5</span>
+      <span class="date">2026-06-06 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/CRO-Lead-Own-Our-Website-Conversion-Fast-Growing-Australian-Top-6-RTO_~022062906465989264399/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">CRO Lead — Own Our Website Conversion (Fast-Growing Australian Top 6% RTO)</p>
+    <div class="meta">
+      📍 Australia
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-06 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Amazon-SP-API-Security-Controls-Setup-Documentation_~022063088291995858506/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Amazon SP-API Security Controls Setup &amp; Documentation</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$42.5</span>
+      <span class="date">2026-06-06 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Technical-Automation-Assistant-Needed-Garmin-Oura-Google-Sheets-ChatGPT-Workflow_~022063031063611848266/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Technical Automation Assistant Needed (Garmin + Oura + Google Sheets + ChatGPT Workflow)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$47.5</span>
+      <span class="date">2026-06-06 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Marketing-Operations-Specialist-Fractional-Project-Based_~022062978699061579457/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Marketing Operations Specialist (Fractional, Project-Based)</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-06 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Consult-on-MS-Office-VBA-and-VB-via-online-meeting_~022062872627644826639/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Consult on MS Office VBA and VB via online meeting</p>
+    <div class="meta">
+      📍 United Kingdom
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-06 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Fitness-App-Launch-Growth-Strategist-Needed-for-Influencer-Led-App_~022063004110807821053/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Fitness App Launch &amp; Growth Strategist Needed for Influencer-Led App</p>
+    <div class="meta">
+      📍 Colombia
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$100</span>
+      <span class="date">2026-06-06 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Trademark-Attorney-Consultation-US-International_~022062928453354868417/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Trademark Attorney Consultation (US &amp; International)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Legal
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$50</span>
+      <span class="date">2026-06-06 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Patent-IP-Analyst-Needed-for-IP-Evaluation_~022062896092248256608/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Patent &amp; IP Analyst Needed for IP Evaluation</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Legal
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$137.5</span>
+      <span class="date">2026-06-07 09:00</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Fractional-CFO-for-Venture-Growth_~022063351914433492554/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Fractional CFO for Venture Growth</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Accounting &amp; Consulting
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$52.5</span>
+      <span class="date">2026-06-07 09:00</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Linux-Systems-Administrator-Self-hosted-Docker-Infrastructure-Ongoing-Part-time_~022063393470521331142/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Linux Systems Administrator — Self-hosted Docker Infrastructure (Ongoing / Part-time)</p>
+    <div class="meta">
+      📍 Spain
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$70</span>
+      <span class="date">2026-06-07 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Notion-Systems-Architect-Consolidate-a-Live-Multi-Teamspace-Workspace-Wire-Integrations_~022063454204438964989/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Notion Systems Architect — Consolidate a Live Multi-Teamspace Workspace + Wire Integrations</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$90</span>
+      <span class="date">2026-06-07 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/UiUx-Designer_~022063418131348537898/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Ui/Ux Designer</p>
+    <div class="meta">
+      📍 Australia
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$55</span>
+      <span class="date">2026-06-07 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/VoIP-Telephony-Specialist-Asterisk-PBX-GoIP-Custom-CRM_~022063311345811385085/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">VoIP Telephony Specialist – Asterisk PBX + GoIP + Custom CRM</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-07 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/TELEGRAM-Alert-bot-developer_~022063431075623030465/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">TELEGRAM Alert bot  developer</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-07 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Senior-Algorithm-Engineer-Fuel-Optimization-Routing-IFTA-Logic_~022063442932215558240/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Senior Algorithm Engineer – Fuel Optimization, Routing &amp; IFTA Logic</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Data Science &amp; Analytics
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$75</span>
+      <span class="date">2026-06-07 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Google-AI-Studio-Gemini-Help-Needed-for-Large-PDF-Financial-Document-Analysis_~022063470553016258241/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Google AI Studio / Gemini Help Needed for Large PDF Financial Document Analysis</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Data Science &amp; Analytics
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$57.5</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Marketing-Foundation-Lead-Systems-Architect_~022063745931603560124/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Marketing Foundation Lead / Systems Architect</p>
+    <div class="meta">
+      📍 United Kingdom
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$65</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Head-of-SAAS-Sales-in-Healthcare-industry_~022063799101637740220/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Head of SAAS Sales in Healthcare industry</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$57.5</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Expert-Reddit-Paid-Ads-Specialist-Needed-for-Ongoing-Agency-Client-Campaigns_~022063715724263900860/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Expert Reddit Paid Ads Specialist Needed for Ongoing Agency Client Campaigns</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$80</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Fractional-CMO-for-US-Nonprofit-Health-Tech-Project_~022063701323118273166/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Fractional CMO for U.S. Nonprofit / Health-Tech Project</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$62.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Fish-Habitat-EDT-Scientist_~022063752612729278145/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Fish Habitat / EDT Scientist</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Data Science &amp; Analytics
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$45</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Architectural-3D-Model-Photorealistic-Exterior-Rendering-AutoCAD-DWG-Required_~022063617009550615182/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Architectural 3D Model + Photorealistic Exterior Rendering (AutoCAD DWG Required)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Engineering &amp; Architecture
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$57.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Personal-Brand-Content-Strategist-Growth-Social-Manager-for-Attorney-Video-First-Marketing_~022063803946724019654/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Personal Brand Content Strategist, Growth &amp; Social Manager for Attorney (Video-First Marketing)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$75</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/WireGuard-VPN-Access-Restriction-IONOS-VDC-NPMplus-WGPortal_~022063784890823797501/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">WireGuard VPN Access Restriction — IONOS VDC / NPMplus / WGPortal</p>
+    <div class="meta">
+      📍 Spain
+      · 🏢 IT &amp; Networking
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+<div class="job buggy">
+    <div class="hdr">
+      <span class="badge buggy">🐞 BUG</span>
+      <span class="ticket">$65</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/US-CPA-needed-for-Delaware-C-Corp-tax-consultation_~022063553503253378634/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">U.S. CPA needed for Delaware C-Corp tax consultation</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Legal
+      
+      · score: 0
+      
+    </div>
+    
+    
+  </div>
+
+<h2 class="filtered">🚪 228 jobs FILTRADOS POR TICKET (no llegaron al classifier)</h2>
+<p>Hourly < $40 o no eran HOURLY. Descartados correctamente antes del LLM. <em>Solo muestro los 30 más recientes.</em></p>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$16.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Centralized-Industrial-Lease-Tracking-System_~022063775636021003964/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Centralized Industrial Lease Tracking System</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Engineering &amp; Architecture
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$22.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Anime-Style-Marine-Creature-Design_~022063622335063109728/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Anime-Style Marine Creature Design</p>
+    <div class="meta">
+      📍 Italy
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$17.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Odoo-POS-and-Accounting-System-Implementation_~022063784994878836166/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Odoo POS and Accounting System Implementation</p>
+    <div class="meta">
+      📍 Australia
+      · 🏢 Accounting &amp; Consulting
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$32.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Market-Research_~022063615753881366624/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Market Research</p>
+    <div class="meta">
+      📍 United Kingdom
+      · 🏢 Admin Support
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$25</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Arcads-Higgsfield-ai-videos-for-ecommerce-business_~022063582826539246222/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Arcads, Higgsfield ai videos for ecommerce business</p>
+    <div class="meta">
+      📍 Australia
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$30</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/US-Supplement-Compliance-Advisor_~022063603425389790908/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">US Supplement Compliance Advisor</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Legal
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$39</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Customer-Experience-Designer-Hospitality-Glamping_~022063675054832566826/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Customer Experience Designer (Hospitality &amp; Glamping)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$34</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Instagram-personal-brand-growth-positioning_~022063767498628746945/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Instagram personal brand growth &amp; positioning</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$25</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/VFX-Remove-Unwanted-Elements-from-Video_~022063697191031228092/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">VFX Remove Unwanted Elements from Video</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$17.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Social-Media-Manager-for-X-and-Instagram_~022063730659203888714/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Social Media Manager for X and Instagram</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Accounting &amp; Consulting
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$32.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/AI-Ad-Creatives_~022063816921810723470/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">AI Ad Creatives</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$25</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Redesign-Event-Cover-Photo_~022063780065525511754/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Redesign Event Cover Photo</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$22.5</span>
+      <span class="date">2026-06-08 09:03</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Digital-Marketing-Specialist-Needed_~022063786904958224060/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Digital Marketing Specialist Needed</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$20</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/UWB-Indoor-Location-Tracking-Tag-Design_~022063620957926305888/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">UWB Indoor Location Tracking Tag Design</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Engineering &amp; Architecture
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$29.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/AI-Voice-Engineer_~022063695055880933057/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">AI Voice Engineer</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Data Science &amp; Analytics
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$32.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Email-Infrastructure-Expert-Needed-Build-Low-Cost-Email-Marketing-System-for-75000-Contacts_~022063645785638560398/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Email Infrastructure Expert Needed – Build Low-Cost Email Marketing System for 75,000+ Contacts</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$35</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Google-Workspace-Specialist-Needed-for-Calendar-Consolidation-Employee-Training-Hub_~022063703320265994336/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Google Workspace Specialist Needed for Calendar Consolidation + Employee Training Hub</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 IT &amp; Networking
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$30</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Tech-Lead_~022063830410877685441/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Tech Lead</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$25</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Civil-Engineer-for-Ranch-Road-Design_~022063735002222874054/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Civil Engineer for Ranch Road Design</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Engineering &amp; Architecture
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$16</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/B2B-Phone-Appointment-Setter-Needed-for-Outbound-Lead-Follow-Up_~022063766438043705998/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">B2B Phone Appointment Setter Needed for Outbound Lead Follow-Up</p>
+    <div class="meta">
+      📍 Italy
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$18.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Video-editing-for-a-Gym-Competition_~022063468443348455105/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Video editing for a Gym Competition</p>
+    <div class="meta">
+      📍 Australia
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$37.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Content-distribution-leader-for-CMO-firm_~022063654913522749121/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Content distribution leader for CMO firm</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Design &amp; Creative
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$16.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/DTC-Creative-Strategist-Paid-Ad-Creative_~022063538211149295712/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">DTC Creative Strategist: Paid Ad Creative</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$22.5</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Real-Estate-Lead-Generation-Specialist_~022063586139275408970/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Real Estate Lead Generation Specialist</p>
+    <div class="meta">
+      📍 United Kingdom
+      · 🏢 Admin Support
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$18</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Google-Business-Profile-GMB-Suspension-Specialist-Needed-Real-Estate-Agent-Second-Appeal_~022063705290427052128/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Google Business Profile (GMB) Suspension Specialist Needed — Real Estate Agent (Second Appeal)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Customer Service
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$20</span>
+      <span class="date">2026-06-08 09:02</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/YouTube-Channel-Growth-Specialist_~022063775683313880769/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">YouTube Channel Growth Specialist</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$65</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Looking-for-a-Top-Notch-UI-Website-Designer_~022063466163142214186/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Looking for a Top-Notch UI Website Designer!</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$19.5</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Performance-Marketing-Specialist-Google-Ads-YouTube-Ads_~022062223035065465151/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Performance Marketing Specialist (Google Ads &amp; YouTube Ads)</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Sales &amp; Marketing
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$32.5</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/Online-Calendar-Implementation_~022063624971905191366/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">Online Calendar Implementation</p>
+    <div class="meta">
+      📍 Canada
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      
+      
+    </div>
+    
+    
+  </div>
+<div class="job filtered">
+    <div class="hdr">
+      <span class="badge filtered">🚪 FILTERED</span>
+      <span class="ticket">$22.5</span>
+      <span class="date">2026-06-08 09:01</span>
+      <a href="https://www.upwork.com/freelance-jobs/apply/WordPress-Elementor-Publishing-Content-Architecture-Assistant_~022063745532477500157/" target="_blank" class="link">↗ Upwork</a>
+    </div>
+    <p class="title">WordPress Elementor Publishing &amp; Content Architecture Assistant</p>
+    <div class="meta">
+      📍 United States
+      · 🏢 Web, Mobile &amp; Software Dev
+      
+      
+      
+    </div>
+    
+    
+  </div>
+
+</body></html>
