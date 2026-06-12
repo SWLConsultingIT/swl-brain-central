@@ -11,6 +11,7 @@ type Column = {
   label: string
   dotClass: string
   countClass: string
+  windowDays?: number
 }
 
 const COLUMNS: Column[] = [
@@ -18,7 +19,7 @@ const COLUMNS: Column[] = [
   { status: 'ready_to_send',    label: 'Ready to Send',     dotClass: 'bg-violet',     countClass: 'text-violet' },
   { status: 'sent',             label: 'Sent',              dotClass: 'bg-fg',         countClass: 'text-fg' },
   { status: 'responded',        label: 'Responded',         dotClass: 'bg-accent',     countClass: 'text-accent-fg' },
-  { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle' },
+  { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3 },
 ]
 
 type BU = { id: string; name: string }
@@ -109,10 +110,22 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   }, [jobs, query, buId, country, minScore, savedFilter])
 
   const byStatus = useMemo(() => {
+    const now = Date.now()
     const map = new Map<string, JobRow[]>()
-    for (const c of COLUMNS) map.set(c.status, [])
+    const windows = new Map<string, number | undefined>()
+    for (const c of COLUMNS) {
+      map.set(c.status, [])
+      windows.set(c.status, c.windowDays)
+    }
     for (const j of filtered) {
-      if (map.has(j.status)) map.get(j.status)!.push(j)
+      if (!map.has(j.status)) continue
+      const windowDays = windows.get(j.status)
+      if (windowDays != null) {
+        const ts = j.updated_at ?? j.created_at
+        const ageDays = (now - new Date(ts).getTime()) / (24 * 60 * 60 * 1000)
+        if (ageDays > windowDays) continue
+      }
+      map.get(j.status)!.push(j)
     }
     return map
   }, [filtered])
@@ -282,6 +295,9 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
                         <h2 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg">
                           {col.label}
                         </h2>
+                        {col.windowDays != null && (
+                          <span className="text-[10px] font-mono text-fg-subtle">· {col.windowDays}d</span>
+                        )}
                       </div>
                       <span className={`font-mono text-[11px] tabular-nums font-semibold ${col.countClass}`}>
                         {stats.count}
