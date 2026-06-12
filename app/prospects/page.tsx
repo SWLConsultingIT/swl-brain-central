@@ -33,7 +33,7 @@ export default async function ProspectsPage() {
                 B
               </div>
               <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">
-                Brain Central
+                Upwork Brain
               </h1>
             </Link>
             <span className="text-fg-subtle text-[13px]" aria-hidden>/</span>

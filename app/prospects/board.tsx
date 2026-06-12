@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import type { JobRow } from '@/lib/jobs/list'
 import JobCard from './job-card'
 import JobTable from './job-table'
-import { isFresh, isStale } from './job-meta'
+import { isFresh } from './job-meta'
 
 type Column = {
   status: string
@@ -41,19 +41,14 @@ function computeStats(items: JobRow[]): ColStats {
 
 type SavedView = {
   id: string
-  emoji: string
   label: string
   filter: (j: JobRow) => boolean
 }
 
 const SAVED_VIEWS: SavedView[] = [
-  { id: 'all',       emoji: '◐',  label: 'All',          filter: () => true },
-  { id: 'hot',       emoji: '🔥', label: 'Hot',          filter: j => j.status === 'qualified' && isFresh(j.post_date, 6) },
-  { id: 'fresh',     emoji: '✨', label: 'Fresh',        filter: j => isFresh(j.post_date, 2) },
-  { id: 'drafts',    emoji: '📝', label: 'Drafts',       filter: j => !!j.cover_letter_draft && (j.status === 'qualified' || j.status === 'proposal_drafted') },
-  { id: 'ready',     emoji: '📨', label: 'Ready',        filter: j => j.status === 'ready_to_send' },
-  { id: 'stale',     emoji: '⏱',  label: 'Stale',        filter: j => j.status === 'qualified' && !j.cover_letter_draft && isStale(j.classifier_run_at, 6) },
-  { id: 'review',    emoji: '👀', label: 'Review',       filter: j => j.status === 'discarded_review' },
+  { id: 'all',       label: 'All',          filter: () => true },
+  { id: 'drafts',    label: 'Drafts',       filter: j => !!j.cover_letter_draft && (j.status === 'qualified' || j.status === 'proposal_drafted') },
+  { id: 'review',    label: 'Review',       filter: j => j.status === 'discarded_review' },
 ]
 
 type ViewMode = 'board' | 'table'
@@ -142,10 +137,10 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       <div className="px-8 pt-6 pb-2 max-w-[2400px] mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Kpi label="Total" value={kpis.total} />
-          <Kpi label="Fresh 24h" value={kpis.fresh} tone="accent" />
+          <Kpi label="Fresh 24h" value={kpis.fresh} />
           <Kpi label="Qualified" value={kpis.qualified} />
           <Kpi label="Drafts" value={kpis.drafts} />
-          <Kpi label="Sent" value={kpis.sent} tone="dark" />
+          <Kpi label="Sent" value={kpis.sent} />
         </div>
       </div>
 
@@ -159,11 +154,11 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
               <button
                 key={v.id}
                 onClick={() => setSavedView(v.id)}
-                className={`relative inline-flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
+                className={`relative inline-flex items-center gap-2 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
                   active ? 'text-fg' : 'text-fg-muted hover:text-fg'
                 }`}
               >
-                <span className="text-[13px]">{v.emoji}</span>
+                <span className={`size-1.5 rounded-full ${active ? 'bg-fg' : 'bg-fg-subtle'}`} aria-hidden />
                 <span>{v.label}</span>
                 <span className={`font-mono text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
                   active ? 'bg-fg text-bg' : 'bg-bg text-fg-subtle'
@@ -334,13 +329,11 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   )
 }
 
-function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'accent' | 'dark' }) {
+function Kpi({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-surface border border-border rounded-xl px-4 py-3 shadow-card">
+    <div className="bg-surface border border-border/60 rounded-lg px-4 py-3">
       <div className="text-[10px] uppercase tracking-[0.1em] text-fg-muted font-semibold">{label}</div>
-      <div className={`text-2xl font-bold tabular-nums tracking-tight mt-1 ${
-        tone === 'accent' ? 'text-accent-fg' : tone === 'dark' ? 'text-fg' : 'text-fg'
-      }`}>
+      <div className="text-2xl font-bold tabular-nums tracking-tight mt-1 text-fg">
         {value.toLocaleString()}
       </div>
     </div>

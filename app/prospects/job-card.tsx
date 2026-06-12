@@ -15,9 +15,9 @@ function shortUpworkId(upworkId: string | null): string {
 function ScoreBar({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, value))
   const tone =
-    value >= 70 ? 'bg-accent' : value >= 40 ? 'bg-warning' : 'bg-fg-subtle'
+    value >= 70 ? 'bg-fg' : value >= 40 ? 'bg-fg-muted' : 'bg-border-strong'
   const toneFg =
-    value >= 70 ? 'text-accent-fg' : value >= 40 ? 'text-warning' : 'text-fg-subtle'
+    value >= 70 ? 'text-fg' : value >= 40 ? 'text-fg-muted' : 'text-fg-subtle'
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <div className="relative h-1 w-12 bg-border rounded-full overflow-hidden flex-shrink-0">

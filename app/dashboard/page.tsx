@@ -163,7 +163,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="size-7 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[13px] tracking-tighter">B</div>
-              <h1 className="text-[15px] font-bold tracking-tight text-fg group-hover:text-accent-fg transition">Brain Central</h1>
+              <h1 className="text-[15px] font-bold tracking-tight text-fg group-hover:text-fg-muted transition">Upwork Brain</h1>
             </Link>
             <span className="text-fg-subtle text-sm">/</span>
             <span className="text-fg-muted text-sm font-medium">Dashboard</span>
