@@ -12,14 +12,15 @@ type Column = {
   dotClass: string
   countClass: string
   windowDays?: number
+  emptyText: string
 }
 
 const COLUMNS: Column[] = [
-  { status: 'proposal_drafted', label: 'Proposal',          dotClass: 'bg-info',       countClass: 'text-info' },
-  { status: 'ready_to_send',    label: 'Ready to Send',     dotClass: 'bg-violet',     countClass: 'text-violet' },
-  { status: 'sent',             label: 'Sent',              dotClass: 'bg-fg',         countClass: 'text-fg' },
-  { status: 'responded',        label: 'Responded',         dotClass: 'bg-accent',     countClass: 'text-accent-fg' },
-  { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3 },
+  { status: 'proposal_drafted', label: 'Proposal',          dotClass: 'bg-info',       countClass: 'text-info',      emptyText: 'No drafts to review' },
+  { status: 'ready_to_send',    label: 'Ready to Send',     dotClass: 'bg-violet',     countClass: 'text-violet',    emptyText: 'Nothing ready yet' },
+  { status: 'sent',             label: 'Sent',              dotClass: 'bg-fg',         countClass: 'text-fg',        emptyText: 'Nothing sent yet' },
+  { status: 'responded',        label: 'Responded',         dotClass: 'bg-accent',     countClass: 'text-accent-fg', emptyText: 'Awaiting replies' },
+  { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3, emptyText: 'No discards in last 3 days' },
 ]
 
 type BU = { id: string; name: string }
@@ -101,7 +102,10 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
     const q = query.trim().toLowerCase()
     return jobs.filter(j => {
       if (!savedFilter(j)) return false
-      if (q && !j.title.toLowerCase().includes(q)) return false
+      if (q) {
+        const haystack = `${j.title} ${j.description ?? ''}`.toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
       if (buId !== 'all' && j.business_unit_id !== buId) return false
       if (country !== 'all' && j.country !== country) return false
       if (minScore > 0 && (j.classifier_score ?? 0) < minScore) return false
@@ -197,7 +201,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search by title…"
+              placeholder="Search title or description…"
               className="w-full pl-8 pr-3 py-1.5 text-[13px] bg-bg border border-border rounded-md placeholder:text-fg-subtle focus:outline-none focus:border-fg focus:bg-surface transition-colors"
             />
           </div>
@@ -326,8 +330,8 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
                       <JobCard key={j.id} job={j} />
                     ))}
                     {items.length === 0 && (
-                      <div className="text-[11px] text-fg-subtle/70 px-3 py-8 text-center font-mono">
-                        empty
+                      <div className="text-[11px] text-fg-subtle px-3 py-8 text-center">
+                        {col.emptyText}
                       </div>
                     )}
                   </div>
