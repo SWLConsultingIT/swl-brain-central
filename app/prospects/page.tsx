@@ -1,29 +1,9 @@
 import Link from 'next/link'
 import { getServerClient } from '@/lib/supabase/server'
 import { listJobs, type JobRow } from '@/lib/jobs/list'
-import JobCard from './job-card'
+import Board from './board'
 
 export const dynamic = 'force-dynamic'
-
-type Column = {
-  status: string
-  label: string
-  dot: string
-  bg: string
-  fg: string
-}
-
-const COLUMNS: Column[] = [
-  { status: 'new',              label: 'Prospect',          dot: 'bg-slate',       bg: 'bg-slate-bg',       fg: 'text-slate' },
-  { status: 'prequalified',     label: 'Prequalified',      dot: 'bg-warning',     bg: 'bg-warning-bg',     fg: 'text-warning' },
-  { status: 'qualified',        label: 'Qualified',         dot: 'bg-accent',      bg: 'bg-accent-bg',      fg: 'text-accent-fg' },
-  { status: 'proposal_drafted', label: 'Proposal',          dot: 'bg-info',        bg: 'bg-info-bg',        fg: 'text-info' },
-  { status: 'ready_to_send',    label: 'Ready to Send',     dot: 'bg-violet',      bg: 'bg-violet-bg',      fg: 'text-violet' },
-  { status: 'sent',             label: 'Sent',              dot: 'bg-fuchsia',     bg: 'bg-fuchsia-bg',     fg: 'text-fuchsia' },
-  { status: 'discarded',        label: 'Discarded',         dot: 'bg-fg-subtle',   bg: 'bg-bg',             fg: 'text-fg-subtle' },
-  { status: 'discarded_review', label: 'Revisar Discarded', dot: 'bg-orange',      bg: 'bg-orange-bg',      fg: 'text-orange' },
-]
-
 
 export default async function ProspectsPage() {
   const supabase = getServerClient()
@@ -35,38 +15,45 @@ export default async function ProspectsPage() {
     error = (e as Error).message
   }
 
-  const byStatus = new Map<string, JobRow[]>()
-  for (const c of COLUMNS) byStatus.set(c.status, [])
-  for (const j of jobs) {
-    if (byStatus.has(j.status)) byStatus.get(j.status)!.push(j)
-  }
+  const { data: bus } = await supabase
+    .from('business_units')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('name')
+
+  const businessUnits = (bus ?? []) as { id: string; name: string }[]
 
   return (
     <main className="min-h-screen bg-bg">
-      <header className="bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60 border-b border-border sticky top-0 z-10">
-        <div className="px-8 py-4 flex items-center justify-between max-w-[2400px] mx-auto">
+      <header className="bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/70 border-b border-border sticky top-0 z-10">
+        <div className="px-8 py-3.5 flex items-center justify-between max-w-[2400px] mx-auto">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="size-7 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[13px] tracking-tighter">
+              <div className="size-6 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[11px] tracking-tighter">
                 B
               </div>
-              <div>
-                <h1 className="text-[15px] font-bold tracking-tight text-fg group-hover:text-accent-fg transition">
-                  Brain Central
-                </h1>
-              </div>
+              <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">
+                Brain Central
+              </h1>
             </Link>
-            <span className="text-fg-subtle text-sm">/</span>
-            <span className="text-fg-muted text-sm font-medium">Prospects</span>
+            <span className="text-fg-subtle text-[13px]" aria-hidden>/</span>
+            <span className="text-fg-muted text-[13px] font-medium">Prospects</span>
           </div>
 
-          <div className="flex items-center gap-5 text-[13px]">
-            <span className="text-fg-muted">
-              <span className="font-semibold text-fg tabular-nums">{jobs.length}</span> jobs
+          <div className="flex items-center gap-6 text-[13px]">
+            <span className="text-fg-muted font-mono tabular-nums">
+              <span className="font-semibold text-fg">{jobs.length}</span>
+              <span className="text-fg-subtle ml-1">jobs</span>
             </span>
             <Link
+              href="/dashboard"
+              className="text-fg-muted hover:text-fg transition-colors font-medium"
+            >
+              Dashboard
+            </Link>
+            <Link
               href="/health"
-              className="text-fg-muted hover:text-fg transition font-medium"
+              className="text-fg-muted hover:text-fg transition-colors font-medium"
             >
               Health
             </Link>
@@ -80,38 +67,7 @@ export default async function ProspectsPage() {
         </div>
       )}
 
-      <div className="kanban-scroll overflow-x-auto px-8 py-8">
-        <div className="flex gap-5 min-w-max">
-          {COLUMNS.map(col => {
-            const items = byStatus.get(col.status) ?? []
-            return (
-              <div key={col.status} className="w-[300px] flex-shrink-0">
-                <div className="flex items-center justify-between px-1 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`size-1.5 rounded-full ${col.dot}`} />
-                    <h2 className={`text-[12px] font-bold tracking-wide uppercase ${col.fg}`}>
-                      {col.label}
-                    </h2>
-                  </div>
-                  <span className={`text-[11px] tabular-nums font-bold px-1.5 py-0.5 rounded ${col.bg} ${col.fg}`}>
-                    {items.length}
-                  </span>
-                </div>
-                <div className="space-y-2.5">
-                  {items.map(j => (
-                    <JobCard key={j.id} job={j} />
-                  ))}
-                  {items.length === 0 && (
-                    <div className="text-[11px] text-fg-subtle px-3 py-6 text-center border border-dashed border-border rounded-lg">
-                      empty
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <Board jobs={jobs} businessUnits={businessUnits} />
     </main>
   )
 }
