@@ -74,6 +74,7 @@ export default function JobCard({ job }: { job: JobRow }) {
     job.status === 'proposal_drafted' ||
     job.status === 'ready_to_send' ||
     job.status === 'sent' ||
+    job.status === 'responded' ||
     !!job.classifier_reason
 
   const flag = countryFlag(job.country)
@@ -187,14 +188,24 @@ export default function JobCard({ job }: { job: JobRow }) {
           </div>
         )}
 
-        {hasCoverLetter && (
-          <div className="mt-2.5">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-fg text-bg text-[10px] font-semibold uppercase tracking-wide">
-              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden>
-                <path d="M3 5l5 4 5-4M3 5v6h10V5M3 5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Draft
-            </span>
+        {(hasCoverLetter || job.notes) && (
+          <div className="mt-2.5 flex items-center gap-1.5">
+            {hasCoverLetter && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-fg text-bg text-[10px] font-semibold uppercase tracking-wide">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M3 5l5 4 5-4M3 5v6h10V5M3 5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Draft
+              </span>
+            )}
+            {job.notes && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-warning-bg text-warning text-[10px] font-semibold"
+                title={job.notes.length > 80 ? job.notes.slice(0, 80) + '…' : job.notes}
+              >
+                📓 Notes
+              </span>
+            )}
           </div>
         )}
 

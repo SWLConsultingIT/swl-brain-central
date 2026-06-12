@@ -24,6 +24,7 @@ export type JobRow = {
   country: string | null
   post_date: string | null
   created_at: string
+  notes: string | null
 }
 
 export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
@@ -32,7 +33,7 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
     .select(
       'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
         'classifier_match, classifier_score, classifier_area, classifier_reason, classifier_run_at, ' +
-        'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at',
+        'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, notes',
     )
     .order('created_at', { ascending: false })
 

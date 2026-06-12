@@ -51,12 +51,6 @@ export default async function ProspectsPage() {
             >
               Dashboard
             </Link>
-            <Link
-              href="/health"
-              className="text-fg-muted hover:text-fg transition-colors font-medium"
-            >
-              Health
-            </Link>
           </div>
         </div>
       </header>

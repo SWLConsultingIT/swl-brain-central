@@ -53,13 +53,14 @@ export default function JobTable({ jobs, buNames }: { jobs: JobRow[]; buNames: R
                 <th className="text-right font-medium text-fg-muted text-[10px] uppercase tracking-[0.08em] px-3 py-2.5">Score</th>
                 <th className="text-left font-medium text-fg-muted text-[10px] uppercase tracking-[0.08em] px-3 py-2.5 hidden lg:table-cell">Age</th>
                 <th className="text-left font-medium text-fg-muted text-[10px] uppercase tracking-[0.08em] px-3 py-2.5">Status</th>
+                <th className="text-left font-medium text-fg-muted text-[10px] uppercase tracking-[0.08em] px-3 py-2.5 hidden xl:table-cell">Notes</th>
                 <th className="px-3 py-2.5 w-8"></th>
               </tr>
             </thead>
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-fg-subtle font-mono text-[12px]">
+                  <td colSpan={10} className="px-4 py-12 text-center text-fg-subtle font-mono text-[12px]">
                     no jobs match these filters
                   </td>
                 </tr>
@@ -77,6 +78,7 @@ export default function JobTable({ jobs, buNames }: { jobs: JobRow[]; buNames: R
                     job.status === 'proposal_drafted' ||
                     job.status === 'ready_to_send' ||
                     job.status === 'sent' ||
+                    job.status === 'responded' ||
                     !!job.classifier_reason
 
                   return (
@@ -156,6 +158,13 @@ export default function JobTable({ jobs, buNames }: { jobs: JobRow[]; buNames: R
                       </td>
                       <td className="px-3 py-2.5">
                         <StatusPill status={job.status} />
+                      </td>
+                      <td className="px-3 py-2.5 hidden xl:table-cell max-w-[200px]">
+                        {job.notes ? (
+                          <span className="text-[11px] text-fg-muted truncate block" title={job.notes}>
+                            📓 {job.notes.slice(0, 50)}{job.notes.length > 50 && '…'}
+                          </span>
+                        ) : <span className="text-fg-subtle">—</span>}
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         {isClickable && (

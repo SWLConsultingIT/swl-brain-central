@@ -11,6 +11,7 @@ export const STATUS_META: Record<string, StatusMeta> = {
   proposal_drafted: { emoji: '📝', label: 'Proposal',     pillClass: 'bg-info-bg text-info' },
   ready_to_send:    { emoji: '📨', label: 'Ready',        pillClass: 'bg-violet-bg text-violet' },
   sent:             { emoji: '✓',  label: 'Sent',         pillClass: 'bg-fg text-bg' },
+  responded:        { emoji: '🟢', label: 'Responded',    pillClass: 'bg-accent-bg text-accent-fg' },
   discarded:        { emoji: '✗',  label: 'Discarded',    pillClass: 'bg-slate-bg text-fg-subtle' },
   discarded_review: { emoji: '👀', label: 'Review',       pillClass: 'bg-orange-bg text-orange' },
 }

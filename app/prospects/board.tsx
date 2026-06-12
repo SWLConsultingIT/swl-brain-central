@@ -17,6 +17,7 @@ const COLUMNS: Column[] = [
   { status: 'proposal_drafted', label: 'Proposal',          dotClass: 'bg-info',       countClass: 'text-info' },
   { status: 'ready_to_send',    label: 'Ready to Send',     dotClass: 'bg-violet',     countClass: 'text-violet' },
   { status: 'sent',             label: 'Sent',              dotClass: 'bg-fg',         countClass: 'text-fg' },
+  { status: 'responded',        label: 'Responded',         dotClass: 'bg-accent',     countClass: 'text-accent-fg' },
   { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle' },
 ]
 
