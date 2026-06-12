@@ -170,7 +170,6 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center gap-5 text-[13px]">
             <Link href="/prospects" className="text-fg-muted hover:text-fg transition font-medium">Prospects</Link>
-            <Link href="/health" className="text-fg-muted hover:text-fg transition font-medium">Health</Link>
           </div>
         </div>
       </header>
