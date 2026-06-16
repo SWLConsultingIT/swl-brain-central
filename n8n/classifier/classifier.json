@@ -3,11 +3,21 @@
   "nodes": [
     {
       "parameters": {
-        "rule": { "interval": [ { "field": "cronExpression", "expression": "15 */6 * * *" } ] }
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "15 */6 * * *"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 400],
+      "position": [
+        240,
+        400
+      ],
       "id": "schedule-trigger",
       "name": "Daily 7:00 AM"
     },
@@ -15,15 +25,32 @@
       "parameters": {
         "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/business_units?is_active=eq.true&select=id,name,description,scopes,keywords,good_fit_signals,red_flags,decision_logic",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
-          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" }
-        ] },
-        "options": { "response": { "response": { "responseFormat": "json" } } }
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 400],
+      "position": [
+        460,
+        400
+      ],
       "id": "fetch-bu-cards",
       "name": "Fetch BU cards"
     },
@@ -31,25 +58,45 @@
       "parameters": {
         "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/proposals?status=eq.Sent&business_unit_id=not.is.null&order=sent_date.desc&limit=160&select=business_unit_id,job_title",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
-          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" }
-        ] },
-        "options": { "response": { "response": { "responseFormat": "json" } } }
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 400],
+      "position": [
+        680,
+        400
+      ],
       "id": "fetch-precedent",
       "name": "Fetch Sent precedent"
     },
     {
       "parameters": {
-        "jsCode": "function asArray(nodeName) {\n  const items = $(nodeName).all();\n  if (!items || items.length === 0) return [];\n  if (items.length > 1) return items.map(it => it.json);\n  const j = items[0].json;\n  if (Array.isArray(j)) return j;\n  return [j];\n}\n\nconst bus = asArray('Fetch BU cards');\nconst precedent = asArray('Fetch Sent precedent');\n\nconst precByBU = new Map();\nfor (const p of (precedent || [])) {\n  if (!p.business_unit_id) continue;\n  if (!precByBU.has(p.business_unit_id)) precByBU.set(p.business_unit_id, []);\n  if (precByBU.get(p.business_unit_id).length < 5) precByBU.get(p.business_unit_id).push(p.job_title);\n}\n\nconst buSection = bus.map(bu => {\n  const prec = precByBU.get(bu.id) || [];\n  return [\n    `## ${bu.name}`,\n    bu.description,\n    `Scopes: ${(bu.scopes || []).join(' · ')}`,\n    `Keywords: ${(bu.keywords || []).slice(0, 30).join(', ')}`,\n    `Good fit: ${bu.good_fit_signals || ''}`,\n    `Red flags: ${bu.red_flags || ''}`,\n    `Decision: ${bu.decision_logic || ''}`,\n    prec.length > 0 ? `Recent Sent precedent: ${prec.join(' · ')}` : 'Recent Sent precedent: (none yet)',\n  ].join('\\n');\n}).join('\\n\\n---\\n\\n');\n\nconst HARD_EXCLUSIONS = [\n  'pure graphic design only',\n  'physical product manufacturing',\n  'legal services',\n  'medical services',\n  'academic writing, grant writing for non-profits',\n  'civil/mechanical/electrical/aerospace/hardware engineering',\n  'embedded/firmware/DSP/radar/RF/IoT hardware',\n  'COACHING/TRAINING ROLES (STRICT): Coach, Trainer, Mentor, Enablement, Workshop, Bootcamp - strict',\n  'MICROSOFT ECOSYSTEM (STRICT): M365, Dynamics, SharePoint, Power Platform admin. EXCEPTION: Power BI dashboarding OK',\n  'SAP INTERNAL. EXCEPTION: external API pulls OK',\n  'PR/MEDIA RELATIONS (STRICT)',\n  'CPA TACTICAL (STRICT): US tax, IRS, Delaware C-Corp, SBA, bookkeeping',\n  'TOOL-SPECIFIC (STRICT): Framer, Figma (ANY mention), Klaviyo operator, Etsy listing, Smartsheet, Shopify theme, Wix',\n  'ONE-TIME TACTICAL',\n  'BROKERAGE/NETWORKING without technical scope',\n  'RECRUITING, CRYPTO/WEB3, 3D/VFX',\n];\n\nconst buNameToId = {};\nfor (const bu of bus) buNameToId[bu.name] = bu.id;\n\nconst systemPrompt = [\n  'You are a senior qualification analyst for SWL Consulting.',\n  '',\n  `Below are SWL's 8 business units.`,\n  '',\n  buSection,\n  '',\n  '---',\n  '',\n  'HARD EXCLUSIONS (match=false, score<=10):',\n  ...HARD_EXCLUSIONS.map(e => `- ${e}`),\n  '',\n  'BU-SPECIFIC: Power BI→PM&BI; n8n/Zapier→SI/AI&A; Meta/Google Ads→M&B; Fractional CFO/COO→F&A; Brand+strategy→M&B',\n  '',\n  'NEVER mention ticket/budget/hourly rate in reason. If scope fits and no hard exclusion, match=true.',\n  '',\n  'Return ONLY valid JSON: { \"match\": bool, \"score\": 0-100, \"area\": <BU name>|null, \"reason\": \"...\" }',\n].join('\\n');\n\nreturn { json: { systemPrompt, buNameToId } };"
+        "jsCode": "function asArray(nodeName) {\n  const items = $(nodeName).all();\n  if (!items || items.length === 0) return [];\n  if (items.length > 1) return items.map(it => it.json);\n  const j = items[0].json;\n  if (Array.isArray(j)) return j;\n  return [j];\n}\n\nconst bus = asArray('Fetch BU cards');\nconst precedent = asArray('Fetch Sent precedent');\n\nconst precByBU = new Map();\nfor (const p of (precedent || [])) {\n  if (!p.business_unit_id) continue;\n  if (!precByBU.has(p.business_unit_id)) precByBU.set(p.business_unit_id, []);\n  if (precByBU.get(p.business_unit_id).length < 5) precByBU.get(p.business_unit_id).push(p.job_title);\n}\n\nconst buSection = bus.map(bu => {\n  const prec = precByBU.get(bu.id) || [];\n  return [\n    `## ${bu.name}`,\n    bu.description,\n    `Scopes: ${(bu.scopes || []).join(' · ')}`,\n    `Keywords: ${(bu.keywords || []).slice(0, 30).join(', ')}`,\n    `Good fit: ${bu.good_fit_signals || ''}`,\n    `Red flags: ${bu.red_flags || ''}`,\n    `Decision: ${bu.decision_logic || ''}`,\n    prec.length > 0 ? `Recent Sent precedent: ${prec.join(' · ')}` : 'Recent Sent precedent: (none yet)',\n  ].join('\\n');\n}).join('\\n\\n---\\n\\n');\n\nconst HARD_EXCLUSIONS = [\n  'pure graphic design only',\n  'physical product manufacturing',\n  'legal services',\n  'medical services',\n  'academic writing, grant writing for non-profits',\n  'civil/mechanical/electrical/aerospace/hardware engineering',\n  'embedded/firmware/DSP/radar/RF/IoT hardware',\n  'COACHING/TRAINING ROLES (STRICT): Coach, Trainer, Mentor, Enablement, Workshop, Bootcamp - strict',\n  'MICROSOFT ECOSYSTEM (STRICT): M365, Dynamics, SharePoint, Power Platform admin. EXCEPTION: Power BI dashboarding OK',\n  'SAP INTERNAL. EXCEPTION: external API pulls OK',\n  'PR/MEDIA RELATIONS (STRICT)',\n  'CPA TACTICAL (STRICT): US tax, IRS, Delaware C-Corp, SBA, bookkeeping',\n  'TOOL-SPECIFIC (STRICT): Framer, Figma (ANY mention), Klaviyo operator, Etsy listing, Smartsheet, Shopify theme, Wix',\n  'ONE-TIME TACTICAL',\n  'BROKERAGE/NETWORKING without technical scope',\n  'RECRUITING, CRYPTO/WEB3, 3D/VFX',\n  'SHORT SESSION DELIVERABLES (STRICT): Reject if primary deliverable is a single call/session/consultation/meeting/kickoff/workshop/audit of N minutes or N hours (examples: \"60-90 minute consultation\", \"2 hour kickoff\", \"1 hour audit\", \"30-minute call\"). Even if framed as strategic consulting or architecture guidance, if the entire engagement fits in one session, REJECT. SWL takes hourly engagements that last days/weeks.',\n];\n\n\nconst buNameToId = {};\nfor (const bu of bus) buNameToId[bu.name] = bu.id;\n\nconst systemPrompt = [\n  'You are a senior qualification analyst for SWL Consulting.',\n  '',\n  `Below are SWL's 8 business units.`,\n  '',\n  buSection,\n  '',\n  '---',\n  '',\n  'CRITICAL — UPWORK PLATFORM CONTEXT:',\n  'ALL jobs on this platform are freelance/contract by definition. There are NO permanent hires, NO full-time employee placements. Even ongoing engagements (\"permanent CFO\", \"monthly retainer\", \"30+ hrs/week ongoing\") are STILL contract work that SWL provides.',\n  '',\n  'DO NOT reject a job for being:',\n  '- \"Full-time\" or \"permanent\" sounding (impossible on Upwork)',\n  '- \"Ongoing operational\" (this IS fractional CFO / fractional COO work — F&A and Business Operations BUs explicitly cover this)',\n  '- \"Day-to-day team management\" (legitimate scope for F&A and Business Operations)',\n  '- \"Implementation + maintenance\" (legitimate System Integrations scope)',\n  '',\n  'ONLY use the explicit hard exclusions list below to reject jobs.',\n  '',\n  'CRITICAL — DURATION SOURCE OF TRUTH:',\n  'The Upwork \"duration\" field (e.g., \"1 to 3 months\", \"More than 6 months\") is set by the client and FREQUENTLY CONTRADICTS the actual scope described in the body. ALWAYS prioritize what the description/summary says. If duration says \"1 to 3 months\" but the description describes a single call, audit, or one-off task — trust the description (likely SHORT SESSION DELIVERABLES reject).',\n  '',\n  'HARD EXCLUSIONS (match=false, score<=10):',\n  ...HARD_EXCLUSIONS.map(e => `- ${e}`),\n  '',\n  'BU-SPECIFIC: Power BI→PM&BI; n8n/Zapier→SI/AI&A; Meta/Google Ads→M&B; Fractional CFO/COO→F&A; Brand+strategy→M&B',\n  '',\n  'NEVER mention ticket/budget/hourly rate in reason. If scope fits and no hard exclusion, match=true.',\n  '',\n  'Return ONLY valid JSON: { \"match\": bool, \"score\": 0-100, \"area\": <BU name>|null, \"reason\": \"...\" }',\n].join('\\n');\n\nreturn { json: { systemPrompt, buNameToId } };\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 400],
+      "position": [
+        900,
+        400
+      ],
       "id": "build-system",
       "name": "Build Classifier System Prompt"
     },
@@ -57,23 +104,46 @@
       "parameters": {
         "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/jobs?status=eq.prequalified&select=id,title,description,industry,hourly_average",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
-          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" }
-        ] },
-        "options": { "response": { "response": { "responseFormat": "json" } } }
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 400],
+      "position": [
+        1120,
+        400
+      ],
       "id": "fetch-prequalified",
       "name": "Fetch prequalified jobs"
     },
     {
-      "parameters": { "batchSize": 1, "options": {} },
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 1,
-      "position": [240, 600],
+      "position": [
+        240,
+        600
+      ],
       "id": "loop",
       "name": "Loop Prequalified"
     },
@@ -84,7 +154,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 600],
+      "position": [
+        460,
+        600
+      ],
       "id": "build-user",
       "name": "Build Classifier User Prompt"
     },
@@ -93,19 +166,35 @@
         "method": "POST",
         "url": "https://api.anthropic.com/v1/messages",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [
-          { "name": "x-api-key", "value": "<REPLACE_WITH_ANTHROPIC_API_KEY>" },
-          { "name": "anthropic-version", "value": "2023-06-01" },
-          { "name": "Content-Type", "value": "application/json" }
-        ] },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "<REPLACE_WITH_ANTHROPIC_API_KEY>"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  model: \"claude-haiku-4-5\",\n  max_tokens: 512,\n  system: $json.systemPrompt,\n  messages: [ { role: \"user\", content: $json.userPrompt } ]\n}) }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 600],
+      "position": [
+        680,
+        600
+      ],
       "id": "anthropic",
       "name": "Anthropic Classifier",
       "onError": "continueRegularOutput"
@@ -117,7 +206,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 600],
+      "position": [
+        900,
+        600
+      ],
       "id": "parse",
       "name": "Parse Classifier"
     },
@@ -126,11 +218,22 @@
         "method": "POST",
         "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/rpc/brain_transition_job",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [
-          { "name": "Authorization", "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>" },
-          { "name": "apikey", "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>" },
-          { "name": "Content-Type", "value": "application/json" }
-        ] },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  p_job_id: $json.job_id,\n  p_to_status: $json.newStatus,\n  p_actor: 'brain_classifier',\n  p_actor_detail: 'claude-haiku-4-5',\n  p_reason: $json.reason,\n  p_classifier_match: $json.match,\n  p_classifier_score: $json.score,\n  p_classifier_area: $json.area,\n  p_business_unit_id: $json.businessUnitId\n}) }}",
@@ -138,26 +241,133 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 600],
+      "position": [
+        1120,
+        600
+      ],
       "id": "transition",
       "name": "Transition (classifier)",
       "onError": "continueRegularOutput"
     }
   ],
   "connections": {
-    "Daily 7:00 AM": { "main": [[{ "node": "Fetch BU cards", "type": "main", "index": 0 }]] },
-    "Fetch BU cards": { "main": [[{ "node": "Fetch Sent precedent", "type": "main", "index": 0 }]] },
-    "Fetch Sent precedent": { "main": [[{ "node": "Build Classifier System Prompt", "type": "main", "index": 0 }]] },
-    "Build Classifier System Prompt": { "main": [[{ "node": "Fetch prequalified jobs", "type": "main", "index": 0 }]] },
-    "Fetch prequalified jobs": { "main": [[{ "node": "Loop Prequalified", "type": "main", "index": 0 }]] },
-    "Loop Prequalified": { "main": [[{ "node": "Build Classifier User Prompt", "type": "main", "index": 0 }]] },
-    "Build Classifier User Prompt": { "main": [[{ "node": "Anthropic Classifier", "type": "main", "index": 0 }]] },
-    "Anthropic Classifier": { "main": [[{ "node": "Parse Classifier", "type": "main", "index": 0 }]] },
-    "Parse Classifier": { "main": [[{ "node": "Transition (classifier)", "type": "main", "index": 0 }]] },
-    "Transition (classifier)": { "main": [[{ "node": "Loop Prequalified", "type": "main", "index": 0 }]] }
+    "Daily 7:00 AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch BU cards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch BU cards": {
+      "main": [
+        [
+          {
+            "node": "Fetch Sent precedent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sent precedent": {
+      "main": [
+        [
+          {
+            "node": "Build Classifier System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classifier System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Fetch prequalified jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch prequalified jobs": {
+      "main": [
+        [
+          {
+            "node": "Loop Prequalified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Prequalified": {
+      "main": [
+        [
+          {
+            "node": "Build Classifier User Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classifier User Prompt": {
+      "main": [
+        [
+          {
+            "node": "Anthropic Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Classifier": {
+      "main": [
+        [
+          {
+            "node": "Parse Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Classifier": {
+      "main": [
+        [
+          {
+            "node": "Transition (classifier)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transition (classifier)": {
+      "main": [
+        [
+          {
+            "node": "Loop Prequalified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1", "binaryMode": "separate", "timezone": "America/Argentina/Buenos_Aires" },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
   "pinData": {},
   "meta": {}
 }
