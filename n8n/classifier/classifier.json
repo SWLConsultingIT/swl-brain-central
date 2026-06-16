@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 7 * * *" } ] }
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "15 */6 * * *" } ] }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
