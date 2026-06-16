@@ -8,41 +8,34 @@ node_modules/
 .next/
 dist/
 build/
+out/
+.vercel
+tsconfig.tsbuildinfo
 
-# Notion export (raw data, no versionar)
-Private & Shared/
-*.zip
-d3fdde77-*/
+# Archivo de cosas viejas / dudosas (Notion export, toolkits personales, descargas, etc.)
+_archive/
 
-# CSVs grandes en raíz (export crudo)
-/*.csv
-
-# Exports temporales
+# Datos crudos / exports (CSVs, dumps)
 data/exports/
+*.zip
 
-# n8n workflow exports (contienen credenciales en las versiones originales)
-JSON /
-JSON/
+# Documentos personales (CV, etc.)
+docs/personal/
 
+# Master Prompt PDFs (documentos internos de Juan, no versionar)
+docs/prompts/Master Prompt*.pdf
+docs/prompts/ COPIA Master Prompt*.pdf
+
+# n8n workflow JSON exports (contienen API keys de Anthropic + Supabase)
+n8n/_exports/
 # Brain pipeline generado por build-workflow.cjs (hardcodea SUPABASE_SECRET_KEY)
 n8n/brain-pipeline/brain-pipeline.json
 
-# n8n workflow JSON exports en raíz (contienen API keys de Anthropic + Supabase)
-/Brain*.json
-/Notion*.json
+# Reportes generados (xlsx + html/pdf de cover-letters/weekend)
+reports/Reporte_*.xlsx
+reports/Test_del_*.xlsx
+reports/cover-letters-24h.*
+reports/weekend-audit-cover-letters.html
 
 # R history (irrelevante)
 docs/.Rhistory
-
-# Master Prompt PDFs (documentos internos de Juan, no versionar)
-/Master Prompt*.pdf
-
-# Excel reports temporales en raíz
-/Reporte_*.xlsx
-/Test_del_*.xlsx
-
-# Personal Claude skills toolkit (no es del proyecto)
-MCP Y SKILLS copy/
-out/
-tsconfig.tsbuildinfo
-.vercel
