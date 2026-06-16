@@ -28,16 +28,32 @@ export type JobRow = {
   notes: string | null
 }
 
-export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
-  const { data, error } = await supabase
-    .from('jobs')
-    .select(
-      'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
-        'classifier_match, classifier_score, classifier_area, classifier_reason, classifier_run_at, ' +
-        'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, updated_at, notes',
-    )
-    .order('created_at', { ascending: false })
+const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
+  'classifier_match, classifier_score, classifier_area, classifier_reason, classifier_run_at, ' +
+  'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, updated_at, notes'
 
-  if (error) throw new Error(error.message)
-  return (data ?? []) as unknown as JobRow[]
+const ACTIVE_STATUSES = ['qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
+const DISCARDED_WINDOW_DAYS = 3
+
+export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
+  const sinceWindow = new Date(Date.now() - DISCARDED_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+  const [active, recentDiscarded] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select(SELECT)
+      .in('status', ACTIVE_STATUSES)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('jobs')
+      .select(SELECT)
+      .eq('status', 'discarded')
+      .gte('updated_at', sinceWindow)
+      .order('created_at', { ascending: false }),
+  ])
+
+  if (active.error) throw new Error(active.error.message)
+  if (recentDiscarded.error) throw new Error(recentDiscarded.error.message)
+
+  return [...(active.data ?? []), ...(recentDiscarded.data ?? [])] as unknown as JobRow[]
 }
