@@ -13,22 +13,17 @@
 // Prompt caching: activado para amortizar el master prompt en llamadas frecuentes.
 
 import OpenAI from 'openai'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { SupabaseClient } from '@supabase/supabase-js'
+// Reusamos el Master Prompt del cover letter — misma voz SWL, mismas reglas anti-clichés.
+// Importarlo desde el módulo (no leer .md desde disco) evita problemas de bundling
+// en serverless de Vercel: el archivo .md no se incluye automáticamente si vive
+// en otro subfolder de lib/.
+import { MASTER_PROMPT } from '../cover-letter/generator'
 
 export const ANSWER_MODEL = 'gpt-4o-mini'
 
 const PRECEDENT_LIMIT = 3
 const MAX_PRECEDENT_CL_CHARS = 400
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-// Reusamos el master prompt del cover letter — misma voz SWL, mismas reglas.
-const MASTER_PROMPT = readFileSync(
-  join(__dirname, '..', 'cover-letter', 'master-prompt.md'),
-  'utf8',
-)
 
 export type GeneratorJob = {
   title: string

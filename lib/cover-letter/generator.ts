@@ -20,8 +20,9 @@ const PRECEDENT_LIMIT = 5
 const MAX_PRECEDENT_CL_CHARS = 600
 
 // Master prompt cargado en build-time (no depende del cwd del runtime).
+// Exportado para reuso por otros generators (ej. lib/answers que comparte voz SWL).
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const MASTER_PROMPT = readFileSync(join(__dirname, 'master-prompt.md'), 'utf8')
+export const MASTER_PROMPT = readFileSync(join(__dirname, 'master-prompt.md'), 'utf8')
 
 export type GeneratorJob = {
   title: string
