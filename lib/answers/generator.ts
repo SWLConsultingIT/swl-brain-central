@@ -14,11 +14,10 @@
 
 import OpenAI from 'openai'
 import type { SupabaseClient } from '@supabase/supabase-js'
-// Reusamos el Master Prompt del cover letter — misma voz SWL, mismas reglas anti-clichés.
-// Importarlo desde el módulo (no leer .md desde disco) evita problemas de bundling
-// en serverless de Vercel: el archivo .md no se incluye automáticamente si vive
-// en otro subfolder de lib/.
-import { MASTER_PROMPT } from '../cover-letter/generator'
+// Master Prompt SWL — copia standalone en este mismo folder (no cruzamos a
+// lib/cover-letter/ para no romper bundling en serverless de Vercel).
+// Si actualizás el .md del cover letter, actualizá también lib/answers/master-prompt.ts.
+import { MASTER_PROMPT } from './master-prompt'
 
 export const ANSWER_MODEL = 'gpt-4o-mini'
 
