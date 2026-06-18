@@ -28,16 +28,101 @@ export default function JobDetailModal({ job, onClose }: Props) {
   const isDirty = draft !== savedDraft
   const notesDirty = notes !== savedNotes
   const canEdit = job.status === 'proposal_drafted' || job.status === 'ready_to_send'
-  // Fuente primaria: jobs.questions (Upwork API directo). Fallback: extractor de la description.
-  const screeningQuestions = useMemo(() => {
+
+  // Preguntas estructuradas (desde Upwork API). Si no las hay, fallback al extractor de description.
+  const structuredQuestions = useMemo(() => {
     if (job.questions && job.questions.length > 0) {
-      return job.questions
-        .slice()
-        .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))
-        .map((q) => q.question)
+      return job.questions.slice().sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))
     }
+    return null
+  }, [job.questions])
+
+  const fallbackQuestionTexts = useMemo(() => {
+    if (structuredQuestions) return null
     return extractQuestions(job.description)
-  }, [job.questions, job.description])
+  }, [structuredQuestions, job.description])
+
+  // State para las respuestas (editables, persistidas)
+  type AnswerRow = { question: string; sequenceNumber: number; answer: string; edited_at: string | null }
+  const initialAnswers: AnswerRow[] = (job.questions_answers ?? []) as AnswerRow[]
+  const [answers, setAnswers] = useState<AnswerRow[]>(initialAnswers)
+  const answersRef = useRef<AnswerRow[]>(initialAnswers)
+  useEffect(() => { answersRef.current = answers }, [answers])
+  const [generatingAnswers, setGeneratingAnswers] = useState(false)
+  const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null)
+  const answersSaveTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Auto-trigger lazy: si el job tiene preguntas estructuradas pero NO tiene respuestas guardadas, generarlas.
+  // Solo se dispara para jobs qualified+ con BU asignada.
+  useEffect(() => {
+    const hasQuestions = structuredQuestions && structuredQuestions.length > 0
+    const hasAnswers = initialAnswers.length > 0
+    const eligibleStatus = ['qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded'].includes(job.status)
+    if (!hasQuestions || hasAnswers || !eligibleStatus || !job.business_unit_id) return
+
+    let cancelled = false
+    setGeneratingAnswers(true)
+    fetch(`/api/jobs/${job.id}/answer-questions`, { method: 'POST' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return
+        if (data?.answers && Array.isArray(data.answers)) {
+          setAnswers(data.answers)
+          if (!data.cached) showToast('✓ Answers generated')
+        } else if (data?.error) {
+          setError(`Answers: ${data.error}`)
+        }
+      })
+      .catch((e) => !cancelled && setError(`Answers fetch failed: ${(e as Error).message}`))
+      .finally(() => !cancelled && setGeneratingAnswers(false))
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job.id])
+
+  const saveAnswer = (idx: number, nextAnswer: string) => {
+    setAnswers((prev) => {
+      const copy = prev.slice()
+      if (copy[idx]) copy[idx] = { ...copy[idx], answer: nextAnswer, edited_at: new Date().toISOString() }
+      return copy
+    })
+    // debounce: 1.2s después de dejar de tipear
+    if (answersSaveTimers.current.get(idx)) clearTimeout(answersSaveTimers.current.get(idx)!)
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${job.id}/update-answers`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ answers: answersRef.current }),
+        })
+        if (!res.ok) throw new Error((await res.json()).error ?? 'Save failed')
+        showToast('✓ Answer saved')
+      } catch (e) {
+        setError((e as Error).message)
+      }
+    }, 1200)
+    answersSaveTimers.current.set(idx, timer)
+  }
+
+  const regenerateAnswer = async (idx: number) => {
+    setRegeneratingIdx(idx); setError(null)
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/answer-questions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ force: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error ?? 'Regenerate failed')
+      if (data?.answers && Array.isArray(data.answers)) {
+        setAnswers(data.answers)
+        showToast('✓ Regenerated')
+      }
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setRegeneratingIdx(null)
+    }
+  }
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -231,14 +316,66 @@ export default function JobDetailModal({ job, onClose }: Props) {
             </section>
           )}
 
-          {screeningQuestions && screeningQuestions.length > 0 && (
+          {/* Screening questions — con respuestas auto-generadas editables si están */}
+          {structuredQuestions && structuredQuestions.length > 0 && (
             <section className="border border-border-strong rounded-lg p-4 bg-surface">
               <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg mb-3 flex items-center gap-2">
                 <span>Screening questions</span>
-                <span className="text-fg-subtle normal-case tracking-normal font-mono">· {screeningQuestions.length}</span>
+                <span className="text-fg-subtle normal-case tracking-normal font-mono">· {structuredQuestions.length}</span>
+                {generatingAnswers && (
+                  <span className="ml-auto text-fg-subtle normal-case tracking-normal text-[10px] font-mono animate-pulse">
+                    generating answers…
+                  </span>
+                )}
+              </h3>
+              <ol className="space-y-4 text-sm text-fg leading-relaxed list-decimal pl-5 marker:text-fg-subtle marker:font-mono">
+                {structuredQuestions.map((q) => {
+                  const ans = answers.find((a) => a.sequenceNumber === q.sequenceNumber)
+                  const idx = answers.findIndex((a) => a.sequenceNumber === q.sequenceNumber)
+                  return (
+                    <li key={q.sequenceNumber} className="pl-1">
+                      <div className="font-medium mb-1.5">{q.question}</div>
+                      {ans ? (
+                        <>
+                          <textarea
+                            value={ans.answer}
+                            onChange={(e) => saveAnswer(idx, e.target.value)}
+                            className="w-full min-h-[80px] text-sm text-fg bg-bg border border-border rounded-md p-2.5 leading-relaxed font-sans resize-y focus:outline-none focus:border-border-focus transition-colors"
+                            placeholder="Answer..."
+                            spellCheck
+                          />
+                          <div className="mt-1 flex items-center justify-between text-[10px] text-fg-subtle font-mono">
+                            <span>{ans.answer.length} chars</span>
+                            <button
+                              onClick={() => regenerateAnswer(idx)}
+                              disabled={regeneratingIdx !== null}
+                              className="text-fg-subtle hover:text-fg disabled:opacity-50 transition-colors"
+                            >
+                              {regeneratingIdx === idx ? 'regenerating…' : '↻ regenerate'}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-[11px] text-fg-subtle italic">
+                          {generatingAnswers ? 'generating…' : 'no answer yet'}
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ol>
+            </section>
+          )}
+
+          {/* Fallback: jobs sin questions estructuradas pero con preguntas embebidas en la description */}
+          {!structuredQuestions && fallbackQuestionTexts && fallbackQuestionTexts.length > 0 && (
+            <section className="border border-border-strong rounded-lg p-4 bg-surface">
+              <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg mb-3 flex items-center gap-2">
+                <span>Screening questions</span>
+                <span className="text-fg-subtle normal-case tracking-normal font-mono">· {fallbackQuestionTexts.length}</span>
               </h3>
               <ol className="space-y-2.5 text-sm text-fg leading-relaxed list-decimal pl-5 marker:text-fg-subtle marker:font-mono">
-                {screeningQuestions.map((q, i) => (
+                {fallbackQuestionTexts.map((q, i) => (
                   <li key={i} className="pl-1">{q}</li>
                 ))}
               </ol>
