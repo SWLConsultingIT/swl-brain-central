@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { JobRow } from '@/lib/jobs/list'
+import { extractQuestions } from '@/lib/jobs/extract-questions'
 
 type Props = {
   job: JobRow
@@ -27,6 +28,16 @@ export default function JobDetailModal({ job, onClose }: Props) {
   const isDirty = draft !== savedDraft
   const notesDirty = notes !== savedNotes
   const canEdit = job.status === 'proposal_drafted' || job.status === 'ready_to_send'
+  // Fuente primaria: jobs.questions (Upwork API directo). Fallback: extractor de la description.
+  const screeningQuestions = useMemo(() => {
+    if (job.questions && job.questions.length > 0) {
+      return job.questions
+        .slice()
+        .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))
+        .map((q) => q.question)
+    }
+    return extractQuestions(job.description)
+  }, [job.questions, job.description])
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -217,6 +228,20 @@ export default function JobDetailModal({ job, onClose }: Props) {
               <p className="text-sm text-fg-muted leading-relaxed italic border-l-2 border-border-strong pl-3">
                 {job.classifier_reason}
               </p>
+            </section>
+          )}
+
+          {screeningQuestions && screeningQuestions.length > 0 && (
+            <section className="border border-border-strong rounded-lg p-4 bg-surface">
+              <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg mb-3 flex items-center gap-2">
+                <span>Screening questions</span>
+                <span className="text-fg-subtle normal-case tracking-normal font-mono">· {screeningQuestions.length}</span>
+              </h3>
+              <ol className="space-y-2.5 text-sm text-fg leading-relaxed list-decimal pl-5 marker:text-fg-subtle marker:font-mono">
+                {screeningQuestions.map((q, i) => (
+                  <li key={i} className="pl-1">{q}</li>
+                ))}
+              </ol>
             </section>
           )}
 

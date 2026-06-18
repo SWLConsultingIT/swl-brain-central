@@ -26,11 +26,12 @@ export type JobRow = {
   created_at: string
   updated_at: string | null
   notes: string | null
+  questions: { question: string; sequenceNumber: number }[] | null
 }
 
 const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
   'classifier_match, classifier_score, classifier_area, classifier_reason, classifier_run_at, ' +
-  'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, updated_at, notes'
+  'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, updated_at, notes, questions'
 
 const ACTIVE_STATUSES = ['qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
 const DISCARDED_WINDOW_DAYS = 3
