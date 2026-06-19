@@ -740,7 +740,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\n\n// Palabras/frases que NO querés\nconst BLOCKLIST = [\n  \"ugc content\",\n  \"ugc program manager\",\n  \"ai video editor\",\n  \"graphic design\",\n  \"virtual assistant\",\n  \"mechanical engineer\",\n  \"video editor\",\n  \"youtuber\",\n  \"instructor\",\n  \"tour coordinator\",\n  \"tiktoker\",\n  \"reels editor\",\n  \"tutor\",\n  \"teacher\",\n  \"instagrammer\",\n  \"voiceover artist\",\n  \"ad video creator\",\n  \"executive assistant\"\n];\n\n// Normaliza texto (lowercase + sin acentos)\nfunction normalize(str) {\n  return String(str || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .trim();\n}\n\nreturn items.filter(item => {\n  const title = normalize(item.json.title);\n\n  // true → lo dejamos pasar\n  // false → lo filtramos (bloqueado)\n  const isBlocked = BLOCKLIST.some(word =>\n    title.includes(word)\n  );\n\n  return !isBlocked;\n});\n"
+        "jsCode": "const items = $input.all();\n\n// Palabras/frases que NO querés\nconst BLOCKLIST = [];\n\n// Normaliza texto (lowercase + sin acentos)\nfunction normalize(str) {\n  return String(str || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .trim();\n}\n\nreturn items.filter(item => {\n  const title = normalize(item.json.title);\n\n  // true → lo dejamos pasar\n  // false → lo filtramos (bloqueado)\n  const isBlocked = BLOCKLIST.some(word =>\n    title.includes(word)\n  );\n\n  return !isBlocked;\n});\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
