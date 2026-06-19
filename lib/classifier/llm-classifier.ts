@@ -86,7 +86,6 @@ export async function llmClassify(
         `## ${bu.name}`,
         bu.description,
         `Scopes: ${bu.scopes.join(' · ')}`,
-        `Keywords: ${bu.keywords.join(', ')}`,
         `Good fit: ${bu.good_fit_signals}`,
         `Red flags: ${bu.red_flags}`,
         `Decision: ${bu.decision_logic}`,
