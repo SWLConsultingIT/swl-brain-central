@@ -10,14 +10,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // (lib/cover-letter/generator.ts) — calidad del texto importa para ganar el job.
 export const CLASSIFIER_MODEL = 'claude-haiku-4-5'
 
-const HARD_EXCLUSIONS = [
-  'pure graphic design only',
-  'physical product manufacturing',
-  'legal services',
-  'medical services',
-  'academic writing',
-  'civil / mechanical / electrical engineering',
-]
+// Hard exclusions removed (decisión dirección 2026-06-19): el classifier ya no
+// descarta jobs por dominio/scope. Toda calificación pasa por el scoring de fit.
 
 const PRECEDENT_PER_BU = 5
 const PRECEDENT_TOTAL = 40
@@ -113,7 +107,7 @@ export async function llmClassify(
     ``,
     `---`,
     ``,
-    `HARD EXCLUSIONS (always match=false, score≤10): ${HARD_EXCLUSIONS.join(' · ')}.`,
+    `HARD EXCLUSIONS: NONE. Do not reject any job on domain or scope grounds — evaluate every job purely on fit with the 8 business units. If scope fits, match=true.`,
     ``,
     `CRITICAL — TICKET POLICY:`,
     `Jobs reach you ONLY after passing the official SQL filter: ticket ≥ $40 USD, posted ≤ 48h, ≤ 50 existing proposals. These thresholds are validated by SWL leadership. DO NOT apply your own intuition about "engagement minimums", "below market rates", or "budget insufficient". Even $40-$200 tickets are viable for SWL — don't reject them on budget grounds. Your job is scope fit, not budget.`,
@@ -124,11 +118,10 @@ export async function llmClassify(
     `Decision protocol:`,
     `1. Read job title + description.`,
     `2. Identify which BU (if any) fits → set "area" accordingly.`,
-    `3. Check hard exclusions → if any apply, match=false, score≤10.`,
-    `4. Otherwise, weigh good-fit signals, red flags, decision logic, and precedent.`,
-    `5. Decide match=true when there is a clear scope fit + realistic precedent.`,
-    `6. Assign score: 0=clear miss · 30=weak/no precedent · 60=plausible · 85+=strong fit with precedent.`,
-    `7. reason ≤ 25 words, concrete, cite signals or precedent. NEVER cite ticket/budget as the reason — that's not your call.`,
+    `3. Weigh good-fit signals, red flags, decision logic, and precedent.`,
+    `4. Decide match=true when there is a clear scope fit + realistic precedent.`,
+    `5. Assign score: 0=clear miss · 30=weak/no precedent · 60=plausible · 85+=strong fit with precedent.`,
+    `6. reason ≤ 25 words, concrete, cite signals or precedent. NEVER cite ticket/budget as the reason — that's not your call.`,
     ``,
     `Return ONLY valid JSON, no markdown fences, no prose: { "match": bool, "score": 0-100, "area": <one of the BU names above> | null, "reason": "..." }`,
   ].join('\n')
