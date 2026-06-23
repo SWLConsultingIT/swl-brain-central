@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
 import { extractQuestions } from '@/lib/jobs/extract-questions'
 
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export default function JobDetailModal({ job, onClose }: Props) {
+  const router = useRouter()
   const original = job.cover_letter_draft ?? ''
   const originalNotes = job.notes ?? ''
   const [draft, setDraft] = useState(original)
@@ -196,7 +198,7 @@ export default function JobDetailModal({ job, onClose }: Props) {
       const res = await fetch(`/api/jobs/${job.id}/mark-responded`, { method: 'POST' })
       if (!res.ok) throw new Error((await res.json()).error ?? 'mark-responded failed')
       onClose()
-      window.location.reload()
+      router.refresh()
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -254,7 +256,7 @@ export default function JobDetailModal({ job, onClose }: Props) {
       const res = await fetch(`/api/jobs/${job.id}/mark-sent`, { method: 'POST' })
       if (!res.ok) throw new Error((await res.text()) || 'Error')
       onClose()
-      window.location.reload()
+      router.refresh()
     } catch (e) {
       setError((e as Error).message)
     } finally {

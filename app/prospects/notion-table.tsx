@@ -5,7 +5,7 @@ import type { JobRow } from '@/lib/jobs/list'
 import JobDetailModal from './job-detail-modal'
 import { STATUS_META, countryFlag, postedAgo } from './job-meta'
 
-// ── shared cells (estilo consistente con job-table.tsx) ────────────────────
+// ── shared cells ───────────────────────────────────────────────────────────
 
 function ScoreCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-fg-subtle">—</span>
@@ -293,7 +293,7 @@ export default function NotionTable({
                   <th
                     key={c.key}
                     className={`font-medium text-fg-muted text-[12px] px-3 py-2.5 bg-bg sticky top-0 z-20 border-b border-r border-border whitespace-nowrap ${c.align === 'right' ? 'text-right' : 'text-left'} ${
-                      i === 0 ? 'sticky left-0 z-30 pl-4 min-w-[300px] border-r' : ''
+                      i === 0 ? 'sticky left-0 z-30 pl-4 min-w-[200px] md:min-w-[300px] border-r' : ''
                     } ${c.className ?? ''}`}
                   >
                     {c.label}
@@ -324,7 +324,7 @@ export default function NotionTable({
                       <td
                         key={c.key}
                         className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : ''} ${
-                          i === 0 ? 'sticky left-0 z-10 bg-surface pl-4 min-w-[300px]' : ''
+                          i === 0 ? 'sticky left-0 z-10 bg-surface pl-4 min-w-[200px] md:min-w-[300px]' : ''
                         } ${c.className ?? ''}`}
                       >
                         {c.render(job, ctx)}
