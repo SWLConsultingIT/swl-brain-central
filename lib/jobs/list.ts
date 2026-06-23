@@ -55,7 +55,7 @@ export type JobRow = {
 }
 
 const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
-  'classifier_match, classifier_score, classifier_area, classifier_reason, classifier_run_at, ' +
+  'classifier_match, classifier_score, classifier_area, classifier_reason, classifier_run_at, match_score, ' +
   'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, updated_at, notes, questions, questions_answers, ' +
   'matched_keyword, preferred_location, preferred_location_mandatory, experience_level, engagement, hourly_min, hourly_max, weekly_budget, skills, ' +
   'client_total_hires, client_total_spent, client_verification, client_total_reviews, client_rating, client_company_name, ' +

@@ -275,6 +275,13 @@ export default function NotionTable({
   const [activeJob, setActiveJob] = useState<JobRow | null>(null)
   const ctx: Ctx = { buNames }
 
+  // Prioritarios arriba: ordenar por score (match) desc, y entre iguales los más nuevos
+  const sorted = [...jobs].sort((a, b) => {
+    const d = matchPct(b) - matchPct(a)
+    if (d !== 0) return d
+    return (b.post_date ?? '').localeCompare(a.post_date ?? '')
+  })
+
   return (
     <>
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -303,7 +310,7 @@ export default function NotionTable({
                   </td>
                 </tr>
               ) : (
-                jobs.map((job) => (
+                sorted.map((job) => (
                   <tr
                     key={job.id}
                     onClick={(e) => {
