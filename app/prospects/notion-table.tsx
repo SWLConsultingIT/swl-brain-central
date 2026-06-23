@@ -244,11 +244,11 @@ const COL = {
 
 // set completo de columnas (todo lo que está en Notion)
 const FULL: Col[] = [
-  COL.title, COL.flow, COL.universe, COL.status, COL.currentState,
+  COL.title, COL.flow, COL.universe, COL.status,
   COL.score, COL.match, COL.priority,
   COL.ticket, COL.totalSpent, COL.proposals, COL.invites, COL.unanswered, COL.interviewing,
   COL.viewedByClient, COL.reviews, COL.payment,
-  COL.prefLoc, COL.country, COL.keyword, COL.scrapMethod,
+  COL.prefLoc, COL.country, COL.keyword,
   COL.posted, COL.added, COL.lastUpdate, COL.declineReason, COL.link,
 ]
 
