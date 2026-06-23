@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
+import { CRITERIA, matchPct } from '@/lib/jobs/score'
 import { extractQuestions } from '@/lib/jobs/extract-questions'
 
 type Props = {
@@ -317,6 +318,31 @@ export default function JobDetailModal({ job, onClose }: Props) {
               </p>
             </section>
           )}
+
+          {/* Score breakdown — desglose determinístico (por qué tiene ese score) */}
+          {(() => {
+            const pct = matchPct(job)
+            const met = CRITERIA.filter((c) => c.test(job)).length
+            return (
+              <section>
+                <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg-muted mb-3 flex items-center gap-2">
+                  <span>Score breakdown</span>
+                  <span className="text-fg-subtle normal-case tracking-normal font-mono">· {met}/{CRITERIA.length} → {pct}%</span>
+                </h3>
+                <ul className="space-y-1.5">
+                  {CRITERIA.map((c, i) => {
+                    const ok = c.test(job)
+                    return (
+                      <li key={i} className="flex items-center gap-2 text-sm">
+                        <span className={`font-mono ${ok ? 'text-accent-fg' : 'text-fg-subtle'}`}>{ok ? '✓' : '✗'}</span>
+                        <span className={ok ? 'text-fg' : 'text-fg-subtle'}>{c.label}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            )
+          })()}
 
           {/* Client & activity — todos los datos scrapeados del cliente y del job */}
           {(() => {
