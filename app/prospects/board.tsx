@@ -163,14 +163,14 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
 
   return (
     <>
-      {/* Hero KPI strip */}
+      {/* Hero KPI strip — barra de stats conectada (estilo Linear) */}
       <div className="px-8 pt-6 pb-2 max-w-[2400px] mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="bg-surface border border-border rounded-xl flex flex-wrap divide-x divide-border overflow-hidden">
           <Kpi label="Total" value={kpis.total} />
-          <Kpi label="Fresh 24h" value={kpis.fresh} />
-          <Kpi label="Qualified" value={kpis.qualified} />
-          <Kpi label="Drafts" value={kpis.drafts} />
-          <Kpi label="Sent" value={kpis.sent} />
+          <Kpi label="Fresh 24h" value={kpis.fresh} accent="bg-warning" />
+          <Kpi label="Qualified" value={kpis.qualified} accent="bg-accent" />
+          <Kpi label="Drafts" value={kpis.drafts} accent="bg-violet" />
+          <Kpi label="Sent" value={kpis.sent} accent="bg-fg" />
         </div>
       </div>
 
@@ -335,11 +335,14 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   )
 }
 
-function Kpi({ label, value }: { label: string; value: number }) {
+function Kpi({ label, value, accent }: { label: string; value: number; accent?: string }) {
   return (
-    <div className="bg-surface border border-border/60 rounded-lg px-4 py-3">
-      <div className="text-[10px] uppercase tracking-[0.1em] text-fg-muted font-semibold">{label}</div>
-      <div className="text-2xl font-bold tabular-nums tracking-tight mt-1 text-fg">
+    <div className="flex-1 min-w-[120px] px-5 py-3.5">
+      <div className="flex items-center gap-1.5 text-[11px] text-fg-muted font-medium">
+        {accent && <span className={`size-1.5 rounded-full ${accent}`} aria-hidden />}
+        {label}
+      </div>
+      <div className="text-[24px] font-semibold tabular-nums tracking-tight text-fg leading-tight mt-1">
         {value.toLocaleString()}
       </div>
     </div>
