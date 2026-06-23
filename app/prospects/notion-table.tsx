@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { JobRow } from '@/lib/jobs/list'
+import { matchPct, matchDetail } from '@/lib/jobs/score'
 import JobDetailModal from './job-detail-modal'
 import { STATUS_META, countryFlag, postedAgo } from './job-meta'
 
@@ -162,31 +163,7 @@ function PriorityCell({ value }: { value: number | null }) {
   return <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${cls}`}>{label}</span>
 }
 
-// ── Match score DETERMINÍSTICO: cuántas condiciones reales cumple el job ──────
-// (no es la opinión de la IA; es objetivo, sobre los datos guardados)
-// El score NO premia el mínimo (el scraper ya lo garantiza: ≥$40, ≥1 hire, verificado,
-// ≤40 propuestas, etc.). Premia cuánto SUPERA ese mínimo → así rankea calidad real.
-const CRITERIA: { label: string; test: (j: JobRow) => boolean }[] = [
-  { label: 'Tarifa ≥ $60/h (sobre el piso de $40)', test: (j) => (j.hourly_max ?? j.ticket ?? 0) >= 60 },
-  { label: 'Tarifa premium ≥ $100/h', test: (j) => (j.hourly_max ?? j.ticket ?? 0) >= 100 },
-  { label: 'Muy poca competencia (≤ 5 propuestas)', test: (j) => j.proposals_count != null && j.proposals_count <= 5 },
-  { label: 'Poca competencia (≤ 10 propuestas)', test: (j) => j.proposals_count != null && j.proposals_count <= 10 },
-  { label: 'Cliente invierte fuerte (gastó ≥ $5k)', test: (j) => (j.client_total_spent ?? 0) >= 5000 },
-  { label: 'Cliente muy activo (≥ 5 contrataciones)', test: (j) => (j.client_total_hires ?? 0) >= 5 },
-  { label: 'Rating excelente (≥ 4.7★)', test: (j) => (j.client_rating ?? 0) >= 4.7 },
-  { label: 'Entrás muy temprano (≤ 2 invitaciones)', test: (j) => (j.invites_sent ?? 0) <= 2 },
-]
-
-function matchPct(j: JobRow): number {
-  if (j.match_score != null) return j.match_score // valor exacto guardado en Supabase
-  const met = CRITERIA.filter((c) => c.test(j)).length // fallback local (misma lógica)
-  return Math.round((met / CRITERIA.length) * 100)
-}
-
-function matchDetail(j: JobRow): string {
-  const met = CRITERIA.filter((c) => c.test(j)).length
-  return `${met}/${CRITERIA.length} criterios\n` + CRITERIA.map((c) => `${c.test(j) ? '✓' : '✗'} ${c.label}`).join('\n')
-}
+// Match score determinístico → ahora vive en lib/jobs/score.ts (compartido con el kanban)
 
 // reusable column builders
 const COL = {
@@ -267,19 +244,22 @@ export default function NotionTable({
   jobs,
   columns,
   buNames,
+  sortBy = 'score',
 }: {
   jobs: JobRow[]
   columns: Col[]
   buNames: Record<string, string>
+  sortBy?: 'score' | 'recent'
 }) {
   const [activeJob, setActiveJob] = useState<JobRow | null>(null)
   const ctx: Ctx = { buNames }
 
-  // Prioritarios arriba: ordenar por score (match) desc, y entre iguales los más nuevos
+  // Orden elegible: por score determinístico (mejores arriba) o por fecha (más nuevos arriba).
+  const byDate = (a: JobRow, b: JobRow) => (b.post_date ?? '').localeCompare(a.post_date ?? '')
   const sorted = [...jobs].sort((a, b) => {
-    const d = matchPct(b) - matchPct(a)
-    if (d !== 0) return d
-    return (b.post_date ?? '').localeCompare(a.post_date ?? '')
+    if (sortBy === 'recent') return byDate(a, b)
+    const d = matchPct(b) - matchPct(a) // por score; entre iguales, los más nuevos
+    return d !== 0 ? d : byDate(a, b)
   })
 
   return (

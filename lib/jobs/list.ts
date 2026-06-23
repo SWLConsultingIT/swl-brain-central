@@ -61,7 +61,7 @@ const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency
   'client_total_hires, client_total_spent, client_verification, client_total_reviews, client_rating, client_company_name, ' +
   'total_applicants, invites_sent, interviewing, unanswered_invites, total_hired, viewed_by_client, published_date'
 
-const ACTIVE_STATUSES = ['qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
+const ACTIVE_STATUSES = ['prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
 const DISCARDED_WINDOW_DAYS = 3
 const PROSPECTS_LIMIT = 400
 

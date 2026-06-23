@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { JobRow } from '@/lib/jobs/list'
 import JobCard from './job-card'
 import NotionTable, { NOTION_VIEW_COLUMNS } from './notion-table'
+import { matchPct } from '@/lib/jobs/score'
 import { isFresh } from './job-meta'
 
 type Column = {
@@ -47,11 +48,13 @@ type NotionView = {
   id: string
   label: string
   status: string | null // null = kanban "Por estado"
+  statuses?: string[]    // si está, la vista filtra por varios estados (en vez de status único)
   columnsKey?: keyof typeof NOTION_VIEW_COLUMNS
 }
 
 const NOTION_VIEWS: NotionView[] = [
-  { id: 'prospectos',     label: 'Prospectos',     status: 'new',              columnsKey: 'prospectos' },
+  // Prospectos = bandeja de jobs viables frescos (recién pasaron el filtro), antes de redactar carta.
+  { id: 'prospectos',     label: 'Prospectos',     status: 'prequalified',     statuses: ['prequalified', 'qualified'], columnsKey: 'prospectos' },
   { id: 'prequalified',   label: 'Prequalified',   status: 'prequalified',     columnsKey: 'prequalified' },
   { id: 'qualified',      label: 'Qualified',      status: 'qualified',        columnsKey: 'qualified' },
   { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted', columnsKey: 'check_proposal' },
@@ -66,6 +69,15 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [buId, setBuId] = useState<string>('all')
   const [country, setCountry] = useState<string>('all')
   const [minScore, setMinScore] = useState<number>(0)
+  const [sortBy, setSortBy] = useState<'score' | 'recent'>('score')
+
+  // Orden compartido: por score determinístico (mejores arriba) o por fecha (más nuevos).
+  const sortJobs = (arr: JobRow[]) =>
+    [...arr].sort((a, b) =>
+      sortBy === 'recent'
+        ? (b.post_date ?? '').localeCompare(a.post_date ?? '')
+        : (matchPct(b) - matchPct(a)) || (b.post_date ?? '').localeCompare(a.post_date ?? ''),
+    )
 
   const buNames = useMemo(() => {
     const m: Record<string, string> = {}
@@ -101,7 +113,8 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const viewCounts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const v of NOTION_VIEWS) {
-      m[v.id] = v.status === null ? jobs.length : jobs.filter(j => j.status === v.status).length
+      const statuses = v.statuses ?? (v.status ? [v.status] : [])
+      m[v.id] = v.status === null ? jobs.length : jobs.filter(j => statuses.includes(j.status)).length
     }
     return m
   }, [jobs])
@@ -116,7 +129,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       }
       if (buId !== 'all' && j.business_unit_id !== buId) return false
       if (country !== 'all' && j.country !== country) return false
-      if (minScore > 0 && (j.classifier_score ?? 0) < minScore) return false
+      if (minScore > 0 && matchPct(j) < minScore) return false
       return true
     })
   }, [jobs, query, buId, country, minScore])
@@ -124,7 +137,8 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   // Filas para la vista de tabla activa (filtra por el status de la vista).
   const tableRows = useMemo(() => {
     if (isBoardView || activeView.status === null) return []
-    return filtered.filter(j => j.status === activeView.status)
+    const statuses = activeView.statuses ?? [activeView.status]
+    return filtered.filter(j => statuses.includes(j.status))
   }, [filtered, isBoardView, activeView])
 
   const byStatus = useMemo(() => {
@@ -250,6 +264,16 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
             ]}
           />
 
+          <Select
+            label="Ordenar"
+            value={sortBy}
+            onChange={v => setSortBy(v as 'score' | 'recent')}
+            options={[
+              { value: 'score', label: 'Mejor score' },
+              { value: 'recent', label: 'Más nuevos' },
+            ]}
+          />
+
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
             <span className="font-mono tabular-nums">
               <span className="font-semibold text-fg">{isBoardView ? filtered.length : tableRows.length}</span>
@@ -268,7 +292,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
         <div className="kanban-scroll overflow-x-auto px-8 py-8">
           <div className="flex gap-6 min-w-max">
             {COLUMNS.map(col => {
-              const items = byStatus.get(col.status) ?? []
+              const items = sortJobs(byStatus.get(col.status) ?? [])
               const stats = computeStats(items)
               return (
                 <div key={col.status} className="w-[320px] flex-shrink-0">
@@ -326,6 +350,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
             jobs={tableRows}
             columns={activeView.columnsKey ? NOTION_VIEW_COLUMNS[activeView.columnsKey] : []}
             buNames={buNames}
+            sortBy={sortBy}
           />
         </div>
       )}
