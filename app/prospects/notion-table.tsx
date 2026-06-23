@@ -311,7 +311,7 @@ export default function NotionTable({
                       <td
                         key={c.key}
                         className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : ''} ${
-                          i === 0 ? 'sticky left-0 z-10 bg-surface pl-4 min-w-[200px] md:min-w-[300px]' : ''
+                          i === 0 ? 'sticky left-0 z-10 bg-surface pl-4 min-w-[200px] md:min-w-[300px]' : 'whitespace-nowrap'
                         } ${c.className ?? ''}`}
                       >
                         {c.render(job, ctx)}
