@@ -184,18 +184,16 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
               <button
                 key={v.id}
                 onClick={() => setViewId(v.id)}
-                className={`relative inline-flex items-center gap-2 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
-                  active ? 'text-fg' : 'text-fg-muted hover:text-fg'
+                className={`inline-flex items-center gap-2 my-2 px-3 py-1.5 text-[13px] font-medium whitespace-nowrap rounded-md transition-colors ${
+                  active ? 'bg-surface text-fg border border-border shadow-sm' : 'text-fg-muted hover:text-fg hover:bg-surface/60'
                 }`}
               >
-                <span className={`size-1.5 rounded-full ${active ? 'bg-fg' : 'bg-fg-subtle'}`} aria-hidden />
                 <span>{v.label}</span>
                 <span className={`font-mono text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
-                  active ? 'bg-fg text-bg' : 'bg-bg text-fg-subtle'
+                  active ? 'bg-fg text-bg' : 'bg-border text-fg-subtle'
                 }`}>
                   {count}
                 </span>
-                {active && <span className="absolute bottom-0 left-2 right-2 h-px bg-fg" />}
               </button>
             )
           })}
