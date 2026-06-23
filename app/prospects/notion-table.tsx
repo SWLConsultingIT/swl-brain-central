@@ -174,9 +174,11 @@ const COL = {
   proposals: { key: 'proposals', label: 'Proposals', align: 'right' as const, className: 'hidden sm:table-cell', render: (j: JobRow) => <NumCell value={j.proposals_count} tone={j.proposals_count != null ? proposalsTone(j.proposals_count) : undefined} /> },
   invites: { key: 'invites', label: 'Invites Sent', align: 'right' as const, className: 'hidden lg:table-cell', render: (j: JobRow) => <NumCell value={j.invites_sent} /> },
   prefLoc: { key: 'prefLoc', label: 'Preferred Location', className: 'hidden xl:table-cell', render: (j: JobRow) => {
-    const loc = j.preferred_location
-    if (!loc || loc.length === 0) return <span className="text-fg-subtle text-[11px]">—</span>
-    return <span className="text-[11px] text-fg-muted truncate block max-w-[180px]" title={loc.join(', ')}>{loc.join(', ')}</span>
+    let loc: unknown = j.preferred_location
+    if (typeof loc === 'string') { try { loc = JSON.parse(loc) } catch { loc = [] } }
+    if (!Array.isArray(loc) || loc.length === 0) return <span className="text-fg-subtle text-[11px]">—</span>
+    const text = loc.join(', ')
+    return <span className="text-[11px] text-fg-muted truncate block max-w-[180px]" title={text}>{text}</span>
   } },
   country: { key: 'country', label: 'Country', className: 'hidden lg:table-cell', render: (j: JobRow) => <CountryCell job={j} /> },
   keyword: { key: 'keyword', label: 'Keyword', className: 'hidden xl:table-cell', render: (j: JobRow) => j.matched_keyword
