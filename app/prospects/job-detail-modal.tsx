@@ -318,6 +318,74 @@ export default function JobDetailModal({ job, onClose }: Props) {
             </section>
           )}
 
+          {/* Client & activity — todos los datos scrapeados del cliente y del job */}
+          {(() => {
+            const fmtMoney = (n: number | null) =>
+              n == null ? null : n >= 1000 ? `$${Math.round(n / 1000)}k` : `$${Math.round(n)}`
+            const rate =
+              job.hourly_min != null || job.hourly_max != null
+                ? `$${job.hourly_min ?? '?'}–$${job.hourly_max ?? '?'}/h`
+                : job.hourly_average != null
+                ? `$${job.hourly_average}/h`
+                : null
+            const payment =
+              job.client_verification && /verif/i.test(job.client_verification)
+                ? 'Verified'
+                : job.client_verification ?? null
+            const stats: [string, string | number | null][] = [
+              ['Total spent', fmtMoney(job.client_total_spent)],
+              ['Client hires', job.client_total_hires],
+              ['Rating', job.client_rating != null ? `${job.client_rating.toFixed(1)}★` : null],
+              ['Payment', payment],
+              ['Rate', rate],
+              ['Proposals', job.proposals_count],
+              ['Invites sent', job.invites_sent],
+              ['Interviewing', job.interviewing],
+              ['Unanswered', job.unanswered_invites],
+              ['Keyword', job.matched_keyword],
+            ]
+            let loc: unknown = job.preferred_location
+            if (typeof loc === 'string') { try { loc = JSON.parse(loc) } catch { loc = [] } }
+            const prefLoc = Array.isArray(loc) && loc.length > 0 ? loc.join(', ') : null
+            let sk: unknown = job.skills
+            if (typeof sk === 'string') { try { sk = JSON.parse(sk) } catch { sk = [] } }
+            const skills = Array.isArray(sk)
+              ? sk.map((s) => (typeof s === 'string' ? s : (s?.name ?? s?.prettyName ?? ''))).filter(Boolean)
+              : []
+            return (
+              <section>
+                <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg-muted mb-3">
+                  Client &amp; activity
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
+                  {stats.map(([label, value]) => (
+                    <div key={label}>
+                      <div className="text-[10px] uppercase tracking-wide text-fg-subtle font-mono">{label}</div>
+                      <div className="text-sm text-fg font-medium tabular-nums">
+                        {value != null && value !== '' ? value : '—'}
+                      </div>
+                    </div>
+                  ))}
+                  {prefLoc && (
+                    <div className="col-span-2 sm:col-span-3">
+                      <div className="text-[10px] uppercase tracking-wide text-fg-subtle font-mono">Preferred location</div>
+                      <div className="text-sm text-fg font-medium">{prefLoc}</div>
+                    </div>
+                  )}
+                </div>
+                {skills.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {skills.slice(0, 14).map((s, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-md bg-bg border border-border text-[11px] text-fg-muted">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )
+          })()}
+
           {/* Screening questions — con respuestas auto-generadas editables si están */}
           {structuredQuestions && structuredQuestions.length > 0 && (
             <section className="border border-border-strong rounded-lg p-4 bg-surface">
