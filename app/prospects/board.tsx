@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { JobRow } from '@/lib/jobs/list'
 import JobCard from './job-card'
-import JobTable from './job-table'
+import NotionTable, { NOTION_VIEW_COLUMNS } from './notion-table'
 import { isFresh } from './job-meta'
 
 type Column = {
@@ -41,23 +41,27 @@ function computeStats(items: JobRow[]): ColStats {
   }
 }
 
-type SavedView = {
+// Vistas estilo Notion. Cada tab filtra por status y define sus columnas.
+// 'estado' es especial: muestra el kanban (Board) completo.
+type NotionView = {
   id: string
   label: string
-  filter: (j: JobRow) => boolean
+  status: string | null // null = kanban "Por estado"
+  columnsKey?: keyof typeof NOTION_VIEW_COLUMNS
 }
 
-const SAVED_VIEWS: SavedView[] = [
-  { id: 'all',       label: 'All',          filter: () => true },
-  { id: 'drafts',    label: 'Drafts',       filter: j => !!j.cover_letter_draft && (j.status === 'qualified' || j.status === 'proposal_drafted') },
-  { id: 'review',    label: 'Review',       filter: j => j.status === 'discarded_review' },
+const NOTION_VIEWS: NotionView[] = [
+  { id: 'prospectos',     label: 'Prospectos',     status: 'new',              columnsKey: 'prospectos' },
+  { id: 'prequalified',   label: 'Prequalified',   status: 'prequalified',     columnsKey: 'prequalified' },
+  { id: 'qualified',      label: 'Qualified',      status: 'qualified',        columnsKey: 'qualified' },
+  { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted', columnsKey: 'check_proposal' },
+  { id: 'ready_to_send',  label: 'Ready to Send',  status: 'ready_to_send',    columnsKey: 'ready_to_send' },
+  { id: 'sent',           label: 'Sent',           status: 'sent',             columnsKey: 'sent' },
+  { id: 'estado',         label: 'Por estado',     status: null },
 ]
 
-type ViewMode = 'board' | 'table'
-
 export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; businessUnits: BU[] }) {
-  const [view, setView] = useState<ViewMode>('board')
-  const [savedView, setSavedView] = useState<string>('all')
+  const [viewId, setViewId] = useState<string>('estado')
   const [query, setQuery] = useState('')
   const [buId, setBuId] = useState<string>('all')
   const [country, setCountry] = useState<string>('all')
@@ -87,21 +91,25 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
     return { total: jobs.length, qualified, drafts, sent, fresh }
   }, [jobs])
 
-  const savedFilter = useMemo(
-    () => SAVED_VIEWS.find(v => v.id === savedView)?.filter ?? (() => true),
-    [savedView],
+  const activeView = useMemo(
+    () => NOTION_VIEWS.find(v => v.id === viewId) ?? NOTION_VIEWS[NOTION_VIEWS.length - 1],
+    [viewId],
   )
+  const isBoardView = activeView.status === null
 
-  const savedViewCounts = useMemo(() => {
+  // Conteo por tab: status crudo, sin los filtros de búsqueda/BU/etc.
+  const viewCounts = useMemo(() => {
     const m: Record<string, number> = {}
-    for (const v of SAVED_VIEWS) m[v.id] = jobs.filter(v.filter).length
+    for (const v of NOTION_VIEWS) {
+      m[v.id] = v.status === null ? jobs.length : jobs.filter(j => j.status === v.status).length
+    }
     return m
   }, [jobs])
 
+  // Filtros compartidos (búsqueda, BU, country, minScore) — aplican a todas las vistas.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return jobs.filter(j => {
-      if (!savedFilter(j)) return false
       if (q) {
         const haystack = `${j.title} ${j.description ?? ''}`.toLowerCase()
         if (!haystack.includes(q)) return false
@@ -111,7 +119,13 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       if (minScore > 0 && (j.classifier_score ?? 0) < minScore) return false
       return true
     })
-  }, [jobs, query, buId, country, minScore, savedFilter])
+  }, [jobs, query, buId, country, minScore])
+
+  // Filas para la vista de tabla activa (filtra por el status de la vista).
+  const tableRows = useMemo(() => {
+    if (isBoardView || activeView.status === null) return []
+    return filtered.filter(j => j.status === activeView.status)
+  }, [filtered, isBoardView, activeView])
 
   const byStatus = useMemo(() => {
     const now = Date.now()
@@ -145,7 +159,6 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
     setBuId('all')
     setCountry('all')
     setMinScore(0)
-    setSavedView('all')
   }
 
   return (
@@ -161,16 +174,16 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
         </div>
       </div>
 
-      {/* Saved view tabs */}
+      {/* Notion-style view tabs */}
       <div className="border-b border-border bg-bg/40">
         <div className="px-8 max-w-[2400px] mx-auto flex items-center gap-1 overflow-x-auto kanban-scroll">
-          {SAVED_VIEWS.map(v => {
-            const active = savedView === v.id
-            const count = savedViewCounts[v.id]
+          {NOTION_VIEWS.map(v => {
+            const active = viewId === v.id
+            const count = viewCounts[v.id]
             return (
               <button
                 key={v.id}
-                onClick={() => setSavedView(v.id)}
+                onClick={() => setViewId(v.id)}
                 className={`relative inline-flex items-center gap-2 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
                   active ? 'text-fg' : 'text-fg-muted hover:text-fg'
                 }`}
@@ -241,7 +254,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
 
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
             <span className="font-mono tabular-nums">
-              <span className="font-semibold text-fg">{filtered.length}</span>
+              <span className="font-semibold text-fg">{isBoardView ? filtered.length : tableRows.length}</span>
               <span className="text-fg-subtle"> / {jobs.length}</span>
             </span>
             {activeFilters > 0 && (
@@ -249,42 +262,11 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
                 Clear ({activeFilters})
               </button>
             )}
-
-            {/* View switcher */}
-            <div className="inline-flex items-center bg-bg border border-border rounded-md p-0.5">
-              <button
-                onClick={() => setView('board')}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[12px] font-medium transition-colors ${
-                  view === 'board' ? 'bg-surface text-fg shadow-card' : 'text-fg-muted hover:text-fg'
-                }`}
-                title="Board view"
-              >
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <rect x="1.5" y="2" width="3.5" height="12" rx="1" stroke="currentColor" strokeWidth="1.4" />
-                  <rect x="6.25" y="2" width="3.5" height="9" rx="1" stroke="currentColor" strokeWidth="1.4" />
-                  <rect x="11" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.4" />
-                </svg>
-                Board
-              </button>
-              <button
-                onClick={() => setView('table')}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[12px] font-medium transition-colors ${
-                  view === 'table' ? 'bg-surface text-fg shadow-card' : 'text-fg-muted hover:text-fg'
-                }`}
-                title="Table view"
-              >
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <rect x="1.5" y="2.5" width="13" height="11" rx="1" stroke="currentColor" strokeWidth="1.4" />
-                  <path d="M1.5 6.5h13M1.5 10h13M5.5 2.5v11" stroke="currentColor" strokeWidth="1.4" />
-                </svg>
-                Table
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      {view === 'board' ? (
+      {isBoardView ? (
         <div className="kanban-scroll overflow-x-auto px-8 py-8">
           <div className="flex gap-6 min-w-max">
             {COLUMNS.map(col => {
@@ -342,7 +324,11 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
         </div>
       ) : (
         <div className="px-8 py-6 max-w-[2400px] mx-auto">
-          <JobTable jobs={filtered} buNames={buNames} />
+          <NotionTable
+            jobs={tableRows}
+            columns={activeView.columnsKey ? NOTION_VIEW_COLUMNS[activeView.columnsKey] : []}
+            buNames={buNames}
+          />
         </div>
       )}
     </>

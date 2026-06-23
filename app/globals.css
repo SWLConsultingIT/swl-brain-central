@@ -5,20 +5,20 @@
 @tailwind utilities;
 
 :root {
-  /* B&W chrome — Linear/Vercel inspired */
-  --color-bg:             #FCFCFC;
+  /* Light & limpio — estilo Notion */
+  --color-bg:             #FAFAF8;        /* near-white cálido (no gris) */
   --color-surface:        #FFFFFF;
-  --color-surface-hover:  #FAFAFA;
-  --color-fg:             #0A0A0A;
-  --color-fg-muted:       #525252;
-  --color-fg-subtle:      #A3A3A3;
-  --color-border:         #EAEAEA;
-  --color-border-strong:  #D4D4D4;
-  --color-border-focus:   #0A0A0A;
+  --color-surface-hover:  #F6F6F3;
+  --color-fg:             #1F1E1B;        /* casi negro cálido (tinta Notion) */
+  --color-fg-muted:       #6B6B65;
+  --color-fg-subtle:      #9B9B92;
+  --color-border:         #ECECE8;        /* divisores muy sutiles */
+  --color-border-strong:  #DDDDD8;
+  --color-border-focus:   #1F1E1B;
 
-  /* Semantic — only inside chips/badges, never in chrome */
+  /* Semantic — chips/badges claros */
   --color-accent:         #15803D;        /* green-700 */
-  --color-accent-bg:      #F0FDF4;        /* green-50 */
+  --color-accent-bg:      #ECFDF3;        /* green-50 */
   --color-accent-fg:      #14532D;        /* green-900 */
 
   --color-warning:        #A16207;        /* yellow-700 */
@@ -40,7 +40,7 @@
   --color-orange-bg:      #FFF7ED;        /* orange-50 */
 
   --color-slate:          #404040;        /* neutral-700 */
-  --color-slate-bg:       #F5F5F5;        /* neutral-100 */
+  --color-slate-bg:       #F1F2F4;        /* neutral-100 */
 
   color-scheme: light;
 }
@@ -62,8 +62,8 @@ html, body {
 }
 
 ::selection {
-  background: #0A0A0A;
-  color: #FCFCFC;
+  background: #16181D;
+  color: #F2F3F5;
 }
 
 /* Refined scrollbar */
