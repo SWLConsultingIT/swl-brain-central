@@ -80,7 +80,7 @@ function ticketLabel(job: JobRow): React.ReactNode {
     const hi = job.hourly_max != null ? `$${job.hourly_max}` : '—'
     const ok = (job.hourly_max ?? job.hourly_min ?? 0) >= 40
     return (
-      <span className={`font-mono text-[11px] font-semibold tabular-nums ${ok ? 'text-fg' : 'text-fg-subtle'}`}>
+      <span className={`font-mono text-[11px] font-semibold tabular-nums whitespace-nowrap ${ok ? 'text-fg' : 'text-fg-subtle'}`}>
         {lo} - {hi}
       </span>
     )
@@ -89,7 +89,7 @@ function ticketLabel(job: JobRow): React.ReactNode {
     const cur = job.ticket_currency ?? 'USD'
     const ok = cur === 'USD' && job.ticket >= 40
     return (
-      <span className={`font-mono text-[11px] font-semibold tabular-nums ${ok ? 'text-fg' : 'text-fg-subtle'}`}>
+      <span className={`font-mono text-[11px] font-semibold tabular-nums whitespace-nowrap ${ok ? 'text-fg' : 'text-fg-subtle'}`}>
         {cur === 'USD' ? '$' : `${cur} `}{job.ticket}{cur === 'USD' && '/h'}
       </span>
     )
