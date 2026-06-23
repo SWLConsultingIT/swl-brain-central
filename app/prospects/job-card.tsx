@@ -69,13 +69,8 @@ export default function JobCard({ job }: { job: JobRow }) {
   const [open, setOpen] = useState(false)
 
   const hasCoverLetter = !!job.cover_letter_draft && job.cover_letter_draft.length > 0
-  const isClickable =
-    hasCoverLetter ||
-    job.status === 'proposal_drafted' ||
-    job.status === 'ready_to_send' ||
-    job.status === 'sent' ||
-    job.status === 'responded' ||
-    !!job.classifier_reason
+  // Cualquier job se puede abrir para ver su detalle (incluidos los discarded).
+  const isClickable = true
 
   const flag = countryFlag(job.country)
   const posted = postedAgo(job.post_date)

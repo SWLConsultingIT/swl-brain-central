@@ -53,14 +53,13 @@ type NotionView = {
 }
 
 const NOTION_VIEWS: NotionView[] = [
-  // Prospectos = bandeja de jobs viables frescos (recién pasaron el filtro), antes de redactar carta.
-  { id: 'prospectos',     label: 'Prospectos',     status: 'prequalified',     statuses: ['prequalified', 'qualified'], columnsKey: 'prospectos' },
-  { id: 'prequalified',   label: 'Prequalified',   status: 'prequalified',     columnsKey: 'prequalified' },
-  { id: 'qualified',      label: 'Qualified',      status: 'qualified',        columnsKey: 'qualified' },
+  // Qualified = jobs the classifier approved (prequalified + qualified), ready to work on.
+  { id: 'qualified',      label: 'Qualified',      status: 'qualified',        statuses: ['prequalified', 'qualified'], columnsKey: 'qualified' },
   { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted', columnsKey: 'check_proposal' },
   { id: 'ready_to_send',  label: 'Ready to Send',  status: 'ready_to_send',    columnsKey: 'ready_to_send' },
   { id: 'sent',           label: 'Sent',           status: 'sent',             columnsKey: 'sent' },
-  { id: 'estado',         label: 'Por estado',     status: null },
+  { id: 'discarded',      label: 'Discarded',      status: 'discarded',        columnsKey: 'discarded' },
+  { id: 'estado',         label: 'By Status',      status: null },
 ]
 
 export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; businessUnits: BU[] }) {
@@ -265,12 +264,12 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
           />
 
           <Select
-            label="Ordenar"
+            label="Sort"
             value={sortBy}
             onChange={v => setSortBy(v as 'score' | 'recent')}
             options={[
-              { value: 'score', label: 'Mejor score' },
-              { value: 'recent', label: 'Más nuevos' },
+              { value: 'score', label: 'Best score' },
+              { value: 'recent', label: 'Newest' },
             ]}
           />
 

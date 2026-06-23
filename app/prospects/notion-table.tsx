@@ -189,7 +189,7 @@ const COL = {
     ? <span className="text-fg-subtle">—</span>
     : <span className={`text-[11px] font-semibold ${j.classifier_match ? 'text-accent-fg' : 'text-fg-subtle'}`}>{j.classifier_match ? '✓' : '✗'}</span> },
   link: { key: 'link', label: 'Link', className: 'hidden sm:table-cell', render: (j: JobRow) => j.link
-    ? <a href={j.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg transition-colors">open ↗</a>
+    ? <a href={j.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg transition-colors whitespace-nowrap">open&nbsp;↗</a>
     : <span className="text-fg-subtle text-[11px]">—</span> },
   cover: { key: 'cover', label: 'Cover Letter', render: (j: JobRow) => <CoverCell job={j} /> },
   posted: { key: 'posted', label: 'Posted', className: 'hidden lg:table-cell', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
@@ -238,6 +238,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   check_proposal: [COL.title, COL.flow, COL.ticket, COL.proposals, COL.score, COL.link, COL.cover, COL.status],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready, COL.status],
   sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent, COL.status],
+  discarded: FULL,
 }
 
 // ── table ───────────────────────────────────────────────────────────────────
