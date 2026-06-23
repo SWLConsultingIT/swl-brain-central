@@ -208,9 +208,13 @@ const COL = {
   viewedByClient: { key: 'viewedByClient', label: 'Viewed', align: 'right' as const, className: 'hidden xl:table-cell', render: (j: JobRow) => j.viewed_by_client == null
     ? <span className="text-fg-subtle">—</span>
     : <span className={`text-[11px] font-semibold ${j.viewed_by_client ? 'text-accent-fg' : 'text-fg-subtle'}`}>{j.viewed_by_client ? '✓' : '✗'}</span> },
-  reviews: { key: 'reviews', label: 'Reviews', align: 'right' as const, className: 'hidden xl:table-cell', render: (j: JobRow) => (j.client_total_reviews == null && j.client_rating == null)
-    ? <span className="text-fg-subtle text-[11px]">—</span>
-    : <span className="text-[11px] text-fg-muted font-mono tabular-nums">{j.client_total_reviews ?? 0}{j.client_rating != null ? ` · ${j.client_rating.toFixed(1)}★` : ''}</span> },
+  reviews: { key: 'reviews', label: 'Reviews', align: 'right' as const, className: 'hidden xl:table-cell', render: (j: JobRow) => {
+    const rating = j.client_rating != null ? `${j.client_rating.toFixed(1)}★` : null
+    const count = j.client_total_reviews && j.client_total_reviews > 0 ? `${j.client_total_reviews}` : null
+    if (!rating && !count) return <span className="text-fg-subtle text-[11px]">—</span>
+    const text = count && rating ? `${count} · ${rating}` : (rating ?? `${count} reviews`)
+    return <span className="text-[11px] text-fg-muted font-mono tabular-nums whitespace-nowrap">{text}</span>
+  } },
   payment: { key: 'payment', label: 'Payment', className: 'hidden xl:table-cell', render: (j: JobRow) => {
     const v = j.client_verification
     if (!v) return <span className="text-fg-subtle text-[11px]">—</span>
