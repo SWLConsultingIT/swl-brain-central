@@ -70,12 +70,15 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [minScore, setMinScore] = useState<number>(0)
   const [sortBy, setSortBy] = useState<'score' | 'recent'>('score')
 
-  // Orden compartido: por score determinístico (mejores arriba) o por fecha (más nuevos).
+  // Orden compartido. 'recent' = más nuevos arriba. 'score' = FRESCO + MEJOR:
+  // día más nuevo primero, y dentro de cada día el mejor score.
+  const ageDays = (j: JobRow) => j.post_date ? Math.floor((Date.now() - new Date(j.post_date).getTime()) / 86400000) : 9999
+  const byDate = (a: JobRow, b: JobRow) => (b.post_date ?? '').localeCompare(a.post_date ?? '')
   const sortJobs = (arr: JobRow[]) =>
     [...arr].sort((a, b) =>
       sortBy === 'recent'
-        ? (b.post_date ?? '').localeCompare(a.post_date ?? '')
-        : (matchPct(b) - matchPct(a)) || (b.post_date ?? '').localeCompare(a.post_date ?? ''),
+        ? byDate(a, b)
+        : (ageDays(a) - ageDays(b)) || (matchPct(b) - matchPct(a)) || byDate(a, b),
     )
 
   const buNames = useMemo(() => {
@@ -268,7 +271,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
             value={sortBy}
             onChange={v => setSortBy(v as 'score' | 'recent')}
             options={[
-              { value: 'score', label: 'Best score' },
+              { value: 'score', label: 'Fresh + best' },
               { value: 'recent', label: 'Newest' },
             ]}
           />

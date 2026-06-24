@@ -186,11 +186,12 @@ export default function JobCard({ job }: { job: JobRow }) {
         {(hasCoverLetter || job.notes) && (
           <div className="mt-2.5 flex items-center gap-1.5">
             {hasCoverLetter && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-fg text-bg text-[10px] font-semibold uppercase tracking-wide">
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <path d="M3 5l5 4 5-4M3 5v6h10V5M3 5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-fg text-bg text-[10px] font-semibold uppercase tracking-wide" title="Cover letter ready">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="1.75" y="3.25" width="12.5" height="9.5" rx="1.5" />
+                  <path d="M2.25 4l5.75 4.25L13.75 4" />
                 </svg>
-                Draft
+                Cover
               </span>
             )}
             {job.notes && (

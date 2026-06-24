@@ -104,7 +104,6 @@ function proposalsTone(n: number): string {
 }
 
 function TitleCell({ job }: { job: JobRow }) {
-  const hasCover = !!job.cover_letter_draft && job.cover_letter_draft.length > 0
   return (
     <div className="flex items-center gap-2 max-w-[440px]">
       <svg viewBox="0 0 16 16" className="size-[15px] shrink-0 text-fg-subtle" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
@@ -112,11 +111,6 @@ function TitleCell({ job }: { job: JobRow }) {
         <path d="M8.5 1.75V5.5h3.75" />
       </svg>
       <span className="font-normal text-fg text-[14px] truncate">{job.title}</span>
-      {hasCover && (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide bg-fg text-bg flex-shrink-0" title="Cover letter ready">
-          Draft
-        </span>
-      )}
     </div>
   )
 }
@@ -138,8 +132,11 @@ function CoverCell({ job }: { job: JobRow }) {
   const hasCover = !!job.cover_letter_draft && job.cover_letter_draft.length > 0
   if (!hasCover) return <span className="text-fg-subtle text-[11px]">—</span>
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide bg-fg text-bg">
-      Draft
+    <span className="inline-flex items-center justify-center size-6 rounded-md bg-fg text-bg" title="Cover letter ready">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="1.75" y="3.25" width="12.5" height="9.5" rx="1.5" />
+        <path d="M2.25 4l5.75 4.25L13.75 4" />
+      </svg>
     </span>
   )
 }
@@ -278,12 +275,13 @@ export default function NotionTable({
     }
   }
 
-  // Orden elegible: por score determinístico (mejores arriba) o por fecha (más nuevos arriba).
+  // Orden elegible. byDate = más nuevos arriba. ageDays = antigüedad del post en días.
   const byDate = (a: JobRow, b: JobRow) => (b.post_date ?? '').localeCompare(a.post_date ?? '')
+  const ageDays = (j: JobRow) => j.post_date ? Math.floor((Date.now() - new Date(j.post_date).getTime()) / 86400000) : 9999
   const sorted = [...jobs].sort((a, b) => {
     if (sortBy === 'recent') return byDate(a, b)
-    const d = matchPct(b) - matchPct(a) // por score; entre iguales, los más nuevos
-    return d !== 0 ? d : byDate(a, b)
+    // 'score' = FRESCO + MEJOR: día más nuevo primero, dentro del día el mejor score.
+    return (ageDays(a) - ageDays(b)) || (matchPct(b) - matchPct(a)) || byDate(a, b)
   })
 
   return (

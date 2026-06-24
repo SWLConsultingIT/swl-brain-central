@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
  * Usa el RPC brain_transition_job para mantener el audit consistente.
  */
 const TO_DISCARDED = new Set(['new', 'prequalified', 'qualified'])
-const TO_REVIEW = new Set(['proposal_drafted', 'ready_to_send'])
+const TO_REVIEW = new Set(['proposal_drafted', 'ready_to_send', 'sent'])
 
 export async function POST(
   _request: Request,
