@@ -132,7 +132,7 @@ function CoverCell({ job }: { job: JobRow }) {
   const hasCover = !!job.cover_letter_draft && job.cover_letter_draft.length > 0
   if (!hasCover) return <span className="text-fg-subtle text-[11px]">—</span>
   return (
-    <span className="inline-flex items-center justify-center size-6 rounded-md bg-fg text-bg" title="Cover letter ready">
+    <span className="inline-flex items-center justify-center size-6 rounded-md bg-surface border border-border text-fg" title="Cover letter ready">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M3.25 1.75h6L12.75 5v9.25h-9.5z" />
         <path d="M9 1.75V5h3.75" />
