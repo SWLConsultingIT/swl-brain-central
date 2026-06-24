@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
 import { matchPct, matchDetail } from '@/lib/jobs/score'
 import JobDetailModal from './job-detail-modal'
@@ -259,7 +260,23 @@ export default function NotionTable({
   sortBy?: 'score' | 'recent'
 }) {
   const [activeJob, setActiveJob] = useState<JobRow | null>(null)
+  const [discarding, setDiscarding] = useState<string | null>(null)
+  const router = useRouter()
   const ctx: Ctx = { buNames }
+
+  // Tachito: descartar un job desde la fila (sin abrir el modal).
+  async function discardJob(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('Discard this job? (move it out of your list)')) return
+    setDiscarding(id)
+    try {
+      const r = await fetch(`/api/jobs/${id}/discard`, { method: 'POST' })
+      if (!r.ok) { alert('Could not discard: ' + (await r.text())); return }
+      router.refresh()
+    } finally {
+      setDiscarding(null)
+    }
+  }
 
   // Orden elegible: por score determinístico (mejores arriba) o por fecha (más nuevos arriba).
   const byDate = (a: JobRow, b: JobRow) => (b.post_date ?? '').localeCompare(a.post_date ?? '')
@@ -317,8 +334,16 @@ export default function NotionTable({
                         {c.render(job, ctx)}
                       </td>
                     ))}
-                    <td className="px-3 py-3 text-right">
-                      <span className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity text-sm" aria-hidden>→</span>
+                    <td className="px-3 py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={(e) => discardJob(job.id, e)}
+                        disabled={discarding === job.id}
+                        title="Discard (move to Discarded)"
+                        aria-label="Discard job"
+                        className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive disabled:opacity-30 text-sm leading-none"
+                      >
+                        🗑️
+                      </button>
                     </td>
                   </tr>
                 ))
