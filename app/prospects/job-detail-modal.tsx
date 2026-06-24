@@ -24,6 +24,7 @@ export default function JobDetailModal({ job, onClose }: Props) {
   const [sending, setSending] = useState(false)
   const [marking, setMarking] = useState(false)
   const [responding, setResponding] = useState(false)
+  const [discarding, setDiscarding] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -262,6 +263,21 @@ export default function JobDetailModal({ job, onClose }: Props) {
       setError((e as Error).message)
     } finally {
       setMarking(false)
+    }
+  }
+
+  const discardJob = async () => {
+    if (!confirm('Discard this job? (move it out of your list)')) return
+    setDiscarding(true); setError(null)
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/discard`, { method: 'POST' })
+      if (!res.ok) throw new Error((await res.text()) || 'Error')
+      onClose()
+      router.refresh()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setDiscarding(false)
     }
   }
 
@@ -577,6 +593,15 @@ export default function JobDetailModal({ job, onClose }: Props) {
               className="px-3 py-1.5 text-[13px] font-medium text-fg-muted hover:text-fg transition rounded-lg"
             >
               Close
+            </button>
+
+            <button
+              onClick={discardJob}
+              disabled={discarding}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-fg-subtle hover:text-destructive border border-border rounded-lg transition disabled:opacity-40"
+              title="Discard this job"
+            >
+              {discarding ? 'Discarding…' : '🗑️ Discard'}
             </button>
 
             {canEdit && draft && (
