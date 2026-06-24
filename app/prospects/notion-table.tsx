@@ -238,9 +238,9 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   prospectos: FULL,
   prequalified: FULL,
   qualified: FULL,
-  check_proposal: [COL.title, COL.flow, COL.ticket, COL.proposals, COL.score, COL.link, COL.cover, COL.status],
-  ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready, COL.status],
-  sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent, COL.status],
+  check_proposal: [COL.title, COL.flow, COL.ticket, COL.proposals, COL.score, COL.link, COL.cover],
+  ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
+  sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent],
   discarded: FULL,
 }
 
