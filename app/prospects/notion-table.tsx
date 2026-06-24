@@ -338,7 +338,7 @@ export default function NotionTable({
                         disabled={discarding === job.id}
                         title="Discard (move to Discarded)"
                         aria-label="Discard job"
-                        className="text-fg-subtle/70 hover:text-destructive hover:scale-110 transition disabled:opacity-30 text-base leading-none cursor-pointer"
+                        className="text-fg-subtle/70 hover:text-destructive hover:scale-110 transition disabled:opacity-30 text-xs leading-none cursor-pointer"
                       >
                         🗑️
                       </button>
