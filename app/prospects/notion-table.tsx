@@ -133,9 +133,10 @@ function CoverCell({ job }: { job: JobRow }) {
   if (!hasCover) return <span className="text-fg-subtle text-[11px]">—</span>
   return (
     <span className="inline-flex items-center justify-center size-6 rounded-md bg-fg text-bg" title="Cover letter ready">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <rect x="1.75" y="3.25" width="12.5" height="9.5" rx="1.5" />
-        <path d="M2.25 4l5.75 4.25L13.75 4" />
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M3.25 1.75h6L12.75 5v9.25h-9.5z" />
+        <path d="M9 1.75V5h3.75" />
+        <path d="M5.25 8h5.5M5.25 10.5h5.5M5.25 5.5h2" />
       </svg>
     </span>
   )
@@ -338,7 +339,7 @@ export default function NotionTable({
                         disabled={discarding === job.id}
                         title="Discard (move to Discarded)"
                         aria-label="Discard job"
-                        className="text-fg-subtle/70 hover:text-destructive hover:scale-110 transition disabled:opacity-30 text-xs leading-none cursor-pointer"
+                        className="text-fg-subtle/70 hover:text-destructive hover:scale-110 transition disabled:opacity-30 text-[10px] leading-none cursor-pointer"
                       >
                         🗑️
                       </button>
