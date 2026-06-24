@@ -67,7 +67,7 @@ type Ctx = { buNames: Record<string, string> }
 type Col = {
   key: string
   label: string
-  align?: 'left' | 'right'
+  align?: 'left' | 'right' | 'center'
   className?: string // applied to <td> and <th> (e.g. responsive hide)
   render: (job: JobRow, ctx: Ctx) => React.ReactNode
 }
@@ -189,7 +189,7 @@ const COL = {
   link: { key: 'link', label: 'Link', className: 'hidden sm:table-cell', render: (j: JobRow) => j.link
     ? <a href={j.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg transition-colors whitespace-nowrap">open&nbsp;↗</a>
     : <span className="text-fg-subtle text-[11px]">—</span> },
-  cover: { key: 'cover', label: 'Cover Letter', render: (j: JobRow) => <CoverCell job={j} /> },
+  cover: { key: 'cover', label: 'Cover Letter', align: 'center' as const, render: (j: JobRow) => <CoverCell job={j} /> },
   posted: { key: 'posted', label: 'Posted', className: 'hidden lg:table-cell', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
   ready: { key: 'ready', label: 'Ready Date', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.cover_letter_generated_at)}</span> },
   sent: { key: 'sent', label: 'Sent', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.updated_at)}</span> },
@@ -294,7 +294,7 @@ export default function NotionTable({
                 {columns.map((c, i) => (
                   <th
                     key={c.key}
-                    className={`font-medium text-fg-muted text-[12px] px-3 py-2.5 bg-bg sticky top-0 z-20 border-b border-r border-border whitespace-nowrap ${c.align === 'right' ? 'text-right' : 'text-left'} ${
+                    className={`font-medium text-fg-muted text-[12px] px-3 py-2.5 bg-bg sticky top-0 z-20 border-b border-r border-border whitespace-nowrap ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : 'text-left'} ${
                       i === 0 ? 'sticky left-0 z-30 pl-4 min-w-[200px] md:min-w-[300px] border-r' : ''
                     } ${c.className ?? ''}`}
                   >
@@ -325,7 +325,7 @@ export default function NotionTable({
                     {columns.map((c, i) => (
                       <td
                         key={c.key}
-                        className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : ''} ${
+                        className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : ''} ${
                           i === 0 ? 'sticky left-0 z-10 bg-surface pl-4 min-w-[200px] md:min-w-[300px]' : 'whitespace-nowrap'
                         } ${c.className ?? ''}`}
                       >
