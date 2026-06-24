@@ -339,9 +339,14 @@ export default function NotionTable({
                         disabled={discarding === job.id}
                         title="Discard (move to Discarded)"
                         aria-label="Discard job"
-                        className="text-fg-subtle/70 hover:text-destructive hover:scale-110 transition disabled:opacity-30 text-[10px] leading-none cursor-pointer"
+                        className="inline-flex items-center justify-center text-fg-subtle/60 hover:text-destructive hover:scale-110 transition disabled:opacity-30 cursor-pointer"
                       >
-                        🗑️
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M2.5 4h11" />
+                          <path d="M5.5 4V2.75h5V4" />
+                          <path d="M3.75 4l.6 9.25a1 1 0 0 0 1 .95h5.3a1 1 0 0 0 1-.95L12.25 4" />
+                          <path d="M6.5 6.75v5M9.5 6.75v5" />
+                        </svg>
                       </button>
                     </td>
                   </tr>
