@@ -53,8 +53,8 @@ type NotionView = {
 }
 
 const NOTION_VIEWS: NotionView[] = [
-  // Qualified = jobs the classifier approved (prequalified + qualified), ready to work on.
-  { id: 'qualified',      label: 'Qualified',      status: 'qualified',        statuses: ['prequalified', 'qualified'], columnsKey: 'qualified' },
+  // 'Qualified' se quitó: es un estado de paso (casi siempre vacío). Los jobs viables
+  // con carta viven en Check Proposal. La salud de qualified se vigila con el watchdog.
   { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted', columnsKey: 'check_proposal' },
   { id: 'ready_to_send',  label: 'Ready to Send',  status: 'ready_to_send',    columnsKey: 'ready_to_send' },
   { id: 'sent',           label: 'Sent',           status: 'sent',             columnsKey: 'sent' },
