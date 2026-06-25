@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
-import { matchPct, matchDetail } from '@/lib/jobs/score'
+import { matchPct, matchDetail, discardReason } from '@/lib/jobs/score'
 import JobDetailModal from './job-detail-modal'
 import { STATUS_META, countryFlag, postedAgo } from './job-meta'
 
@@ -204,6 +204,13 @@ const COL = {
   declineReason: { key: 'declineReason', label: 'Decline Reason', className: 'hidden xl:table-cell', render: (j: JobRow) => j.classifier_reason
     ? <span className="text-[11px] text-fg-muted truncate block max-w-[200px]" title={j.classifier_reason}>{j.classifier_reason}</span>
     : <span className="text-fg-subtle text-[11px]">—</span> },
+  // Motivo corto del descarte (3-5 palabras clave), explicación completa en hover.
+  whyDiscarded: { key: 'whyDiscarded', label: 'Decline Reason', render: (j: JobRow) => {
+    const full = discardReason(j)
+    const words = full.split(/\s+/)
+    const short = words.slice(0, 6).join(' ') + (words.length > 6 ? '…' : '')
+    return <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-bg text-fg-muted text-[11px] max-w-[280px] truncate" title={full}>{short}</span>
+  } },
   viewedByClient: { key: 'viewedByClient', label: 'Viewed', align: 'right' as const, className: 'hidden xl:table-cell', render: (j: JobRow) => j.viewed_by_client == null
     ? <span className="text-fg-subtle">—</span>
     : <span className={`text-[11px] font-semibold ${j.viewed_by_client ? 'text-accent-fg' : 'text-fg-subtle'}`}>{j.viewed_by_client ? '✓' : '✗'}</span> },
@@ -241,7 +248,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   check_proposal: [COL.title, COL.flow, COL.ticket, COL.proposals, COL.score, COL.link, COL.cover],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
   sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent],
-  discarded: FULL,
+  discarded: [COL.title, COL.keyword, COL.whyDiscarded, COL.status, COL.score, COL.ticket, COL.country, COL.link],
 }
 
 // ── table ───────────────────────────────────────────────────────────────────

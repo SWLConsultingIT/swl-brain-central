@@ -111,16 +111,6 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   )
   const isBoardView = activeView.status === null
 
-  // Conteo por tab: status crudo, sin los filtros de búsqueda/BU/etc.
-  const viewCounts = useMemo(() => {
-    const m: Record<string, number> = {}
-    for (const v of NOTION_VIEWS) {
-      const statuses = v.statuses ?? (v.status ? [v.status] : [])
-      m[v.id] = v.status === null ? jobs.length : jobs.filter(j => statuses.includes(j.status)).length
-    }
-    return m
-  }, [jobs])
-
   // Filtros compartidos (búsqueda, BU, country, minScore) — aplican a todas las vistas.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -135,6 +125,17 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       return true
     })
   }, [jobs, query, buId, country, minScore])
+
+  // Conteo por tab: respeta los filtros activos (búsqueda/BU/país/score) para que
+  // el número de la solapa coincida con lo que muestra la tabla.
+  const viewCounts = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const v of NOTION_VIEWS) {
+      const statuses = v.statuses ?? (v.status ? [v.status] : [])
+      m[v.id] = v.status === null ? filtered.length : filtered.filter(j => statuses.includes(j.status)).length
+    }
+    return m
+  }, [filtered])
 
   // Filas para la vista de tabla activa (filtra por el status de la vista).
   const tableRows = useMemo(() => {

@@ -62,12 +62,10 @@ const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency
   'total_applicants, invites_sent, interviewing, unanswered_invites, total_hired, viewed_by_client, published_date'
 
 const ACTIVE_STATUSES = ['prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
-const DISCARDED_WINDOW_DAYS = 3
+const DISCARDED_LIMIT = 800
 const PROSPECTS_LIMIT = 400
 
 export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
-  const sinceWindow = new Date(Date.now() - DISCARDED_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
-
   const [active, recentDiscarded, prospects] = await Promise.all([
     supabase
       .from('jobs')
@@ -78,8 +76,8 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
       .from('jobs')
       .select(SELECT)
       .eq('status', 'discarded')
-      .gte('updated_at', sinceWindow)
-      .order('created_at', { ascending: false }),
+      .order('updated_at', { ascending: false })
+      .limit(DISCARDED_LIMIT),
     supabase
       .from('jobs')
       .select(SELECT)

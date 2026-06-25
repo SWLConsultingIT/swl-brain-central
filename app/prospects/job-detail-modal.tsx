@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
-import { CRITERIA, matchPct } from '@/lib/jobs/score'
+import { CRITERIA, matchPct, discardReason } from '@/lib/jobs/score'
 import { extractQuestions } from '@/lib/jobs/extract-questions'
 
 type Props = {
@@ -324,7 +324,16 @@ export default function JobDetailModal({ job, onClose }: Props) {
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {job.classifier_reason && (
+          {(job.status === 'discarded' || job.status === 'discarded_review') ? (
+            <section>
+              <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-destructive mb-2">
+                Por qué se descartó
+              </h3>
+              <p className="text-sm text-fg-muted leading-relaxed border-l-2 border-destructive pl-3">
+                {discardReason(job)}
+              </p>
+            </section>
+          ) : job.classifier_reason && (
             <section>
               <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg-muted mb-2">
                 Classifier reasoning
