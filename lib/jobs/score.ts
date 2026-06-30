@@ -32,10 +32,32 @@ const ALLOWED_COUNTRIES = new Set([
   'Italy', 'Panama', 'Peru', 'Paraguay', 'United Kingdom', 'Switzerland', 'Uruguay',
 ])
 
-// Motivo legible de por qué un job fue descartado. Deriva del estado del job:
+// Humaniza los motivos generados por máquina del pre-filtro (brain_ticket_filter).
+// Hay varias redacciones según la versión del prefiltro (SQL vs n8n); cubrimos todas.
+function humanizeFilterReason(reason: string): string {
+  // Frescura: "posted 98 hours ago, outside 48h window" | "outside 48h window"
+  const posted = reason.match(/posted\s+(\d+)\s+hours?\s+ago/i)
+  if (posted) return `Posteado hace ${posted[1]}h al scrapearlo (fuera de la ventana de 48h)`
+  if (/outside\s+\d+h\s+window/i.test(reason)) return 'Posteado fuera de la ventana de 48h'
+  // Tarifa: "not above $40/h" | "below $40/h threshold" | "ticket 30 USD below $40"
+  if (/not above/i.test(reason) || /below\s+\$?\d+.*threshold/i.test(reason) || /below\s+\$\d+\/h/i.test(reason))
+    return 'Tarifa por debajo del piso de $40/h'
+  // Precio fijo
+  if (/fixed-price/i.test(reason)) return 'Proyecto a precio fijo (sin tarifa horaria)'
+  // Competencia saturada
+  if (/proposals exceeds/i.test(reason) || /saturated/i.test(reason))
+    return 'Demasiada competencia (propuestas por encima del límite)'
+  // Decisión sin actor explícito: no inventamos un motivo, lo decimos tal cual.
+  if (/without explicit decision/i.test(reason)) return 'Descartado sin decisión explícita (cambio directo de estado)'
+  return reason // ya legible (p. ej. razón del classifier)
+}
+
+// Motivo legible de por qué un job fue descartado. Prioriza la razón REAL registrada
+// en job_decisions al descartar (j.discard_reason); si no existe, deriva del estado:
 // 1) razón del classifier (rechazo por fit), 2) ticket bajo, 3) país fuera de los 20,
 // 4) frescura (posteado >48h antes de scrapearlo), 5) genérico.
 export function discardReason(j: JobRow): string {
+  if (j.discard_reason) return humanizeFilterReason(j.discard_reason)
   if (j.classifier_reason) return j.classifier_reason
   const rate = j.hourly_max ?? (j.ticket_currency === 'USD' ? j.ticket : null)
   if (rate != null && rate < 40) return `Tarifa $${rate}/h, por debajo del piso de $40/h`

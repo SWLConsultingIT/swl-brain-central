@@ -194,7 +194,7 @@ const COL = {
   posted: { key: 'posted', label: 'Posted', className: 'hidden lg:table-cell', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
   ready: { key: 'ready', label: 'Ready Date', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.cover_letter_generated_at)}</span> },
   sent: { key: 'sent', label: 'Sent', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.updated_at)}</span> },
-  added: { key: 'added', label: 'Added', className: 'hidden xl:table-cell', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.created_at) ?? '—'}</span> },
+  added: { key: 'added', label: 'Added', className: 'hidden xl:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted whitespace-nowrap" title={`Agregado a la app: ${dateLabel(j.created_at)}`}>{dateLabel(j.created_at)}</span> },
   priority: { key: 'priority', label: 'Priority', render: (j: JobRow) => <PriorityCell value={matchPct(j)} /> },
   currentState: { key: 'currentState', label: 'Current State', className: 'hidden xl:table-cell', render: (j: JobRow) => <StatusPill status={j.status} /> },
   scrapMethod: { key: 'scrapMethod', label: 'Scrap Method', className: 'hidden xl:table-cell', render: (j: JobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
@@ -255,6 +255,9 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   ],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
   sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent],
+  // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
+  // Muestra el motivo + las señales que dispararon el movimiento.
+  review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],
   discarded: [COL.title, COL.keyword, COL.whyDiscarded, COL.status, COL.score, COL.ticket, COL.country, COL.link],
 }
 
@@ -273,6 +276,7 @@ export default function NotionTable({
 }) {
   const [activeJob, setActiveJob] = useState<JobRow | null>(null)
   const [discarding, setDiscarding] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState<string | null>(null)
   const router = useRouter()
   const ctx: Ctx = { buNames }
 
@@ -289,6 +293,23 @@ export default function NotionTable({
       setDiscarding(null)
     }
   }
+
+  // Mandar un job a "Para Chequear" (discarded_review) desde la fila.
+  async function sendToReview(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('¿Mandar este job a "Para Chequear"?')) return
+    setReviewing(id)
+    try {
+      const r = await fetch(`/api/jobs/${id}/to-review`, { method: 'POST' })
+      if (!r.ok) { alert('No se pudo mandar a chequear: ' + (await r.text())); return }
+      router.refresh()
+    } finally {
+      setReviewing(null)
+    }
+  }
+
+  // El botón "a chequear" solo aparece en jobs del pipeline (no en los ya descartados/enviados).
+  const canReview = (s: string) => s === 'proposal_drafted' || s === 'ready_to_send' || s === 'qualified'
 
   // Orden elegible. byDate = más nuevos arriba. ageDays = antigüedad del post en días.
   const byDate = (a: JobRow, b: JobRow) => (b.post_date ?? '').localeCompare(a.post_date ?? '')
@@ -348,20 +369,36 @@ export default function NotionTable({
                       </td>
                     ))}
                     <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <button
-                        onClick={(e) => discardJob(job.id, e)}
-                        disabled={discarding === job.id}
-                        title="Discard (move to Discarded)"
-                        aria-label="Discard job"
-                        className="inline-flex items-center justify-center text-fg-subtle/60 hover:text-destructive hover:scale-110 transition disabled:opacity-30 cursor-pointer"
-                      >
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M2.5 4h11" />
-                          <path d="M5.5 4V2.75h5V4" />
-                          <path d="M3.75 4l.6 9.25a1 1 0 0 0 1 .95h5.3a1 1 0 0 0 1-.95L12.25 4" />
-                          <path d="M6.5 6.75v5M9.5 6.75v5" />
-                        </svg>
-                      </button>
+                      <div className="inline-flex items-center gap-2.5">
+                        {canReview(job.status) && (
+                          <button
+                            onClick={(e) => sendToReview(job.id, e)}
+                            disabled={reviewing === job.id}
+                            title='Mandar a "Para Chequear"'
+                            aria-label="Mandar a Para Chequear"
+                            className="inline-flex items-center justify-center text-fg-subtle/60 hover:text-warning hover:scale-110 transition disabled:opacity-30 cursor-pointer"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <path d="M3 2.25v11.5" />
+                              <path d="M3 2.75h8.5l-1.5 2.25 1.5 2.25H3" />
+                            </svg>
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => discardJob(job.id, e)}
+                          disabled={discarding === job.id}
+                          title="Discard (move to Discarded)"
+                          aria-label="Discard job"
+                          className="inline-flex items-center justify-center text-fg-subtle/60 hover:text-destructive hover:scale-110 transition disabled:opacity-30 cursor-pointer"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M2.5 4h11" />
+                            <path d="M5.5 4V2.75h5V4" />
+                            <path d="M3.75 4l.6 9.25a1 1 0 0 0 1 .95h5.3a1 1 0 0 0 1-.95L12.25 4" />
+                            <path d="M6.5 6.75v5M9.5 6.75v5" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

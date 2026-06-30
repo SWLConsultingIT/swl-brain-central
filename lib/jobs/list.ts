@@ -52,6 +52,8 @@ export type JobRow = {
   total_hired: number | null
   viewed_by_client: boolean | null
   published_date: string | null
+  // Motivo real registrado al descartar (job_decisions.reason). Solo se llena para discarded.
+  discard_reason: string | null
 }
 
 const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
@@ -90,9 +92,57 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
   if (recentDiscarded.error) throw new Error(recentDiscarded.error.message)
   if (prospects.error) throw new Error(prospects.error.message)
 
+  const activeRows = (active.data ?? []) as unknown as JobRow[]
+  const discarded = (recentDiscarded.data ?? []) as unknown as JobRow[]
+
+  // Adjuntar el motivo REAL guardado al descartar (job_decisions.reason), en vez de re-adivinarlo.
+  // Aplica a los descartados duros (status='discarded') Y a los que cayeron a revisión
+  // (status='discarded_review', p. ej. movidos por el botón Update por saturación/interviews),
+  // para que la solapa "Para Chequear" muestre el motivo real.
+  const needReason = [
+    ...discarded,
+    ...activeRows.filter((j) => j.status === 'discarded_review'),
+  ]
+  if (needReason.length > 0) {
+    const ids = needReason.map((j) => j.id)
+    // .in() va por GET: con cientos de ids la URL excede el límite y da Bad Request.
+    // Por eso consultamos en chunks de 200 y juntamos.
+    const CHUNK = 200
+    const chunks: string[][] = []
+    for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK))
+
+    const results = await Promise.all(
+      chunks.map((chunk) =>
+        supabase
+          .from('job_decisions')
+          .select('job_id, reason, actor, created_at')
+          .in('to_status', ['discarded', 'discarded_review'])
+          .in('job_id', chunk)
+          .order('created_at', { ascending: false }),
+      ),
+    )
+
+    // Preferimos la razón REAL (actor != 'unknown'). El audit trigger agrega una
+    // decisión sintética actor='unknown' ("without explicit decision") DESPUÉS del
+    // descarte real, que de otro modo taparía el motivo verdadero por ser más reciente.
+    const realByJob = new Map<string, string>()
+    const fallbackByJob = new Map<string, string>()
+    for (const { data: decisions } of results) {
+      for (const d of decisions ?? []) {
+        if (!d.reason) continue
+        if (d.actor !== 'unknown') {
+          if (!realByJob.has(d.job_id)) realByJob.set(d.job_id, d.reason)
+        } else if (!fallbackByJob.has(d.job_id)) {
+          fallbackByJob.set(d.job_id, d.reason)
+        }
+      }
+    }
+    for (const j of needReason) j.discard_reason = realByJob.get(j.id) ?? fallbackByJob.get(j.id) ?? null
+  }
+
   return [
     ...(active.data ?? []),
-    ...(recentDiscarded.data ?? []),
+    ...discarded,
     ...(prospects.data ?? []),
   ] as unknown as JobRow[]
 }

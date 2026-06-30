@@ -18,7 +18,6 @@ type Column = {
 
 const COLUMNS: Column[] = [
   { status: 'proposal_drafted', label: 'Proposal',          dotClass: 'bg-info',       countClass: 'text-info',      emptyText: 'No drafts to review' },
-  { status: 'ready_to_send',    label: 'Ready to Send',     dotClass: 'bg-violet',     countClass: 'text-violet',    emptyText: 'Nothing ready yet' },
   { status: 'sent',             label: 'Sent',              dotClass: 'bg-fg',         countClass: 'text-fg',        emptyText: 'Nothing sent yet' },
   { status: 'responded',        label: 'Responded',         dotClass: 'bg-accent',     countClass: 'text-accent-fg', emptyText: 'Awaiting replies' },
   { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3, emptyText: 'No discards in last 3 days' },
@@ -55,10 +54,12 @@ type NotionView = {
 const NOTION_VIEWS: NotionView[] = [
   // 'Qualified' se quitó: es un estado de paso (casi siempre vacío). Los jobs viables
   // con carta viven en Check Proposal. La salud de qualified se vigila con el watchdog.
-  { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted', columnsKey: 'check_proposal' },
-  { id: 'ready_to_send',  label: 'Ready to Send',  status: 'ready_to_send',    columnsKey: 'ready_to_send' },
-  { id: 'sent',           label: 'Sent',           status: 'sent',             columnsKey: 'sent' },
-  { id: 'discarded',      label: 'Discarded',      status: 'discarded',        columnsKey: 'discarded' },
+  { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted',  columnsKey: 'check_proposal' },
+  // Hoja intermedia: jobs que se saturaron (≥40 propuestas / ≥4 interviews) y salieron
+  // del pipeline solos, para que los revises antes de descartarlos del todo.
+  { id: 'review',         label: 'Para Chequear',  status: 'discarded_review',  columnsKey: 'review' },
+  { id: 'sent',           label: 'Sent',           status: 'sent',              columnsKey: 'sent' },
+  { id: 'discarded',      label: 'Discarded',      status: 'discarded',         columnsKey: 'discarded' },
   { id: 'estado',         label: 'By Status',      status: null },
 ]
 

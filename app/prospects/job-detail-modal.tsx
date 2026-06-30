@@ -236,14 +236,10 @@ export default function JobDetailModal({ job, onClose }: Props) {
       }
       // 2. Copy to clipboard
       await navigator.clipboard.writeText(draft)
-      // 3. Mark as ready_to_send (if currently proposal_drafted)
-      if (job.status === 'proposal_drafted') {
-        const markRes = await fetch(`/api/jobs/${job.id}/mark-ready`, { method: 'POST' })
-        if (!markRes.ok) throw new Error((await markRes.json()).error ?? 'mark-ready failed')
-      }
-      // 4. Open Upwork in new tab
+      // 3. Open Upwork in new tab. NO cambiamos el status: el job se queda en
+      //    Check Proposal hasta que toques "Mark Sent" (ya no pasa por Ready to Send).
       window.open(job.link, '_blank', 'noopener')
-      showToast('✓ Copied + ready. Paste in Upwork, then click Mark Sent')
+      showToast('✓ Copiado. Pegá en Upwork y después tocá Mark Sent')
     } catch (e) {
       setError((e as Error).message)
     } finally {
