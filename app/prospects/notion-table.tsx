@@ -191,7 +191,8 @@ const COL = {
     ? <a href={j.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg transition-colors whitespace-nowrap">open&nbsp;↗</a>
     : <span className="text-fg-subtle text-[11px]">—</span> },
   cover: { key: 'cover', label: 'Cover Letter', align: 'center' as const, render: (j: JobRow) => <CoverCell job={j} /> },
-  posted: { key: 'posted', label: 'Posted', className: 'hidden lg:table-cell', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
+  posted: { key: 'posted', label: 'Posted', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
+  postedB: { key: 'postedB', label: 'Posted', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
   ready: { key: 'ready', label: 'Ready Date', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.cover_letter_generated_at)}</span> },
   sent: { key: 'sent', label: 'Sent', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.updated_at)}</span> },
   added: { key: 'added', label: 'Added', className: 'hidden xl:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted whitespace-nowrap" title={`Agregado a la app: ${dateLabel(j.created_at)}`}>{dateLabel(j.created_at)}</span> },
@@ -248,8 +249,8 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   // Mismas columnas que la vista de Notion (mismo orden). Se omiten 3 campos de
   // automatización de Notion sin dato en la app: Webhook Trigger, Update Today, Prequalified Comments.
   check_proposal: [
-    COL.title, COL.flow, COL.status, COL.ticket, COL.proposals, COL.invites, COL.prefLoc,
-    COL.universe, COL.posted, COL.link, COL.declineReason, COL.added, COL.priority, COL.country,
+    COL.title, COL.posted, COL.flow, COL.status, COL.ticket, COL.proposals, COL.invites, COL.postedB, COL.prefLoc,
+    COL.universe, COL.link, COL.declineReason, COL.added, COL.priority, COL.country,
     COL.currentState, COL.scrapMethod, COL.interviewing, COL.keyword, COL.unanswered,
     COL.viewedByClient, COL.reviews, COL.lastUpdate, COL.payment, COL.totalSpent, COL.ready, COL.cover,
   ],
@@ -294,13 +295,18 @@ export default function NotionTable({
     }
   }
 
-  // Mandar un job a "Para Chequear" (discarded_review) desde la fila.
+  // Mandar un job a "Para Chequear" (discarded_review) desde la fila, con comentario opcional.
   async function sendToReview(id: string, e: React.MouseEvent) {
     e.stopPropagation()
-    if (!confirm('¿Mandar este job a "Para Chequear"?')) return
+    const comment = prompt('Mandar a "Para Chequear". Comentario (opcional, queda registrado):')
+    if (comment === null) return // canceló
     setReviewing(id)
     try {
-      const r = await fetch(`/api/jobs/${id}/to-review`, { method: 'POST' })
+      const r = await fetch(`/api/jobs/${id}/to-review`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ comment }),
+      })
       if (!r.ok) { alert('No se pudo mandar a chequear: ' + (await r.text())); return }
       router.refresh()
     } finally {

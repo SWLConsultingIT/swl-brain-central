@@ -13,11 +13,20 @@ export const dynamic = 'force-dynamic'
 const ALLOWED = new Set(['proposal_drafted', 'ready_to_send', 'qualified'])
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
   const supabase = getServerClient()
+
+  // Comentario opcional del usuario (queda como motivo, visible en Para Chequear).
+  let comment = ''
+  try {
+    const body = await request.json()
+    if (body && typeof body.comment === 'string') comment = body.comment.trim()
+  } catch {
+    // sin body / body inválido → comentario vacío, usamos el motivo por defecto
+  }
 
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
@@ -36,12 +45,14 @@ export async function POST(
     )
   }
 
+  const reason = comment ? `A chequear: ${comment}` : 'Marcado para chequear manualmente'
+
   const { error: tErr } = await supabase.rpc('brain_transition_job', {
     p_job_id: id,
     p_to_status: 'discarded_review',
     p_actor: 'human',
     p_actor_detail: 'ui_to_review',
-    p_reason: 'Marcado para chequear manualmente',
+    p_reason: reason,
   })
   if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 })
 

@@ -278,12 +278,17 @@ export default function JobDetailModal({ job, onClose }: Props) {
     }
   }
 
-  // "No me gusta" → manda el job a Para Chequear (discarded_review) sin descartarlo del todo.
+  // "No me gusta" → manda el job a Para Chequear (discarded_review) con un comentario opcional.
   const sendToReview = async () => {
-    if (!confirm('¿Mandar este job a "Para Chequear"?')) return
+    const comment = prompt('Mandar a "Para Chequear". Comentario (opcional, queda registrado):')
+    if (comment === null) return // canceló
     setReviewing(true); setError(null)
     try {
-      const res = await fetch(`/api/jobs/${job.id}/to-review`, { method: 'POST' })
+      const res = await fetch(`/api/jobs/${job.id}/to-review`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ comment }),
+      })
       if (!res.ok) throw new Error((await res.text()) || 'Error')
       onClose()
       router.refresh()
