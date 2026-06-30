@@ -20,6 +20,7 @@ const COLUMNS: Column[] = [
   { status: 'proposal_drafted', label: 'Proposal',          dotClass: 'bg-info',       countClass: 'text-info',      emptyText: 'No drafts to review' },
   { status: 'sent',             label: 'Sent',              dotClass: 'bg-fg',         countClass: 'text-fg',        emptyText: 'Nothing sent yet' },
   { status: 'responded',        label: 'Responded',         dotClass: 'bg-accent',     countClass: 'text-accent-fg', emptyText: 'Awaiting replies' },
+  { status: 'discarded_review', label: 'Para Chequear',     dotClass: 'bg-warning',    countClass: 'text-warning',   emptyText: 'Nada para chequear' },
   { status: 'discarded',        label: 'Discarded',         dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3, emptyText: 'No discards in last 3 days' },
 ]
 
