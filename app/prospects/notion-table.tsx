@@ -245,7 +245,14 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   prospectos: FULL,
   prequalified: FULL,
   qualified: FULL,
-  check_proposal: [COL.title, COL.flow, COL.ticket, COL.proposals, COL.score, COL.link, COL.cover],
+  // Mismas columnas que la vista de Notion (mismo orden). Se omiten 3 campos de
+  // automatización de Notion sin dato en la app: Webhook Trigger, Update Today, Prequalified Comments.
+  check_proposal: [
+    COL.title, COL.flow, COL.status, COL.ticket, COL.proposals, COL.invites, COL.prefLoc,
+    COL.universe, COL.posted, COL.link, COL.declineReason, COL.added, COL.priority, COL.country,
+    COL.currentState, COL.scrapMethod, COL.interviewing, COL.keyword, COL.unanswered,
+    COL.viewedByClient, COL.reviews, COL.lastUpdate, COL.payment, COL.totalSpent, COL.ready, COL.cover,
+  ],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
   sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent],
   discarded: [COL.title, COL.keyword, COL.whyDiscarded, COL.status, COL.score, COL.ticket, COL.country, COL.link],
