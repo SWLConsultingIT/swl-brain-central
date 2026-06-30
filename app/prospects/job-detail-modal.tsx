@@ -25,6 +25,7 @@ export default function JobDetailModal({ job, onClose }: Props) {
   const [marking, setMarking] = useState(false)
   const [responding, setResponding] = useState(false)
   const [discarding, setDiscarding] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -274,6 +275,22 @@ export default function JobDetailModal({ job, onClose }: Props) {
       setError((e as Error).message)
     } finally {
       setDiscarding(false)
+    }
+  }
+
+  // "No me gusta" → manda el job a Para Chequear (discarded_review) sin descartarlo del todo.
+  const sendToReview = async () => {
+    if (!confirm('¿Mandar este job a "Para Chequear"?')) return
+    setReviewing(true); setError(null)
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/to-review`, { method: 'POST' })
+      if (!res.ok) throw new Error((await res.text()) || 'Error')
+      onClose()
+      router.refresh()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setReviewing(false)
     }
   }
 
@@ -608,6 +625,17 @@ export default function JobDetailModal({ job, onClose }: Props) {
             >
               {discarding ? 'Discarding…' : '🗑️ Discard'}
             </button>
+
+            {(job.status === 'proposal_drafted' || job.status === 'ready_to_send' || job.status === 'qualified') && (
+              <button
+                onClick={sendToReview}
+                disabled={reviewing}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-fg-subtle hover:text-warning border border-border rounded-lg transition disabled:opacity-40"
+                title='No me gusta → mandar a "Para Chequear"'
+              >
+                {reviewing ? 'Enviando…' : '🔍 A chequear'}
+              </button>
+            )}
 
             {canEdit && draft && (
               <button
