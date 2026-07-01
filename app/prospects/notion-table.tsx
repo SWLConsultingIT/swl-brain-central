@@ -255,7 +255,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
     COL.viewedByClient, COL.reviews, COL.lastUpdate, COL.payment, COL.totalSpent, COL.ready, COL.cover,
   ],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
-  sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.sent],
+  sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
   // Muestra el motivo + las señales que dispararon el movimiento.
   review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],
