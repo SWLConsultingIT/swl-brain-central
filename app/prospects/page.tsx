@@ -46,6 +46,12 @@ export default async function ProspectsPage() {
               <span className="text-fg-subtle ml-1">jobs</span>
             </span>
             <Link
+              href="/stats"
+              className="text-fg-muted hover:text-fg transition-colors font-medium"
+            >
+              Stats
+            </Link>
+            <Link
               href="/dashboard"
               className="text-fg-muted hover:text-fg transition-colors font-medium"
             >
