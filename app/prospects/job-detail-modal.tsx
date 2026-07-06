@@ -21,6 +21,10 @@ export default function JobDetailModal({ job, onClose }: Props) {
   const [savedNotes, setSavedNotes] = useState(originalNotes)
   const [saving, setSaving] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
+  const [connBase, setConnBase] = useState(job.connects_base != null ? String(job.connects_base) : '')
+  const [connBoost, setConnBoost] = useState(job.connects_boost != null ? String(job.connects_boost) : '')
+  const [savedConn, setSavedConn] = useState({ base: job.connects_base, boost: job.connects_boost })
+  const [savingConn, setSavingConn] = useState(false)
   const [sending, setSending] = useState(false)
   const [marking, setMarking] = useState(false)
   const [responding, setResponding] = useState(false)
@@ -194,8 +198,31 @@ export default function JobDetailModal({ job, onClose }: Props) {
     }
   }
 
+  const numOrNull = (s: string): number | null => (s.trim() === '' ? null : Number(s))
+  const connDirty = numOrNull(connBase) !== savedConn.base || numOrNull(connBoost) !== savedConn.boost
+
+  const saveConnects = async () => {
+    if (!connDirty || savingConn) return
+    setSavingConn(true); setError(null)
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/connects`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ base: numOrNull(connBase), boost: numOrNull(connBoost) }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Save connects failed')
+      setSavedConn({ base: numOrNull(connBase), boost: numOrNull(connBoost) })
+      showToast('✓ Connects guardados')
+      router.refresh()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setSavingConn(false)
+    }
+  }
+
   const markResponded = async () => {
-    if (!confirm('Mark as Responded? (Client replied on Upwork)')) return
+    if (!confirm('Marcar como Client Reply? (el cliente respondió en Upwork)')) return
     setResponding(true); setError(null)
     try {
       const res = await fetch(`/api/jobs/${job.id}/mark-responded`, { method: 'POST' })
@@ -600,6 +627,50 @@ export default function JobDetailModal({ job, onClose }: Props) {
             />
           </section>
 
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg-muted">
+                🎟️ Connects gastados
+                {connDirty && <span className="ml-2 text-warning normal-case tracking-normal">· sin guardar</span>}
+              </h3>
+              <button
+                onClick={saveConnects}
+                disabled={!connDirty || savingConn}
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded transition ${
+                  connDirty ? 'bg-warning-bg text-warning hover:bg-warning/10' : 'text-fg-subtle cursor-not-allowed opacity-60'
+                }`}
+              >
+                {savingConn ? 'Guardando…' : connDirty ? '💾 Guardar' : '✓ Guardado'}
+              </button>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="flex items-center gap-1.5 text-[12px] text-fg-muted">
+                Base
+                <input
+                  type="number" min="0" value={connBase} onChange={(e) => setConnBase(e.target.value)}
+                  placeholder="—"
+                  className="w-16 text-sm text-fg bg-bg border border-border rounded-md px-2 py-1 focus:outline-none focus:border-border-focus"
+                />
+              </label>
+              <label className="flex items-center gap-1.5 text-[12px] text-fg-muted">
+                Boost
+                <input
+                  type="number" min="0" value={connBoost} onChange={(e) => setConnBoost(e.target.value)}
+                  placeholder="0"
+                  className="w-16 text-sm text-fg bg-bg border border-border rounded-md px-2 py-1 focus:outline-none focus:border-border-focus"
+                />
+              </label>
+              {(() => {
+                const total = (numOrNull(connBase) ?? 0) + (numOrNull(connBoost) ?? 0)
+                return total > 0 ? (
+                  <span className="text-[12px] text-fg-muted font-mono tabular-nums">
+                    Total: <span className="text-fg font-semibold">{total}</span> · ~${(total * 0.15).toFixed(2)}
+                  </span>
+                ) : null
+              })()}
+            </div>
+          </section>
+
           {error && (
             <div className="text-sm text-destructive bg-destructive-bg border border-destructive/20 rounded-lg px-3 py-2">
               {error}
@@ -693,7 +764,7 @@ export default function JobDetailModal({ job, onClose }: Props) {
                 disabled={responding}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-accent-fg bg-accent-bg hover:bg-accent/10 border border-accent/30 rounded-lg transition disabled:opacity-50"
               >
-                {responding ? 'Marking…' : '🟢 Mark Responded'}
+                {responding ? 'Marking…' : '🟢 Client Reply'}
               </button>
             )}
           </div>

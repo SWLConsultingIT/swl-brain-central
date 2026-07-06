@@ -12,6 +12,7 @@ export type SentRow = {
   category: string | null
   link: string | null
   responded: boolean // el cliente respondió (status 'responded' = "Client Reply")
+  connects: number | null // base + boost gastados en la propuesta (null si no se cargó)
 }
 
 export async function getSentProposals(supabase: SupabaseClient): Promise<SentRow[]> {
@@ -35,19 +36,24 @@ export async function getSentProposals(supabase: SupabaseClient): Promise<SentRo
   }
 
   const ids = uniq.map((d) => d.job_id)
-  const jobsById = new Map<string, { title: string; classifier_area: string | null; link: string | null; status: string }>()
+  type JobLite = { title: string; classifier_area: string | null; link: string | null; status: string; connects_base: number | null; connects_boost: number | null }
+  const jobsById = new Map<string, JobLite>()
   const CHUNK = 200
   for (let i = 0; i < ids.length; i += CHUNK) {
     const chunk = ids.slice(i, i + CHUNK)
     const { data } = await supabase
       .from('jobs')
-      .select('id, title, classifier_area, link, status')
+      .select('id, title, classifier_area, link, status, connects_base, connects_boost')
       .in('id', chunk)
     for (const j of data ?? []) jobsById.set(j.id, j as never)
   }
 
   return uniq.map((d) => {
     const j = jobsById.get(d.job_id)
+    const connects =
+      j && (j.connects_base != null || j.connects_boost != null)
+        ? (j.connects_base ?? 0) + (j.connects_boost ?? 0)
+        : null
     return {
       job_id: d.job_id,
       sent_at: d.created_at,
@@ -55,6 +61,7 @@ export async function getSentProposals(supabase: SupabaseClient): Promise<SentRo
       category: j?.classifier_area ?? null,
       link: j?.link ?? null,
       responded: j?.status === 'responded',
+      connects,
     }
   })
 }
