@@ -99,6 +99,39 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
   }, [scoped])
   const scopedTotal = scoped.length
 
+  // Resultado & costo (del período seleccionado; 'all' = total acumulado)
+  const agg = useMemo(() => {
+    const sent = scoped.length
+    const responses = scoped.filter((r) => r.responded).length
+    const withConn = scoped.filter((r) => r.connects != null)
+    const connects = withConn.reduce((s, r) => s + (r.connects ?? 0), 0)
+    const spent = connects * CONNECT_USD
+    return {
+      sent,
+      responses,
+      rate: sent ? responses / sent : 0,
+      connects,
+      withConnCount: withConn.length,
+      spent,
+      costPerProposal: withConn.length ? spent / withConn.length : null,
+      costPerResponse: responses && spent > 0 ? spent / responses : null,
+    }
+  }, [scoped])
+
+  const rateByCat = useMemo(() => {
+    const m = new Map<string, { sent: number; resp: number }>()
+    for (const r of scoped) {
+      const c = r.category ?? 'Sin categoría'
+      const e = m.get(c) ?? { sent: 0, resp: 0 }
+      e.sent++
+      if (r.responded) e.resp++
+      m.set(c, e)
+    }
+    return Array.from(m.entries())
+      .map(([cat, v]) => ({ cat, ...v, rate: v.sent ? v.resp / v.sent : 0 }))
+      .sort((a, b) => b.sent - a.sent)
+  }, [scoped])
+
   const list = useMemo(() => {
     let l = scoped
     if (catFilter !== 'all') l = l.filter((r) => (r.category ?? 'Sin categoría') === catFilter)
@@ -119,6 +152,38 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
         <Kpi label="Connects" value={kpis.connects} accent="bg-violet" />
         <Kpi label="$ gastado" value={usd(kpis.connects)} accent="bg-warning" />
       </div>
+
+      {/* Resultado & costo */}
+      <section className="bg-surface border border-border rounded-xl p-5">
+        <h2 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg mb-4">
+          Resultado &amp; costo {activeBucket !== 'all' && <span className="text-fg-subtle font-normal normal-case">· {bucketLabel(activeBucket, period)}</span>}
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <Stat label="Enviadas" value={agg.sent} />
+          <Stat label="Respuestas" value={agg.responses} sub={`${(agg.rate * 100).toFixed(0)}% tasa`} />
+          <Stat label="Connects" value={agg.withConnCount ? agg.connects : '—'} sub={agg.withConnCount ? `${agg.withConnCount}/${agg.sent} cargadas` : 'sin cargar'} />
+          <Stat label="$ gastado" value={agg.withConnCount ? `$${agg.spent.toFixed(2)}` : '—'} />
+          <Stat label="Costo/propuesta" value={agg.costPerProposal != null ? `$${agg.costPerProposal.toFixed(2)}` : '—'} />
+          <Stat label="Costo/respuesta" value={agg.costPerResponse != null ? `$${agg.costPerResponse.toFixed(2)}` : '—'} />
+        </div>
+        <h3 className="text-[11px] font-semibold tracking-[0.06em] uppercase text-fg-muted mb-3">Tasa de respuesta por categoría</h3>
+        <div className="space-y-2.5">
+          {rateByCat.map(({ cat, sent, resp, rate }) => (
+            <div key={cat}>
+              <div className="flex items-center justify-between text-[12px] mb-1">
+                <span className="text-fg-muted truncate pr-2">{cat}</span>
+                <span className="font-mono tabular-nums text-fg whitespace-nowrap">
+                  <span className="font-semibold">{resp}</span>/{sent} · {(rate * 100).toFixed(0)}%
+                </span>
+              </div>
+              <span className="block h-2 bg-bg rounded overflow-hidden">
+                <span className="block h-full rounded bg-accent" style={{ width: `${rate * 100}%` }} />
+              </span>
+            </div>
+          ))}
+          {rateByCat.length === 0 && <div className="text-[11px] text-fg-subtle py-4 text-center">Sin envíos en este período</div>}
+        </div>
+      </section>
 
       {/* Tabla por período */}
       <section className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -252,6 +317,16 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
           </table>
         </div>
       </section>
+    </div>
+  )
+}
+
+function Stat({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
+  return (
+    <div className="bg-bg border border-border rounded-lg px-4 py-3">
+      <div className="text-[11px] text-fg-muted font-medium">{label}</div>
+      <div className="text-[20px] font-semibold tabular-nums tracking-tight text-fg leading-tight mt-0.5">{value}</div>
+      {sub && <div className="text-[10px] text-fg-subtle mt-0.5 font-mono tabular-nums">{sub}</div>}
     </div>
   )
 }
