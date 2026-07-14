@@ -59,9 +59,10 @@ const NOTION_VIEWS: NotionView[] = [
   // Hoja intermedia: jobs que se saturaron (≥40 propuestas / ≥4 interviews) y salieron
   // del pipeline solos, para que los revises antes de descartarlos del todo.
   { id: 'review',         label: 'Para Chequear',  status: 'discarded_review',  columnsKey: 'review' },
-  { id: 'sent',           label: 'Sent',           status: 'sent',              columnsKey: 'sent' },
-  // Clientes que contestaron en Upwork: al marcar "Client Reply" el job pasa de sent → responded
-  // y se traslada acá.
+  // Sent = TODO lo que mandamos (enviados + los que ya respondieron). Los responded
+  // se ven en verde acá y además aparecen en la solapa Client Reply.
+  { id: 'sent',           label: 'Sent',           status: 'sent',   statuses: ['sent', 'responded'], columnsKey: 'sent' },
+  // Clientes que contestaron en Upwork: al marcar "Client Reply" el job pasa de sent → responded.
   { id: 'client_reply',   label: 'Client Reply',   status: 'responded',         columnsKey: 'client_reply' },
   { id: 'discarded',      label: 'Discarded',      status: 'discarded',         columnsKey: 'discarded' },
   { id: 'estado',         label: 'By Status',      status: null },
@@ -105,7 +106,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       j.status === 'ready_to_send'
     ).length
     const drafts = jobs.filter(j => !!j.cover_letter_draft).length
-    const sent = jobs.filter(j => j.status === 'sent').length
+    const sent = jobs.filter(j => j.status === 'sent' || j.status === 'responded').length
     const fresh = jobs.filter(j => isFresh(j.post_date, 24)).length
     return { total: jobs.length, qualified, drafts, sent, fresh }
   }, [jobs])
