@@ -75,6 +75,10 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [country, setCountry] = useState<string>('all')
   const [minScore, setMinScore] = useState<number>(0)
   const [sortBy, setSortBy] = useState<'score' | 'recent'>('score')
+  // Rango de fecha para la solapa Sent (solo visual — no borra nada).
+  const [sentRange, setSentRange] = useState<string>('15d')
+  const [sentFrom, setSentFrom] = useState<string>('')
+  const [sentTo, setSentTo] = useState<string>('')
 
   // Orden compartido. 'recent' = más nuevos arriba. 'score' = FRESCO + MEJOR:
   // día más nuevo primero, y dentro de cada día el mejor score.
@@ -143,12 +147,36 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
     return m
   }, [filtered])
 
+  // Rango de fecha aplicado SOLO a la solapa Sent. La "fecha de envío" es la que
+  // muestra la columna Sent (updated_at). Es 100% visual: todo sigue cargado, cambiar
+  // el rango revela lo que quede afuera. 'all' = sin límite.
+  const sentInRange = useMemo(() => {
+    const now = Date.now()
+    const DAY = 86400000
+    let fromT = -Infinity
+    let toT = Infinity
+    if (sentRange === '15d') fromT = now - 15 * DAY
+    else if (sentRange === '30d') fromT = now - 30 * DAY
+    else if (sentRange === '3m') fromT = now - 90 * DAY
+    else if (sentRange === 'year') fromT = new Date(new Date().getFullYear(), 0, 1).getTime()
+    else if (sentRange === 'custom') {
+      if (sentFrom) fromT = new Date(`${sentFrom}T00:00:00`).getTime()
+      if (sentTo) toT = new Date(`${sentTo}T23:59:59`).getTime()
+    }
+    return (j: JobRow) => {
+      const ts = new Date(j.updated_at ?? j.created_at).getTime()
+      return ts >= fromT && ts <= toT
+    }
+  }, [sentRange, sentFrom, sentTo])
+
   // Filas para la vista de tabla activa (filtra por el status de la vista).
   const tableRows = useMemo(() => {
     if (isBoardView || activeView.status === null) return []
     const statuses = activeView.statuses ?? [activeView.status]
-    return filtered.filter(j => statuses.includes(j.status))
-  }, [filtered, isBoardView, activeView])
+    let rows = filtered.filter(j => statuses.includes(j.status))
+    if (activeView.id === 'sent') rows = rows.filter(sentInRange)
+    return rows
+  }, [filtered, isBoardView, activeView, sentInRange])
 
   const byStatus = useMemo(() => {
     const now = Date.now()
@@ -282,6 +310,45 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
               { value: 'recent', label: 'Newest' },
             ]}
           />
+
+          {activeView.id === 'sent' && (
+            <>
+              <Select
+                label="Enviados"
+                value={sentRange}
+                onChange={setSentRange}
+                options={[
+                  { value: '15d', label: 'Últimos 15 días' },
+                  { value: '30d', label: 'Últimos 30 días' },
+                  { value: '3m', label: 'Últimos 3 meses' },
+                  { value: 'year', label: 'Este año' },
+                  { value: 'all', label: 'Todo el histórico' },
+                  { value: 'custom', label: 'Rango personalizado' },
+                ]}
+              />
+              {sentRange === 'custom' && (
+                <div className="inline-flex items-center gap-1.5 text-[12px]">
+                  <input
+                    type="date"
+                    value={sentFrom}
+                    max={sentTo || undefined}
+                    onChange={e => setSentFrom(e.target.value)}
+                    aria-label="Desde"
+                    className="px-2 py-1.5 text-[13px] bg-bg border border-border rounded-md text-fg focus:outline-none focus:border-fg focus:bg-surface transition-colors"
+                  />
+                  <span className="text-fg-subtle">–</span>
+                  <input
+                    type="date"
+                    value={sentTo}
+                    min={sentFrom || undefined}
+                    onChange={e => setSentTo(e.target.value)}
+                    aria-label="Hasta"
+                    className="px-2 py-1.5 text-[13px] bg-bg border border-border rounded-md text-fg focus:outline-none focus:border-fg focus:bg-surface transition-colors"
+                  />
+                </div>
+              )}
+            </>
+          )}
 
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
             <span className="font-mono tabular-nums">
