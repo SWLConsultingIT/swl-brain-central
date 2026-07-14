@@ -60,6 +60,53 @@ function NumCell({ value, tone }: { value: number | null; tone?: string }) {
   return <span className={`font-mono text-[11px] font-semibold tabular-nums ${tone ?? 'text-fg-muted'}`}>{value}</span>
 }
 
+// Checkbox para marcar si el cliente respondió (sent ↔ responded), sin abrir el modal.
+function RespondedCheckbox({ job }: { job: JobRow }) {
+  const router = useRouter()
+  const [checked, setChecked] = useState(job.status === 'responded')
+  const [busy, setBusy] = useState(false)
+
+  async function toggle(e: React.MouseEvent | React.ChangeEvent) {
+    e.stopPropagation()
+    const next = !checked
+    setChecked(next)
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/jobs/${job.id}/mark-responded`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ responded: next }),
+      })
+      if (!r.ok) {
+        setChecked(!next)
+        alert('No se pudo marcar: ' + (await r.text()))
+        return
+      }
+      router.refresh()
+    } catch {
+      setChecked(!next)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <label
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center justify-center cursor-pointer"
+      title={checked ? 'Cliente respondió — clic para desmarcar' : 'Marcar: el cliente respondió'}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={busy}
+        onChange={toggle}
+        className="size-4 rounded accent-emerald-600 cursor-pointer disabled:opacity-40"
+      />
+    </label>
+  )
+}
+
 // ── column definitions ─────────────────────────────────────────────────────
 
 type Ctx = { buNames: Record<string, string> }
@@ -167,6 +214,7 @@ function PriorityCell({ value }: { value: number | null }) {
 // reusable column builders
 const COL = {
   title: { key: 'title', label: 'Job Title', render: (j: JobRow) => <TitleCell job={j} /> },
+  responded: { key: 'responded', label: 'Respondió', align: 'center' as const, render: (j: JobRow) => <RespondedCheckbox job={j} /> },
   flow: { key: 'flow', label: 'Flow', className: 'hidden md:table-cell', render: (j: JobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status: { key: 'status', label: 'Status', render: (j: JobRow) => <StatusPill status={j.status} /> },
   ticket: { key: 'ticket', label: 'Ticket', align: 'right' as const, render: (j: JobRow) => ticketLabel(j) },
@@ -255,7 +303,9 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
     COL.viewedByClient, COL.reviews, COL.lastUpdate, COL.payment, COL.totalSpent, COL.ready, COL.cover,
   ],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
-  sent: [COL.title, COL.flow, COL.ticket, COL.score, COL.link, COL.sent],
+  sent: [COL.title, COL.responded, COL.flow, COL.ticket, COL.score, COL.link, COL.sent],
+  // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
+  client_reply: [COL.title, COL.responded, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
   // Muestra el motivo + las señales que dispararon el movimiento.
   review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],
@@ -354,21 +404,27 @@ export default function NotionTable({
                   </td>
                 </tr>
               ) : (
-                sorted.map((job) => (
+                sorted.map((job) => {
+                  const responded = job.status === 'responded'
+                  return (
                   <tr
                     key={job.id}
                     onClick={(e) => {
                       const target = e.target as HTMLElement
-                      if (target.closest('a, button')) return
+                      if (target.closest('a, button, label, input')) return
                       setActiveJob(job)
                     }}
-                    className="border-b border-border last:border-0 group transition-colors cursor-pointer hover:bg-bg [&:hover_td.sticky]:bg-bg"
+                    className={`border-b border-border last:border-0 group transition-colors cursor-pointer ${
+                      responded
+                        ? 'bg-accent-bg [&:hover_td.sticky]:bg-accent-bg'
+                        : 'hover:bg-bg [&:hover_td.sticky]:bg-bg'
+                    }`}
                   >
                     {columns.map((c, i) => (
                       <td
                         key={c.key}
                         className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : ''} ${
-                          i === 0 ? 'sticky left-0 z-10 bg-surface pl-4 min-w-[200px] md:min-w-[300px]' : 'whitespace-nowrap'
+                          i === 0 ? `sticky left-0 z-10 pl-4 min-w-[200px] md:min-w-[300px] ${responded ? 'bg-accent-bg' : 'bg-surface'}` : 'whitespace-nowrap'
                         } ${c.className ?? ''}`}
                       >
                         {c.render(job, ctx)}
@@ -407,7 +463,8 @@ export default function NotionTable({
                       </div>
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

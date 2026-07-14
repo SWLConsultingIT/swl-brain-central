@@ -60,6 +60,9 @@ const NOTION_VIEWS: NotionView[] = [
   // del pipeline solos, para que los revises antes de descartarlos del todo.
   { id: 'review',         label: 'Para Chequear',  status: 'discarded_review',  columnsKey: 'review' },
   { id: 'sent',           label: 'Sent',           status: 'sent',              columnsKey: 'sent' },
+  // Clientes que contestaron en Upwork: al marcar "Client Reply" el job pasa de sent → responded
+  // y se traslada acá.
+  { id: 'client_reply',   label: 'Client Reply',   status: 'responded',         columnsKey: 'client_reply' },
   { id: 'discarded',      label: 'Discarded',      status: 'discarded',         columnsKey: 'discarded' },
   { id: 'estado',         label: 'By Status',      status: null },
 ]
