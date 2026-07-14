@@ -207,7 +207,7 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
               <tr>
-                {['Período', 'Propuestas', 'Connects', '$ gastado', 'Respuestas'].map((h, i) => (
+                {['Período', 'Propuestas', 'Connects', '$ gastado', 'Respuestas', 'Tasa'].map((h, i) => (
                   <th key={h} className={`font-medium text-fg-muted text-[12px] px-4 py-2.5 bg-bg sticky top-0 border-b border-border whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
                 ))}
               </tr>
@@ -231,10 +231,20 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
                     <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.connects || '—'}</td>
                     <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.connects ? usd(b.connects) : '—'}</td>
                     <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.replies || '—'}</td>
+                    <td className="px-4 py-2 border-b border-border text-right">
+                      {b.proposals ? (
+                        <span className="inline-flex items-center gap-2 justify-end">
+                          <span className="font-mono tabular-nums text-[12px] text-fg font-semibold">{Math.round((b.replies / b.proposals) * 100)}%</span>
+                          <span className="hidden sm:block h-1.5 w-12 bg-fg/10 rounded overflow-hidden">
+                            <span className="block h-full bg-accent rounded" style={{ width: `${(b.replies / b.proposals) * 100}%` }} />
+                          </span>
+                        </span>
+                      ) : <span className="text-fg-subtle text-[11px]">—</span>}
+                    </td>
                   </tr>
                 )
               })}
-              {buckets.length === 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-fg-subtle text-[12px]">Sin envíos todavía</td></tr>}
+              {buckets.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-fg-subtle text-[12px]">Sin envíos todavía</td></tr>}
             </tbody>
           </table>
         </div>
