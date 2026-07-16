@@ -129,10 +129,10 @@ export default function JobCard({ job }: { job: JobRow }) {
         {hot && (
           <div className="mt-2">
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning-bg text-warning text-[10px] font-bold uppercase tracking-wide"
+              className="text-[15px] leading-none"
               title="Fresco + score alto + poca competencia — los primeros en postularse ganan"
             >
-              🔥 Aplicá ya
+              🔥
             </span>
           </div>
         )}

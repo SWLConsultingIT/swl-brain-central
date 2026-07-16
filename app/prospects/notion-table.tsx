@@ -161,10 +161,10 @@ function TitleCell({ job }: { job: JobRow }) {
       <span className="font-normal text-fg text-[14px] truncate">{job.title}</span>
       {hot && (
         <span
-          className="inline-flex items-center px-1.5 py-0.5 rounded bg-warning-bg text-warning text-[9px] font-bold uppercase tracking-wide shrink-0"
+          className="text-[13px] leading-none shrink-0"
           title="Fresco + score alto + poca competencia — postulate ya"
         >
-          🔥 Ya
+          🔥
         </span>
       )}
     </div>
