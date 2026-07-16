@@ -15,10 +15,6 @@ function ago(iso: string | null | undefined): string {
   return `${Math.round(ms / DAY_MS)}d ago`
 }
 
-function fmt(n: number | null): string {
-  return n == null ? '—' : n.toLocaleString()
-}
-
 async function loadDashboardData() {
   const supabase = getServerClient()
   const now = new Date()
@@ -180,8 +176,30 @@ async function loadDashboardData() {
 export default async function DashboardPage() {
   const d = await loadDashboardData()
 
-  const memoryRatio = d.memory.totalProposals ? (d.memory.withCoverText / d.memory.totalProposals) * 100 : 0
-  const memoryWarning = memoryRatio < 10
+  // Estado general del sistema — para el banner de 1 vistazo.
+  const now = Date.now()
+  const checks = {
+    scrape: !!d.pulse.lastIngest && now - new Date(d.pulse.lastIngest).getTime() < 6 * HOUR_MS,
+    classify: !!d.pulse.lastClassif && now - new Date(d.pulse.lastClassif).getTime() < 6 * HOUR_MS,
+    cover: !!d.pulse.lastCover && now - new Date(d.pulse.lastCover).getTime() < 26 * HOUR_MS,
+    screening: !!d.pulse.lastQuestions && now - new Date(d.pulse.lastQuestions).getTime() < 26 * HOUR_MS,
+    answers: !(d.screening24h.asked > 0 && d.screening24h.answered === 0),
+  }
+  const lowCats = d.entrada.filter((e) => e.low).map((e) => e.cat)
+  const problems: string[] = []
+  if (!checks.scrape) problems.push('el scrapeo no corrió en las últimas 6 horas')
+  if (!checks.classify) problems.push('el clasificador no corrió hace rato')
+  if (!checks.screening) problems.push('no entran preguntas hace más de un día')
+  if (lowCats.length) problems.push(`sin entrar trabajo hoy: ${lowCats.join(', ')}`)
+  const allOk = problems.length === 0
+
+  const pipeline = [
+    { label: 'Scrapeo de jobs', value: ago(d.pulse.lastIngest), ok: checks.scrape },
+    { label: 'Clasificación', value: ago(d.pulse.lastClassif), ok: checks.classify },
+    { label: 'Cover letters', value: ago(d.pulse.lastCover), ok: checks.cover },
+    { label: 'Screening (preguntas)', value: ago(d.pulse.lastQuestions), ok: checks.screening },
+    { label: 'Respuestas del agente', value: `${d.screening24h.answered}/${d.screening24h.asked} hoy`, ok: checks.answers },
+  ]
 
   return (
     <main className="min-h-screen bg-bg">
@@ -204,20 +222,20 @@ export default async function DashboardPage() {
 
       <div className="max-w-[1600px] mx-auto px-8 py-8 space-y-10">
 
-        {/* Pulse — Top */}
-        <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Pulse</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <PulseCard label="Last ingest" value={ago(d.pulse.lastIngest)} ok={!!d.pulse.lastIngest && Date.now() - new Date(d.pulse.lastIngest).getTime() < 6 * HOUR_MS} />
-            <PulseCard label="Last classify" value={ago(d.pulse.lastClassif)} ok={!!d.pulse.lastClassif && Date.now() - new Date(d.pulse.lastClassif).getTime() < 2 * HOUR_MS} />
-            <PulseCard label="Last cover letter" value={ago(d.pulse.lastCover)} ok={!!d.pulse.lastCover && Date.now() - new Date(d.pulse.lastCover).getTime() < 24 * HOUR_MS} />
-            <PulseCard label="Last screening" value={ago(d.pulse.lastQuestions)} ok={!!d.pulse.lastQuestions && Date.now() - new Date(d.pulse.lastQuestions).getTime() < 24 * HOUR_MS} />
-            <PulseCard label="Preguntas 24h" value={d.screening24h.asked.toString()} ok={d.screening24h.asked > 0} />
-            <PulseCard label="Respondidas 24h" value={d.screening24h.answered.toString()} ok={d.screening24h.answered > 0 || d.screening24h.asked === 0} />
-            <PulseCard label="Stuck prequalified" value={d.stuck.prequalified.toString()} ok={d.stuck.prequalified === 0} />
-            <PulseCard label="Stuck qualified" value={d.stuck.qualified.toString()} ok={d.stuck.qualified === 0} />
-            <PulseCard label="Discarded review" value={d.stuck.review.toString()} ok={d.stuck.review === 0} />
+        {/* Estado general — 1 vistazo */}
+        <section className={`rounded-xl border px-6 py-5 ${allOk ? 'bg-accent-bg border-accent/30' : 'bg-destructive-bg border-destructive/30'}`}>
+          <div className="flex items-center gap-2.5">
+            <span className={`size-2.5 rounded-full ${allOk ? 'bg-accent' : 'bg-destructive'}`} />
+            <h2 className="text-lg font-semibold text-fg">{allOk ? 'Todo funcionando' : 'Atención — hay algo para revisar'}</h2>
           </div>
+          <p className="text-sm text-fg-muted mt-1.5">
+            Último scrapeo <strong className="text-fg">{ago(d.pulse.lastIngest)}</strong> · <strong className="text-fg">{d.funnel24h.ingested}</strong> jobs en las últimas 24h
+          </p>
+          {!allOk && (
+            <ul className="mt-2.5 text-sm text-destructive list-disc pl-5 space-y-0.5">
+              {problems.map((p) => <li key={p}>{p}</li>)}
+            </ul>
+          )}
         </section>
 
         {/* Entrada por categoría — chequeo diario para todo el equipo */}
@@ -264,87 +282,22 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Funnel 24h */}
+        {/* Salud del pipeline — cada etapa, en castellano */}
         <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Funnel (last 24h)</h2>
+          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Salud del pipeline</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {pipeline.map((p) => <PulseCard key={p.label} label={p.label} value={p.value} ok={p.ok} />)}
+          </div>
+        </section>
+
+        {/* Embudo del día */}
+        <section>
+          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Embudo del día (últimas 24h)</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <BigStat label="Ingested" value={d.funnel24h.ingested} />
-            <BigStat label="Passed $40/h filter" value={d.funnel24h.passedFilter} sub={d.funnel24h.ingested > 0 ? `${((d.funnel24h.passedFilter / d.funnel24h.ingested) * 100).toFixed(0)}%` : null} />
-            <BigStat label="Match (qualified)" value={d.funnel24h.matched} sub={d.funnel24h.passedFilter > 0 ? `${((d.funnel24h.matched / d.funnel24h.passedFilter) * 100).toFixed(0)}% of filter` : null} />
+            <BigStat label="Entraron" value={d.funnel24h.ingested} />
+            <BigStat label="Pasaron filtro $40/h" value={d.funnel24h.passedFilter} sub={d.funnel24h.ingested > 0 ? `${((d.funnel24h.passedFilter / d.funnel24h.ingested) * 100).toFixed(0)}%` : null} />
+            <BigStat label="Viables (qualified)" value={d.funnel24h.matched} sub={d.funnel24h.passedFilter > 0 ? `${((d.funnel24h.matched / d.funnel24h.passedFilter) * 100).toFixed(0)}% del filtro` : null} />
             <BigStat label="Cover letters" value={d.funnel24h.covers} accent />
-          </div>
-        </section>
-
-        {/* 7-day trend table */}
-        <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Últimos 7 días</h2>
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-surface border-b border-border">
-                <tr className="text-left text-fg-muted text-xs uppercase tracking-wide">
-                  <th className="px-4 py-3">Día</th>
-                  <th className="px-4 py-3 text-right">Ingestados</th>
-                  <th className="px-4 py-3 text-right">Matches</th>
-                  <th className="px-4 py-3 text-right">Cover letters</th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.days7d.length === 0 ? (
-                  <tr><td className="px-4 py-6 text-fg-muted text-center" colSpan={4}>Sin actividad en los últimos 7 días</td></tr>
-                ) : d.days7d.map(row => (
-                  <tr key={row.day} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-mono text-fg-muted">{row.day}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{row.total}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-info">{row.matches}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-accent-fg">{row.covers}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* BU breakdown 24h */}
-        <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Por BU (últimas 24h)</h2>
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            {Object.entries(d.byBU).length === 0 ? (
-              <div className="px-4 py-6 text-fg-muted text-center text-sm">Sin actividad por BU en las últimas 24h</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-surface border-b border-border">
-                  <tr className="text-left text-fg-muted text-xs uppercase tracking-wide">
-                    <th className="px-4 py-3">Business Unit</th>
-                    <th className="px-4 py-3 text-right">Procesados</th>
-                    <th className="px-4 py-3 text-right">Matches</th>
-                    <th className="px-4 py-3 text-right">Cover letters</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(d.byBU).sort((a, b) => b[1].total - a[1].total).map(([bu, s]) => (
-                    <tr key={bu} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3">{bu}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{s.total}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-info">{s.matches}</td>
-                      <td className="px-4 py-3 text-right tabular-nums font-semibold text-accent-fg">{s.covers}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
-
-        {/* Status kanban totals */}
-        <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Status global de la tabla jobs</h2>
-          <div className="bg-card border border-border rounded-xl px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            {Object.entries(d.statusCounts).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
-              <div key={s}>
-                <span className="font-mono text-fg-muted">{s}</span>{' '}
-                <span className="font-semibold tabular-nums">{fmt(c)}</span>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -353,12 +306,12 @@ export default async function DashboardPage() {
           <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Últimas 10 cover letters generadas</h2>
           <div className="space-y-3">
             {d.recentCoverLetters.length === 0 ? (
-              <div className="bg-card border border-border rounded-xl px-4 py-6 text-fg-muted text-center text-sm">Aún no hay cover letters generadas</div>
+              <div className="bg-surface border border-border rounded-xl px-4 py-6 text-fg-muted text-center text-sm">Aún no hay cover letters generadas</div>
             ) : d.recentCoverLetters.map((j) => {
               const bu = j.business_unit_id ? d.buNames[j.business_unit_id] : j.classifier_area
               const ticket = j.ticket ? `$${j.ticket}` : j.hourly_average ? `$${j.hourly_average}/h` : '—'
               return (
-                <details key={j.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                <details key={j.id} className="bg-surface border border-border rounded-xl overflow-hidden">
                   <summary className="px-4 py-3 cursor-pointer hover:bg-surface flex items-center gap-3 flex-wrap">
                     <span className="size-2 rounded-full bg-accent shrink-0" />
                     <span className="font-medium text-sm flex-1 min-w-[200px]">{j.title}</span>
@@ -378,7 +331,7 @@ export default async function DashboardPage() {
         {/* Recent classifications */}
         <section>
           <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Últimas 15 clasificaciones</h2>
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="bg-surface border border-border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-surface border-b border-border">
                 <tr className="text-left text-fg-muted text-xs uppercase tracking-wide">
@@ -408,27 +361,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Memory health */}
-        <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Memoria episódica</h2>
-          <div className={`bg-card border rounded-xl px-5 py-4 ${memoryWarning ? 'border-warning/30' : 'border-border'}`}>
-            <div className="flex items-baseline gap-3 mb-2">
-              <span className={`text-2xl font-bold tabular-nums ${memoryWarning ? 'text-warning' : 'text-fg'}`}>
-                {d.memory.withCoverText.toLocaleString()} / {d.memory.totalProposals.toLocaleString()}
-              </span>
-              <span className="text-sm text-fg-muted">proposals con texto de cover letter</span>
-            </div>
-            {memoryWarning ? (
-              <p className="text-sm text-warning">
-                ⚠ El brain decide sin memoria episódica real. Solo {memoryRatio.toFixed(1)}% de las proposals históricas tienen texto. Sync de Notion API pendiente.
-              </p>
-            ) : (
-              <p className="text-sm text-fg-muted">{memoryRatio.toFixed(1)}% de las proposals históricas tienen texto disponible como precedent.</p>
-            )}
-          </div>
-        </section>
-
-        <p className="text-xs text-fg-subtle text-center pt-4">Refresca cada 60s automáticamente. Reload manual: ⌘+R</p>
+        <p className="text-xs text-fg-subtle text-center pt-4">Se actualiza solo cada 60s. Recargar: ⌘+R</p>
       </div>
     </main>
   )
@@ -436,7 +369,7 @@ export default async function DashboardPage() {
 
 function PulseCard({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
-    <div className="bg-card border border-border rounded-lg px-4 py-3">
+    <div className="bg-surface border border-border rounded-lg px-4 py-3">
       <div className="flex items-center gap-2 mb-1">
         <span className={`size-1.5 rounded-full ${ok ? 'bg-accent' : 'bg-warning'}`} />
         <span className="text-[11px] uppercase tracking-wide text-fg-muted font-medium">{label}</span>
@@ -448,7 +381,7 @@ function PulseCard({ label, value, ok }: { label: string; value: string; ok: boo
 
 function BigStat({ label, value, sub, accent }: { label: string; value: number; sub?: string | null; accent?: boolean }) {
   return (
-    <div className="bg-card border border-border rounded-xl px-5 py-4">
+    <div className="bg-surface border border-border rounded-xl px-5 py-4">
       <div className="text-[11px] uppercase tracking-wide text-fg-muted font-medium mb-2">{label}</div>
       <div className={`text-3xl font-bold tabular-nums ${accent ? 'text-accent-fg' : 'text-fg'}`}>{value}</div>
       {sub && <div className="text-xs text-fg-muted mt-1">{sub}</div>}
