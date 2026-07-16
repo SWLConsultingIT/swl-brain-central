@@ -406,6 +406,15 @@ export default function NotionTable({
               ) : (
                 sorted.map((job) => {
                   const responded = job.status === 'responded'
+                  // Descartado/mandado a revisar a mano (tachito) → resaltado ámbar para distinguirlo de los automáticos.
+                  const manualDiscard = !responded && job.discarded_by_human === true
+                  // Clases literales (Tailwind no genera clases interpoladas dinámicamente).
+                  const rowClass = responded
+                    ? 'bg-accent-bg [&:hover_td.sticky]:bg-accent-bg'
+                    : manualDiscard
+                    ? 'bg-warning-bg [&:hover_td.sticky]:bg-warning-bg'
+                    : 'hover:bg-bg [&:hover_td.sticky]:bg-bg'
+                  const stickyBg = responded ? 'bg-accent-bg' : manualDiscard ? 'bg-warning-bg' : 'bg-surface'
                   return (
                   <tr
                     key={job.id}
@@ -414,17 +423,13 @@ export default function NotionTable({
                       if (target.closest('a, button, label, input')) return
                       setActiveJob(job)
                     }}
-                    className={`border-b border-border last:border-0 group transition-colors cursor-pointer ${
-                      responded
-                        ? 'bg-accent-bg [&:hover_td.sticky]:bg-accent-bg'
-                        : 'hover:bg-bg [&:hover_td.sticky]:bg-bg'
-                    }`}
+                    className={`border-b border-border last:border-0 group transition-colors cursor-pointer ${rowClass}`}
                   >
                     {columns.map((c, i) => (
                       <td
                         key={c.key}
                         className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : ''} ${
-                          i === 0 ? `sticky left-0 z-10 pl-4 min-w-[200px] md:min-w-[300px] ${responded ? 'bg-accent-bg' : 'bg-surface'}` : 'whitespace-nowrap'
+                          i === 0 ? `sticky left-0 z-10 pl-4 min-w-[200px] md:min-w-[300px] ${stickyBg}` : 'whitespace-nowrap'
                         } ${c.className ?? ''}`}
                       >
                         {c.render(job, ctx)}

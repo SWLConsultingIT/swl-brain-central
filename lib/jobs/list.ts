@@ -54,6 +54,8 @@ export type JobRow = {
   published_date: string | null
   // Motivo real registrado al descartar (job_decisions.reason). Solo se llena para discarded.
   discard_reason: string | null
+  // true si una persona lo descartó/mandó a revisar a mano (tachito), para resaltarlo en la UI.
+  discarded_by_human?: boolean
   // Connects gastados al postularse (migración 0030): base = cobro de Upwork, boost = extra.
   connects_base: number | null
   connects_boost: number | null
@@ -119,7 +121,7 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
       chunks.map((chunk) =>
         supabase
           .from('job_decisions')
-          .select('job_id, reason, actor, created_at')
+          .select('job_id, reason, actor, actor_detail, created_at')
           .in('to_status', ['discarded', 'discarded_review'])
           .in('job_id', chunk)
           .order('created_at', { ascending: false }),
@@ -131,8 +133,13 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
     // descarte real, que de otro modo taparía el motivo verdadero por ser más reciente.
     const realByJob = new Map<string, string>()
     const fallbackByJob = new Map<string, string>()
+    // Jobs que descartó una persona a mano (tachito / a-revisar), para resaltarlos en la UI.
+    const humanDiscard = new Set<string>()
     for (const { data: decisions } of results) {
       for (const d of decisions ?? []) {
+        if (d.actor === 'human' && (d.actor_detail === 'ui_discard' || d.actor_detail === 'ui_to_review')) {
+          humanDiscard.add(d.job_id)
+        }
         if (!d.reason) continue
         if (d.actor !== 'unknown') {
           if (!realByJob.has(d.job_id)) realByJob.set(d.job_id, d.reason)
@@ -141,7 +148,10 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
         }
       }
     }
-    for (const j of needReason) j.discard_reason = realByJob.get(j.id) ?? fallbackByJob.get(j.id) ?? null
+    for (const j of needReason) {
+      j.discard_reason = realByJob.get(j.id) ?? fallbackByJob.get(j.id) ?? null
+      j.discarded_by_human = humanDiscard.has(j.id)
+    }
   }
 
   return [
