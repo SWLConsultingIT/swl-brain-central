@@ -50,7 +50,7 @@ async function loadDashboardData() {
     // jobs in last 7d for trend
     supabase
       .from('jobs')
-      .select('created_at, status, classifier_match, cover_letter_draft')
+      .select('created_at, status, classifier_match, cover_letter_draft, classifier_area')
       .gte('created_at', since7d),
     // last activity pulses
     supabase.from('jobs').select('created_at').order('created_at', { ascending: false }).limit(1),
@@ -129,7 +129,28 @@ async function loadDashboardData() {
     statusCounts[r.status] = (statusCounts[r.status] || 0) + 1
   }
 
+  // Entrada de jobs por categoría: hoy (24h) vs promedio diario de los últimos 7d.
+  // Sirve para que cualquiera vea si una categoría (ej. finance) dejó de entrar.
+  const cat24h: Record<string, number> = {}
+  for (const j of jobs24h) {
+    const c = j.classifier_area ?? 'Sin clasificar'
+    cat24h[c] = (cat24h[c] ?? 0) + 1
+  }
+  const cat7d: Record<string, number> = {}
+  for (const j of jobs7d) {
+    const c = j.classifier_area ?? 'Sin clasificar'
+    cat7d[c] = (cat7d[c] ?? 0) + 1
+  }
+  const entrada = Array.from(new Set([...Object.keys(cat24h), ...Object.keys(cat7d)]))
+    .map((cat) => {
+      const today = cat24h[cat] ?? 0
+      const avg = Math.round(((cat7d[cat] ?? 0) / 7) * 10) / 10
+      return { cat, today, avg, low: today === 0 && avg >= 1 }
+    })
+    .sort((a, b) => b.avg - a.avg)
+
   return {
+    entrada,
     funnel24h: { ingested: ingested24h, passedFilter: passedFilter24h, matched: matched24h, covers: covers24h },
     pulse: {
       lastIngest: lastIngest.data?.[0]?.created_at,
@@ -196,6 +217,50 @@ export default async function DashboardPage() {
             <PulseCard label="Stuck prequalified" value={d.stuck.prequalified.toString()} ok={d.stuck.prequalified === 0} />
             <PulseCard label="Stuck qualified" value={d.stuck.qualified.toString()} ok={d.stuck.qualified === 0} />
             <PulseCard label="Discarded review" value={d.stuck.review.toString()} ok={d.stuck.review === 0} />
+          </div>
+        </section>
+
+        {/* Entrada por categoría — chequeo diario para todo el equipo */}
+        <section>
+          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-1">¿Está entrando trabajo? — por categoría</h2>
+          <p className="text-[13px] text-fg-muted mb-3">
+            Jobs que entraron en las <strong>últimas 24h</strong> vs el <strong>promedio diario</strong> de la semana.
+            Si una categoría marca <span className="text-destructive font-medium">0 y su promedio es alto</span>, puede que ese scraper no esté trayendo — avisá al equipo técnico.
+          </p>
+          <div className="bg-surface border border-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-bg border-b border-border">
+                <tr className="text-left text-fg-muted text-xs uppercase tracking-wide">
+                  <th className="px-4 py-3">Categoría</th>
+                  <th className="px-4 py-3 text-right">Últimas 24h</th>
+                  <th className="px-4 py-3 text-right">Promedio/día</th>
+                  <th className="px-4 py-3">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.entrada.length === 0 ? (
+                  <tr><td colSpan={4} className="px-4 py-6 text-center text-fg-muted">Sin datos todavía</td></tr>
+                ) : d.entrada.map((e) => {
+                  const [dot, label, cls] =
+                    e.low ? ['bg-destructive', 'Sin entrar hoy', 'text-destructive'] :
+                    e.avg >= 1 && e.today < e.avg * 0.5 ? ['bg-warning', 'Bajo', 'text-warning'] :
+                    ['bg-accent', 'OK', 'text-fg-muted']
+                  return (
+                    <tr key={e.cat} className={`border-b border-border last:border-0 ${e.low ? 'bg-destructive-bg/40' : ''}`}>
+                      <td className="px-4 py-3 font-medium">{e.cat}</td>
+                      <td className="px-4 py-3 text-right tabular-nums font-semibold">{e.today}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-fg-muted">{e.avg}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+                          <span className={`size-1.5 rounded-full ${dot}`} />
+                          <span className={cls}>{label}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
 
