@@ -31,6 +31,7 @@ async function loadDashboardData() {
     lastIngest,
     lastClassif,
     lastCover,
+    lastQuestions,
     stuckPreq,
     stuckQual,
     stuckReview,
@@ -44,7 +45,7 @@ async function loadDashboardData() {
     // jobs in last 24h with classifier + cover data
     supabase
       .from('jobs')
-      .select('id, status, classifier_match, classifier_run_at, cover_letter_draft, classifier_area, business_unit_id, created_at')
+      .select('id, status, classifier_match, classifier_run_at, cover_letter_draft, classifier_area, business_unit_id, created_at, questions, questions_answers')
       .gte('created_at', since24h),
     // jobs in last 7d for trend
     supabase
@@ -55,6 +56,8 @@ async function loadDashboardData() {
     supabase.from('jobs').select('created_at').order('created_at', { ascending: false }).limit(1),
     supabase.from('jobs').select('classifier_run_at').not('classifier_run_at', 'is', null).order('classifier_run_at', { ascending: false }).limit(1),
     supabase.from('jobs').select('cover_letter_generated_at').not('cover_letter_generated_at', 'is', null).order('cover_letter_generated_at', { ascending: false }).limit(1),
+    // last job that actually got screening questions (detecta si screening se rompió en silencio)
+    supabase.from('jobs').select('created_at').not('questions->0', 'is', null).order('created_at', { ascending: false }).limit(1),
     // stuck counts
     supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'prequalified').is('classifier_run_at', null),
     supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'qualified').is('cover_letter_draft', null),
@@ -96,6 +99,8 @@ async function loadDashboardData() {
   const passedFilter24h = jobs24h.filter(j => j.classifier_run_at).length
   const matched24h = jobs24h.filter(j => j.classifier_match === true).length
   const covers24h = jobs24h.filter(j => j.cover_letter_draft).length
+  const questions24h = jobs24h.filter(j => Array.isArray(j.questions) && j.questions.length > 0).length
+  const answers24h = jobs24h.filter(j => Array.isArray(j.questions_answers) && j.questions_answers.length > 0).length
 
   // 7d trend by day
   const byDay: Record<string, { total: number; matches: number; covers: number }> = {}
@@ -130,7 +135,9 @@ async function loadDashboardData() {
       lastIngest: lastIngest.data?.[0]?.created_at,
       lastClassif: lastClassif.data?.[0]?.classifier_run_at,
       lastCover: lastCover.data?.[0]?.cover_letter_generated_at,
+      lastQuestions: lastQuestions.data?.[0]?.created_at,
     },
+    screening24h: { asked: questions24h, answered: answers24h },
     stuck: {
       prequalified: stuckPreq.count ?? 0,
       qualified: stuckQual.count ?? 0,
@@ -183,6 +190,9 @@ export default async function DashboardPage() {
             <PulseCard label="Last ingest" value={ago(d.pulse.lastIngest)} ok={!!d.pulse.lastIngest && Date.now() - new Date(d.pulse.lastIngest).getTime() < 6 * HOUR_MS} />
             <PulseCard label="Last classify" value={ago(d.pulse.lastClassif)} ok={!!d.pulse.lastClassif && Date.now() - new Date(d.pulse.lastClassif).getTime() < 2 * HOUR_MS} />
             <PulseCard label="Last cover letter" value={ago(d.pulse.lastCover)} ok={!!d.pulse.lastCover && Date.now() - new Date(d.pulse.lastCover).getTime() < 24 * HOUR_MS} />
+            <PulseCard label="Last screening" value={ago(d.pulse.lastQuestions)} ok={!!d.pulse.lastQuestions && Date.now() - new Date(d.pulse.lastQuestions).getTime() < 24 * HOUR_MS} />
+            <PulseCard label="Preguntas 24h" value={d.screening24h.asked.toString()} ok={d.screening24h.asked > 0} />
+            <PulseCard label="Respondidas 24h" value={d.screening24h.answered.toString()} ok={d.screening24h.answered > 0 || d.screening24h.asked === 0} />
             <PulseCard label="Stuck prequalified" value={d.stuck.prequalified.toString()} ok={d.stuck.prequalified === 0} />
             <PulseCard label="Stuck qualified" value={d.stuck.qualified.toString()} ok={d.stuck.qualified === 0} />
             <PulseCard label="Discarded review" value={d.stuck.review.toString()} ok={d.stuck.review === 0} />
@@ -191,11 +201,11 @@ export default async function DashboardPage() {
 
         {/* Funnel 24h */}
         <section>
-          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Funnel (últimas 24h)</h2>
+          <h2 className="text-xs uppercase tracking-wide font-semibold text-fg-muted mb-3">Funnel (last 24h)</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <BigStat label="Ingestados" value={d.funnel24h.ingested} />
-            <BigStat label="Pasaron filtro $40/h" value={d.funnel24h.passedFilter} sub={d.funnel24h.ingested > 0 ? `${((d.funnel24h.passedFilter / d.funnel24h.ingested) * 100).toFixed(0)}%` : null} />
-            <BigStat label="Match (qualified)" value={d.funnel24h.matched} sub={d.funnel24h.passedFilter > 0 ? `${((d.funnel24h.matched / d.funnel24h.passedFilter) * 100).toFixed(0)}% del filtro` : null} />
+            <BigStat label="Ingested" value={d.funnel24h.ingested} />
+            <BigStat label="Passed $40/h filter" value={d.funnel24h.passedFilter} sub={d.funnel24h.ingested > 0 ? `${((d.funnel24h.passedFilter / d.funnel24h.ingested) * 100).toFixed(0)}%` : null} />
+            <BigStat label="Match (qualified)" value={d.funnel24h.matched} sub={d.funnel24h.passedFilter > 0 ? `${((d.funnel24h.matched / d.funnel24h.passedFilter) * 100).toFixed(0)}% of filter` : null} />
             <BigStat label="Cover letters" value={d.funnel24h.covers} accent />
           </div>
         </section>
