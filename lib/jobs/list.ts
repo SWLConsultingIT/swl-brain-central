@@ -52,6 +52,7 @@ export type JobRow = {
   total_hired: number | null
   viewed_by_client: boolean | null
   published_date: string | null
+  last_client_activity: string | null
   // Motivo real registrado al descartar (job_decisions.reason). Solo se llena para discarded.
   discard_reason: string | null
   // true si una persona lo descartó/mandó a revisar a mano (tachito), para resaltarlo en la UI.
@@ -66,7 +67,7 @@ const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency
   'business_unit_id, cover_letter_draft, cover_letter_generated_at, industry, country, post_date, created_at, updated_at, notes, questions, questions_answers, ' +
   'matched_keyword, preferred_location, preferred_location_mandatory, experience_level, engagement, hourly_min, hourly_max, weekly_budget, skills, ' +
   'client_total_hires, client_total_spent, client_verification, client_total_reviews, client_rating, client_company_name, ' +
-  'total_applicants, invites_sent, interviewing, unanswered_invites, total_hired, viewed_by_client, published_date, ' +
+  'total_applicants, invites_sent, interviewing, unanswered_invites, total_hired, viewed_by_client, published_date, last_client_activity, ' +
   'connects_base, connects_boost'
 
 const ACTIVE_STATUSES = ['prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']

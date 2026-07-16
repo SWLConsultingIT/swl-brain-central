@@ -21,6 +21,19 @@ export function matchPct(j: JobRow): number {
   return Math.round((met / CRITERIA.length) * 100)
 }
 
+// "Aplicá ya" / lead caliente: vale la pena saltar sobre este job YA.
+// Los primeros en postularse ganan → score alto + poca competencia + fresco (o cliente activo recién).
+export function isHotLead(j: JobRow): boolean {
+  // Solo tiene sentido en jobs a los que todavía te podés postular.
+  if (['sent', 'responded', 'discarded', 'discarded_review'].includes(j.status)) return false
+  const DAY = 86400000
+  const score = matchPct(j)
+  const fewProposals = j.proposals_count != null && j.proposals_count <= 5
+  const fresh = !!j.post_date && Date.now() - new Date(j.post_date).getTime() < DAY
+  const clientActive = !!j.last_client_activity && Date.now() - new Date(j.last_client_activity).getTime() < 2 * DAY
+  return score >= 60 && fewProposals && (fresh || clientActive)
+}
+
 export function matchDetail(j: JobRow): string {
   const met = CRITERIA.filter((c) => c.test(j)).length
   return `${met}/${CRITERIA.length} criterios\n` + CRITERIA.map((c) => `${c.test(j) ? '✓' : '✗'} ${c.label}`).join('\n')

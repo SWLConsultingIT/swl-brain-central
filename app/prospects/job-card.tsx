@@ -6,6 +6,7 @@ import ClassifyButton from './classify-button'
 import CoverLetterButton from './cover-letter-button'
 import JobDetailModal from './job-detail-modal'
 import { countryFlag, postedAgo, isFresh, isStale } from './job-meta'
+import { isHotLead } from '@/lib/jobs/score'
 
 function shortUpworkId(upworkId: string | null): string {
   const last5 = (upworkId ?? '').slice(-5)
@@ -75,6 +76,7 @@ export default function JobCard({ job }: { job: JobRow }) {
   const flag = countryFlag(job.country)
   const posted = postedAgo(job.post_date)
   const fresh = isFresh(job.post_date, 2)
+  const hot = isHotLead(job)
   const stale =
     job.status === 'qualified' && !hasCoverLetter && isStale(job.classifier_run_at, 6)
 
@@ -123,6 +125,17 @@ export default function JobCard({ job }: { job: JobRow }) {
             {job.title}
           </h3>
         </div>
+
+        {hot && (
+          <div className="mt-2">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warning-bg text-warning text-[10px] font-bold uppercase tracking-wide"
+              title="Fresco + score alto + poca competencia — los primeros en postularse ganan"
+            >
+              🔥 Aplicá ya
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-mono text-fg-subtle">
           {job.link ? (

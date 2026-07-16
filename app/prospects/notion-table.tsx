@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
-import { matchPct, matchDetail, discardReason } from '@/lib/jobs/score'
+import { matchPct, matchDetail, discardReason, isHotLead } from '@/lib/jobs/score'
 import JobDetailModal from './job-detail-modal'
 import { STATUS_META, countryFlag, postedAgo } from './job-meta'
 
@@ -151,6 +151,7 @@ function proposalsTone(n: number): string {
 }
 
 function TitleCell({ job }: { job: JobRow }) {
+  const hot = isHotLead(job)
   return (
     <div className="flex items-center gap-2 max-w-[440px]">
       <svg viewBox="0 0 16 16" className="size-[15px] shrink-0 text-fg-subtle" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
@@ -158,6 +159,14 @@ function TitleCell({ job }: { job: JobRow }) {
         <path d="M8.5 1.75V5.5h3.75" />
       </svg>
       <span className="font-normal text-fg text-[14px] truncate">{job.title}</span>
+      {hot && (
+        <span
+          className="inline-flex items-center px-1.5 py-0.5 rounded bg-warning-bg text-warning text-[9px] font-bold uppercase tracking-wide shrink-0"
+          title="Fresco + score alto + poca competencia — postulate ya"
+        >
+          🔥 Ya
+        </span>
+      )}
     </div>
   )
 }
