@@ -9,20 +9,18 @@
 // El generator NO escribe a Supabase. Eso es responsabilidad del route/script.
 
 import Anthropic from '@anthropic-ai/sdk'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { MASTER_PROMPT } from './master-prompt'
 
 export const COVER_LETTER_MODEL = 'claude-sonnet-4-5'
 
 const PRECEDENT_LIMIT = 5
 const MAX_PRECEDENT_CL_CHARS = 600
 
-// Master prompt cargado en build-time (no depende del cwd del runtime).
-// Exportado para reuso por otros generators (ej. lib/answers que comparte voz SWL).
-const __dirname = dirname(fileURLToPath(import.meta.url))
-export const MASTER_PROMPT = readFileSync(join(__dirname, 'master-prompt.md'), 'utf8')
+// Master prompt como string TS (bundle-safe). Antes se leía master-prompt.md con
+// readFileSync en module-init, lo que crasheaba en Vercel al importarlo cross-folder.
+// Re-exportado para los módulos que lo reusan (classifier, answers).
+export { MASTER_PROMPT }
 
 export type GeneratorJob = {
   title: string
