@@ -313,6 +313,8 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   ],
   ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
   sent: [COL.title, COL.responded, COL.flow, COL.ticket, COL.score, COL.link, COL.sent],
+  // Invites: jobs que entraron por invitación del cliente (pegando el link).
+  invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.link, COL.added],
   // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
   client_reply: [COL.title, COL.responded, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).

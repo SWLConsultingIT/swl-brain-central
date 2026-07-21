@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
 import JobCard from './job-card'
 import NotionTable, { NOTION_VIEW_COLUMNS } from './notion-table'
@@ -49,12 +50,14 @@ type NotionView = {
   label: string
   status: string | null // null = kanban "Por estado"
   statuses?: string[]    // si está, la vista filtra por varios estados (en vez de status único)
+  invitesOnly?: boolean  // si está, filtra is_invite=true (sin importar estado)
   columnsKey?: keyof typeof NOTION_VIEW_COLUMNS
 }
 
 const NOTION_VIEWS: NotionView[] = [
   // 'Qualified' se quitó: es un estado de paso (casi siempre vacío). Los jobs viables
   // con carta viven en Check Proposal. La salud de qualified se vigila con el watchdog.
+  { id: 'invites',        label: 'Invites',        status: null, invitesOnly: true, columnsKey: 'invites' },
   { id: 'check_proposal', label: 'Check Proposal', status: 'proposal_drafted',  columnsKey: 'check_proposal' },
   // Hoja intermedia: jobs que se saturaron (≥40 propuestas / ≥4 interviews) y salieron
   // del pipeline solos, para que los revises antes de descartarlos del todo.
@@ -79,6 +82,28 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [sentRange, setSentRange] = useState<string>('15d')
   const [sentFrom, setSentFrom] = useState<string>('')
   const [sentTo, setSentTo] = useState<string>('')
+  const [addingInvite, setAddingInvite] = useState(false)
+  const router = useRouter()
+
+  // Alta manual de un invite: pegás el link del job → entra a la solapa Invites.
+  async function addInvite() {
+    const link = prompt('Pegá el link del JOB del invite (el que abre el aviso en Upwork):')
+    if (!link || !link.trim()) return
+    setAddingInvite(true)
+    try {
+      const r = await fetch('/api/jobs/add-invite', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ link: link.trim() }),
+      })
+      const data = await r.json()
+      if (!r.ok) { alert(data.error ?? 'No se pudo agregar el invite'); return }
+      setViewId('invites')
+      router.refresh()
+    } finally {
+      setAddingInvite(false)
+    }
+  }
 
   // Orden compartido. 'recent' = más nuevos arriba. 'score' = FRESCO + MEJOR:
   // día más nuevo primero, y dentro de cada día el mejor score.
@@ -119,7 +144,8 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
     () => NOTION_VIEWS.find(v => v.id === viewId) ?? NOTION_VIEWS[NOTION_VIEWS.length - 1],
     [viewId],
   )
-  const isBoardView = activeView.status === null
+  // El kanban "By Status" es el único con status null que NO es tabla. Invites (status null + invitesOnly) es tabla.
+  const isBoardView = activeView.status === null && !activeView.invitesOnly
 
   // Filtros compartidos (búsqueda, BU, country, minScore) — aplican a todas las vistas.
   const filtered = useMemo(() => {
@@ -141,6 +167,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const viewCounts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const v of NOTION_VIEWS) {
+      if (v.invitesOnly) { m[v.id] = filtered.filter(j => j.is_invite).length; continue }
       const statuses = v.statuses ?? (v.status ? [v.status] : [])
       m[v.id] = v.status === null ? filtered.length : filtered.filter(j => statuses.includes(j.status)).length
     }
@@ -171,7 +198,9 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
 
   // Filas para la vista de tabla activa (filtra por el status de la vista).
   const tableRows = useMemo(() => {
-    if (isBoardView || activeView.status === null) return []
+    if (isBoardView) return []
+    if (activeView.invitesOnly) return filtered.filter(j => j.is_invite)
+    if (activeView.status === null) return []
     const statuses = activeView.statuses ?? [activeView.status]
     let rows = filtered.filter(j => statuses.includes(j.status))
     if (activeView.id === 'sent') rows = rows.filter(sentInRange)
@@ -349,6 +378,18 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
               )}
             </>
           )}
+
+          <button
+            onClick={addInvite}
+            disabled={addingInvite}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted transition-colors disabled:opacity-50"
+            title="Pegá el link de un invite para agregarlo"
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+              <path d="M8 3.25v9.5M3.25 8h9.5" />
+            </svg>
+            {addingInvite ? 'Agregando…' : 'Agregar invite'}
+          </button>
 
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
             <span className="font-mono tabular-nums">

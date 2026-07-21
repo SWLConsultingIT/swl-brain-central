@@ -57,6 +57,8 @@ export type JobRow = {
   discard_reason: string | null
   // true si una persona lo descartó/mandó a revisar a mano (tachito), para resaltarlo en la UI.
   discarded_by_human?: boolean
+  // true si entró por INVITE (invitación del cliente); se muestra en la solapa Invites.
+  is_invite: boolean
   // Connects gastados al postularse (migración 0030): base = cobro de Upwork, boost = extra.
   connects_base: number | null
   connects_boost: number | null
@@ -68,14 +70,14 @@ const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency
   'matched_keyword, preferred_location, preferred_location_mandatory, experience_level, engagement, hourly_min, hourly_max, weekly_budget, skills, ' +
   'client_total_hires, client_total_spent, client_verification, client_total_reviews, client_rating, client_company_name, ' +
   'total_applicants, invites_sent, interviewing, unanswered_invites, total_hired, viewed_by_client, published_date, last_client_activity, ' +
-  'connects_base, connects_boost'
+  'connects_base, connects_boost, is_invite'
 
 const ACTIVE_STATUSES = ['prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
 const DISCARDED_LIMIT = 800
 const PROSPECTS_LIMIT = 400
 
 export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
-  const [active, recentDiscarded, prospects] = await Promise.all([
+  const [active, recentDiscarded, prospects, invites] = await Promise.all([
     supabase
       .from('jobs')
       .select(SELECT)
@@ -93,11 +95,18 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
       .eq('status', 'new')
       .order('post_date', { ascending: false })
       .limit(PROSPECTS_LIMIT),
+    // Invites: siempre cargarlos completos, sin importar estado (aparecen en su solapa).
+    supabase
+      .from('jobs')
+      .select(SELECT)
+      .eq('is_invite', true)
+      .order('created_at', { ascending: false }),
   ])
 
   if (active.error) throw new Error(active.error.message)
   if (recentDiscarded.error) throw new Error(recentDiscarded.error.message)
   if (prospects.error) throw new Error(prospects.error.message)
+  if (invites.error) throw new Error(invites.error.message)
 
   const activeRows = (active.data ?? []) as unknown as JobRow[]
   const discarded = (recentDiscarded.data ?? []) as unknown as JobRow[]
@@ -155,9 +164,19 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
     }
   }
 
-  return [
+  // Unir todo y deduplicar por id (un invite puede aparecer también en active/prospects).
+  const merged = [
     ...(active.data ?? []),
     ...discarded,
     ...(prospects.data ?? []),
+    ...(invites.data ?? []),
   ] as unknown as JobRow[]
+  const seen = new Set<string>()
+  const out: JobRow[] = []
+  for (const j of merged) {
+    if (seen.has(j.id)) continue
+    seen.add(j.id)
+    out.push(j)
+  }
+  return out
 }
