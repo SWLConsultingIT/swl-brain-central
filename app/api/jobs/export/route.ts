@@ -54,12 +54,12 @@ export async function GET() {
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet('Upwork')
   ws.columns = [
-    { header: 'Upwork ID', key: 'upwork_id', width: 20 },
-    { header: 'Título', key: 'title', width: 48 },
-    { header: 'Universo', key: 'universo', width: 28 },
-    { header: 'Business Unit', key: 'bu', width: 28 },
+    { header: 'Upwork ID', key: 'upwork_id', width: 18 },
+    { header: 'Título', key: 'title', width: 40 },
+    { header: 'Universo', key: 'universo', width: 22 },
+    { header: 'Business Unit', key: 'bu', width: 22 },
     { header: 'Estado', key: 'status', width: 16 },
-    { header: 'Fecha postulación', key: 'sent_date', width: 20 },
+    { header: 'Fecha postulación', key: 'sent_date', width: 16 },
     { header: 'Score', key: 'match_score', width: 8 },
     { header: 'Score IA', key: 'classifier_score', width: 9 },
     { header: 'Viable IA', key: 'classifier_match', width: 9 },
@@ -73,24 +73,24 @@ export async function GET() {
     { header: 'País', key: 'country', width: 16 },
     { header: 'Ciudad', key: 'city_region', width: 16 },
     { header: 'Rating cliente', key: 'client_rating', width: 12 },
-    { header: 'Cliente gastó (USD)', key: 'client_total_spent', width: 16 },
-    { header: 'Cliente contrataciones', key: 'client_total_hires', width: 16 },
+    { header: 'Cliente gastó (USD)', key: 'client_total_spent', width: 14 },
+    { header: 'Cliente contrataciones', key: 'client_total_hires', width: 13 },
     { header: 'Verificación', key: 'client_verification', width: 12 },
-    { header: 'Duración', key: 'duration', width: 20 },
-    { header: 'Dedicación', key: 'engagement', width: 20 },
+    { header: 'Duración', key: 'duration', width: 17 },
+    { header: 'Dedicación', key: 'engagement', width: 17 },
     { header: 'Experiencia', key: 'experience_level', width: 12 },
-    { header: 'Industria', key: 'industry', width: 20 },
-    { header: 'Skills', key: 'skills', width: 46 },
+    { header: 'Industria', key: 'industry', width: 16 },
+    { header: 'Skills', key: 'skills', width: 34 },
     { header: 'Keyword', key: 'matched_keyword', width: 16 },
     { header: 'Connects base', key: 'connects_base', width: 12 },
     { header: 'Connects boost', key: 'connects_boost', width: 13 },
     { header: '# Preguntas', key: 'n_questions', width: 11 },
     { header: 'Cliente respondió', key: 'responded', width: 14 },
-    { header: 'Link', key: 'link', width: 52 },
+    { header: 'Link', key: 'link', width: 42 },
     { header: 'Fecha publicación', key: 'post_date', width: 18 },
     { header: 'Fecha scrapeado', key: 'created_at', width: 18 },
-    { header: 'Última actividad cliente', key: 'last_client_activity', width: 20 },
-    { header: 'Descripción', key: 'description', width: 90 },
+    { header: 'Última actividad cliente', key: 'last_client_activity', width: 16 },
+    { header: 'Descripción', key: 'description', width: 50 },
   ]
 
   for (const j of jobs) {
@@ -138,14 +138,7 @@ export async function GET() {
     })
   }
 
-  // Columnas de texto largo: wrap + alineadas arriba (para que no se tapen con la de al lado)
-  const wrapKeys = new Set(['title', 'skills', 'description', 'link'])
-  for (const col of ws.columns) {
-    const wrap = col.key ? wrapKeys.has(col.key) : false
-    col.alignment = { vertical: 'top', wrapText: wrap }
-  }
-
-  // Header con color + filtros + panel congelado (después del col loop para que gane el estilo del header)
+  // Header con color + filtros + panel congelado
   const header = ws.getRow(1)
   header.height = 24
   header.eachCell((c) => {
