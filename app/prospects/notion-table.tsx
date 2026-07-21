@@ -356,6 +356,20 @@ export default function NotionTable({
     }
   }
 
+  // En la solapa Invites el tacho BORRA el invite (no lo descarta): saca el placeholder.
+  async function deleteInvite(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('¿Borrar este invite?')) return
+    setDiscarding(id)
+    try {
+      const r = await fetch(`/api/jobs/${id}/delete-invite`, { method: 'POST' })
+      if (!r.ok) { alert('No se pudo borrar: ' + (await r.text())); return }
+      router.refresh()
+    } finally {
+      setDiscarding(null)
+    }
+  }
+
   // Mandar un job a "Para Chequear" (discarded_review) desde la fila, con comentario opcional.
   async function sendToReview(id: string, e: React.MouseEvent) {
     e.stopPropagation()
@@ -463,10 +477,10 @@ export default function NotionTable({
                           </button>
                         )}
                         <button
-                          onClick={(e) => discardJob(job.id, e)}
+                          onClick={(e) => (job.is_invite ? deleteInvite(job.id, e) : discardJob(job.id, e))}
                           disabled={discarding === job.id}
-                          title="Discard (move to Discarded)"
-                          aria-label="Discard job"
+                          title={job.is_invite ? 'Borrar invite' : 'Discard (move to Discarded)'}
+                          aria-label={job.is_invite ? 'Borrar invite' : 'Discard job'}
                           className="inline-flex items-center justify-center text-fg-subtle/60 hover:text-destructive hover:scale-110 transition disabled:opacity-30 cursor-pointer"
                         >
                           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

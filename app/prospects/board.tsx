@@ -83,21 +83,30 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [sentFrom, setSentFrom] = useState<string>('')
   const [sentTo, setSentTo] = useState<string>('')
   const [addingInvite, setAddingInvite] = useState(false)
+  // Modal de alta de invite (Juan pega título + descripción del invite).
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [invTitle, setInvTitle] = useState('')
+  const [invDesc, setInvDesc] = useState('')
+  const [invLink, setInvLink] = useState('')
+  const [invErr, setInvErr] = useState<string | null>(null)
   const router = useRouter()
 
-  // Alta manual de un invite: pegás el link del job → entra a la solapa Invites.
-  async function addInvite() {
-    const link = prompt('Pegá el link del JOB del invite (el que abre el aviso en Upwork):')
-    if (!link || !link.trim()) return
+  // Enviar el invite: se procesa al toque (clasifica + genera cover letter) y entra a Invites.
+  async function submitInvite() {
+    setInvErr(null)
+    if (!invTitle.trim()) { setInvErr('Pegá el título'); return }
+    if (invDesc.trim().length < 30) { setInvErr('Pegá la descripción del job'); return }
     setAddingInvite(true)
     try {
       const r = await fetch('/api/jobs/add-invite', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ link: link.trim() }),
+        body: JSON.stringify({ title: invTitle.trim(), description: invDesc.trim(), link: invLink.trim() || undefined }),
       })
       const data = await r.json()
-      if (!r.ok) { alert(data.error ?? 'No se pudo agregar el invite'); return }
+      if (!r.ok) { setInvErr(data.error ?? 'No se pudo agregar el invite'); return }
+      setInviteOpen(false)
+      setInvTitle(''); setInvDesc(''); setInvLink('')
       setViewId('invites')
       router.refresh()
     } finally {
@@ -380,15 +389,14 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
           )}
 
           <button
-            onClick={addInvite}
-            disabled={addingInvite}
+            onClick={() => { setInvErr(null); setInviteOpen(true) }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted transition-colors disabled:opacity-50"
-            title="Pegá el link de un invite para agregarlo"
+            title="Agregar un invite (pegás título + descripción)"
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
               <path d="M8 3.25v9.5M3.25 8h9.5" />
             </svg>
-            {addingInvite ? 'Agregando…' : 'Agregar invite'}
+            Agregar invite
           </button>
 
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
@@ -469,6 +477,71 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
             buNames={buNames}
             sortBy={sortBy}
           />
+        </div>
+      )}
+
+      {inviteOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !addingInvite && setInviteOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-surface border border-border shadow-xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-[15px] font-semibold text-fg">Agregar invite</h2>
+              <button onClick={() => !addingInvite && setInviteOpen(false)} className="text-fg-subtle hover:text-fg text-[18px] leading-none" aria-label="Cerrar">×</button>
+            </div>
+            <p className="text-[12px] text-fg-muted mb-4">
+              Abrí el invite en Upwork y pegá el <strong>título</strong> y la <strong>descripción</strong> del job.
+              Se clasifica y se genera la cover letter al instante, igual que un job normal.
+            </p>
+
+            <label className="block text-[11px] font-medium text-fg-muted mb-1">Título</label>
+            <input
+              value={invTitle}
+              onChange={(e) => setInvTitle(e.target.value)}
+              placeholder="Ej: Senior n8n Automation Engineer"
+              className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+
+            <label className="block text-[11px] font-medium text-fg-muted mb-1">Descripción</label>
+            <textarea
+              value={invDesc}
+              onChange={(e) => setInvDesc(e.target.value)}
+              rows={7}
+              placeholder="Pegá acá la descripción completa del job del invite…"
+              className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent resize-y"
+            />
+
+            <label className="block text-[11px] font-medium text-fg-muted mb-1">Link (opcional)</label>
+            <input
+              value={invLink}
+              onChange={(e) => setInvLink(e.target.value)}
+              placeholder="https://www.upwork.com/…"
+              className="w-full mb-4 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+
+            {invErr && <p className="text-[12px] text-destructive mb-3">{invErr}</p>}
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setInviteOpen(false)}
+                disabled={addingInvite}
+                className="px-3 py-1.5 rounded-md border border-border text-[12px] text-fg-muted hover:bg-bg disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitInvite}
+                disabled={addingInvite}
+                className="px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted disabled:opacity-50"
+              >
+                {addingInvite ? 'Procesando…' : 'Agregar y generar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
