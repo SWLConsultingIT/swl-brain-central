@@ -57,6 +57,17 @@ export default async function ProspectsPage() {
             >
               Dashboard
             </Link>
+            <a
+              href="/api/jobs/export"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-fg text-bg font-medium hover:bg-fg-muted transition-colors"
+              title="Descargar todos los jobs en Excel"
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M8 1.75v8.5M4.75 7l3.25 3.25L11.25 7" />
+                <path d="M2.75 13.25h10.5" />
+              </svg>
+              Exportar Excel
+            </a>
           </div>
         </div>
       </header>
