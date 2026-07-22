@@ -97,3 +97,13 @@ export function isStale(iso: string | null, afterHours = 6): boolean {
   if (!iso) return false
   return Date.now() - new Date(iso).getTime() > afterHours * HOUR_MS
 }
+
+// Jobs "elegidos a mano" = alta prioridad: invites del cliente + los agregados por link.
+// Se resaltan y van arriba de todo en las tablas. matched_keyword='by-link' lo setea /api/jobs/by-link.
+export function prioritySource(
+  j: { is_invite?: boolean | null; matched_keyword?: string | null },
+): 'invite' | 'link' | null {
+  if (j.is_invite) return 'invite'
+  if (j.matched_keyword === 'by-link') return 'link'
+  return null
+}

@@ -5,7 +5,7 @@ import type { JobRow } from '@/lib/jobs/list'
 import ClassifyButton from './classify-button'
 import CoverLetterButton from './cover-letter-button'
 import JobDetailModal from './job-detail-modal'
-import { countryFlag, postedAgo, isFresh, isStale } from './job-meta'
+import { countryFlag, postedAgo, isFresh, isStale, prioritySource } from './job-meta'
 import { isHotLead } from '@/lib/jobs/score'
 
 function shortUpworkId(upworkId: string | null): string {
@@ -77,6 +77,8 @@ export default function JobCard({ job }: { job: JobRow }) {
   const posted = postedAgo(job.post_date)
   const fresh = isFresh(job.post_date, 2)
   const hot = isHotLead(job)
+  // Elegido a mano (invite / por link) → card resaltada (borde violeta) + badge, alta prioridad.
+  const priority = prioritySource(job)
   const stale =
     job.status === 'qualified' && !hasCoverLetter && isStale(job.classifier_run_at, 6)
 
@@ -89,7 +91,9 @@ export default function JobCard({ job }: { job: JobRow }) {
     <>
       <div
         className={`group relative bg-surface border rounded-xl p-4 shadow-card hover:shadow-card-hover transition-[box-shadow,border-color,transform] duration-200 ease-out ${
-          stale
+          priority
+            ? 'border-violet/50 ring-1 ring-violet/25 hover:border-violet'
+            : stale
             ? 'border-orange/30 hover:border-orange/60'
             : 'border-border hover:border-border-strong'
         } ${isClickable ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default'}`}
@@ -125,6 +129,17 @@ export default function JobCard({ job }: { job: JobRow }) {
             {job.title}
           </h3>
         </div>
+
+        {priority && (
+          <div className="mt-2">
+            <span
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-bg text-violet"
+              title={priority === 'invite' ? 'Invite del cliente — alta prioridad' : 'Agregado a mano por link — alta prioridad'}
+            >
+              {priority === 'invite' ? '📨 Invite' : '🔗 Por link'}
+            </span>
+          </div>
+        )}
 
         {hot && (
           <div className="mt-2">

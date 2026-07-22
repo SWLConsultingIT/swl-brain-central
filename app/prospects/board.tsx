@@ -6,7 +6,7 @@ import type { JobRow } from '@/lib/jobs/list'
 import JobCard from './job-card'
 import NotionTable, { NOTION_VIEW_COLUMNS } from './notion-table'
 import { matchPct } from '@/lib/jobs/score'
-import { isFresh } from './job-meta'
+import { isFresh, prioritySource } from './job-meta'
 
 type Column = {
   status: string
@@ -89,6 +89,12 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [invDesc, setInvDesc] = useState('')
   const [invLink, setInvLink] = useState('')
   const [invErr, setInvErr] = useState<string | null>(null)
+  // Modal de alta por LINK (Juan pega link + título; se traen los datos desde Upwork).
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [blLink, setBlLink] = useState('')
+  const [blTitle, setBlTitle] = useState('')
+  const [blErr, setBlErr] = useState<string | null>(null)
+  const [addingLink, setAddingLink] = useState(false)
   const router = useRouter()
 
   // Enviar el invite: se procesa al toque (clasifica + genera cover letter) y entra a Invites.
@@ -111,6 +117,34 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       router.refresh()
     } finally {
       setAddingInvite(false)
+    }
+  }
+
+  // Agregar por LINK: trae los datos desde Upwork (busca por título, matchea por ciphertext),
+  // clasifica + genera cover letter, y entra a Invites (elegido a mano = alta prioridad).
+  async function submitByLink() {
+    setBlErr(null)
+    if (!/upwork\.com/i.test(blLink.trim())) { setBlErr('Pegá el link del job de Upwork'); return }
+    if (!blTitle.trim()) { setBlErr('Pegá el título exacto del job'); return }
+    setAddingLink(true)
+    try {
+      const r = await fetch('/api/jobs/by-link', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ link: blLink.trim(), title: blTitle.trim() }),
+      })
+      const data = await r.json()
+      if (r.ok && data.found === false) {
+        setBlErr('No lo encontré en Upwork (puede estar viejo/cerrado o el título no coincide exacto). Probá con "Agregar invite" pegando título + descripción.')
+        return
+      }
+      if (!r.ok) { setBlErr(data.error ?? 'No se pudo agregar el job'); return }
+      setLinkOpen(false)
+      setBlLink(''); setBlTitle('')
+      setViewId('invites')
+      router.refresh()
+    } finally {
+      setAddingLink(false)
     }
   }
 
@@ -176,9 +210,13 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const viewCounts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const v of NOTION_VIEWS) {
-      if (v.invitesOnly) { m[v.id] = filtered.filter(j => j.is_invite).length; continue }
+      // Solapa Invites = todos los "elegidos a mano" (invites del cliente + agregados por link).
+      if (v.invitesOnly) { m[v.id] = filtered.filter(j => prioritySource(j) != null).length; continue }
       const statuses = v.statuses ?? (v.status ? [v.status] : [])
-      m[v.id] = v.status === null ? filtered.length : filtered.filter(j => statuses.includes(j.status)).length
+      let rows = v.status === null ? filtered : filtered.filter(j => statuses.includes(j.status))
+      // Check Proposal NO muestra los manuales: viven en su propia solapa (Invites).
+      if (v.id === 'check_proposal') rows = rows.filter(j => prioritySource(j) == null)
+      m[v.id] = rows.length
     }
     return m
   }, [filtered])
@@ -208,10 +246,13 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   // Filas para la vista de tabla activa (filtra por el status de la vista).
   const tableRows = useMemo(() => {
     if (isBoardView) return []
-    if (activeView.invitesOnly) return filtered.filter(j => j.is_invite)
+    // Solapa Invites = todos los "elegidos a mano" (invites del cliente + agregados por link).
+    if (activeView.invitesOnly) return filtered.filter(j => prioritySource(j) != null)
     if (activeView.status === null) return []
     const statuses = activeView.statuses ?? [activeView.status]
     let rows = filtered.filter(j => statuses.includes(j.status))
+    // Check Proposal NO muestra los manuales: se ven en su propia solapa (Invites).
+    if (activeView.id === 'check_proposal') rows = rows.filter(j => prioritySource(j) == null)
     if (activeView.id === 'sent') rows = rows.filter(sentInRange)
     return rows
   }, [filtered, isBoardView, activeView, sentInRange])
@@ -399,6 +440,14 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
             Agregar invite
           </button>
 
+          <button
+            onClick={() => { setBlErr(null); setLinkOpen(true) }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-fg text-[12px] font-medium hover:bg-bg transition-colors disabled:opacity-50"
+            title="Agregar un job pegando su link + título (trae los datos de Upwork)"
+          >
+            🔗 Agregar por link
+          </button>
+
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
             <span className="font-mono tabular-nums">
               <span className="font-semibold text-fg">{isBoardView ? filtered.length : tableRows.length}</span>
@@ -539,6 +588,62 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
                 className="px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted disabled:opacity-50"
               >
                 {addingInvite ? 'Procesando…' : 'Agregar y generar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {linkOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !addingLink && setLinkOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-surface border border-border shadow-xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-[15px] font-semibold text-fg">🔗 Agregar por link</h2>
+              <button onClick={() => !addingLink && setLinkOpen(false)} className="text-fg-subtle hover:text-fg text-[18px] leading-none" aria-label="Cerrar">×</button>
+            </div>
+            <p className="text-[12px] text-fg-muted mb-4">
+              Pegá el <strong>link</strong> del job de Upwork y su <strong>título exacto</strong>.
+              Traemos todos los datos desde Upwork, clasificamos y generamos la cover letter. Entra a <strong>Invites</strong>.
+            </p>
+
+            <label className="block text-[11px] font-medium text-fg-muted mb-1">Link del job</label>
+            <input
+              value={blLink}
+              onChange={(e) => setBlLink(e.target.value)}
+              placeholder="https://www.upwork.com/jobs/~02…"
+              className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+
+            <label className="block text-[11px] font-medium text-fg-muted mb-1">Título exacto</label>
+            <input
+              value={blTitle}
+              onChange={(e) => setBlTitle(e.target.value)}
+              placeholder="Copiá el título tal cual aparece en el job"
+              className="w-full mb-4 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+
+            {blErr && <p className="text-[12px] text-destructive mb-3">{blErr}</p>}
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setLinkOpen(false)}
+                disabled={addingLink}
+                className="px-3 py-1.5 rounded-md border border-border text-[12px] text-fg-muted hover:bg-bg disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitByLink}
+                disabled={addingLink}
+                className="px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted disabled:opacity-50"
+              >
+                {addingLink ? 'Buscando en Upwork…' : 'Traer y generar'}
               </button>
             </div>
           </div>

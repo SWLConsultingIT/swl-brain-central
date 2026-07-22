@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { JobRow } from '@/lib/jobs/list'
 import { matchPct, matchDetail, discardReason, isHotLead } from '@/lib/jobs/score'
 import JobDetailModal from './job-detail-modal'
-import { STATUS_META, countryFlag, postedAgo } from './job-meta'
+import { STATUS_META, countryFlag, postedAgo, prioritySource } from './job-meta'
 
 // ── shared cells ───────────────────────────────────────────────────────────
 
@@ -150,6 +150,23 @@ function proposalsTone(n: number): string {
   return n <= 5 ? 'text-accent-fg' : n <= 15 ? 'text-warning' : 'text-fg-subtle'
 }
 
+function PriorityBadge({ job }: { job: JobRow }) {
+  const src = prioritySource(job)
+  if (!src) return null
+  const [label, title] =
+    src === 'invite'
+      ? ['📨 Invite', 'Invite del cliente — alta prioridad']
+      : ['🔗 Por link', 'Agregado a mano por link — alta prioridad']
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-violet-bg text-violet shrink-0 whitespace-nowrap"
+      title={title}
+    >
+      {label}
+    </span>
+  )
+}
+
 function TitleCell({ job }: { job: JobRow }) {
   const hot = isHotLead(job)
   return (
@@ -159,6 +176,7 @@ function TitleCell({ job }: { job: JobRow }) {
         <path d="M8.5 1.75V5.5h3.75" />
       </svg>
       <span className="font-normal text-fg text-[14px] truncate">{job.title}</span>
+      <PriorityBadge job={job} />
       {hot && (
         <span
           className="text-[13px] leading-none shrink-0"
@@ -395,7 +413,11 @@ export default function NotionTable({
   // Orden elegible. byDate = más nuevos arriba. ageDays = antigüedad del post en días.
   const byDate = (a: JobRow, b: JobRow) => (b.post_date ?? '').localeCompare(a.post_date ?? '')
   const ageDays = (j: JobRow) => j.post_date ? Math.floor((Date.now() - new Date(j.post_date).getTime()) / 86400000) : 9999
+  // Prioridad: invites + por-link SIEMPRE arriba (los eligió una persona).
+  const prRank = (j: JobRow) => (prioritySource(j) ? 0 : 1)
   const sorted = [...jobs].sort((a, b) => {
+    const p = prRank(a) - prRank(b)
+    if (p !== 0) return p
     if (sortBy === 'recent') return byDate(a, b)
     // 'score' = FRESCO + MEJOR: día más nuevo primero, dentro del día el mejor score.
     return (ageDays(a) - ageDays(b)) || (matchPct(b) - matchPct(a)) || byDate(a, b)
@@ -433,13 +455,17 @@ export default function NotionTable({
                   const responded = job.status === 'responded'
                   // Descartado/mandado a revisar a mano (tachito) → resaltado ámbar para distinguirlo de los automáticos.
                   const manualDiscard = !responded && job.discarded_by_human === true
+                  // Elegido a mano (invite / por link) → resaltado violeta, alta prioridad.
+                  const priority = !responded && !manualDiscard && prioritySource(job) != null
                   // Clases literales (Tailwind no genera clases interpoladas dinámicamente).
                   const rowClass = responded
                     ? 'bg-accent-bg [&:hover_td.sticky]:bg-accent-bg'
                     : manualDiscard
                     ? 'bg-warning-bg [&:hover_td.sticky]:bg-warning-bg'
+                    : priority
+                    ? 'bg-violet-bg [&:hover_td.sticky]:bg-violet-bg'
                     : 'hover:bg-bg [&:hover_td.sticky]:bg-bg'
-                  const stickyBg = responded ? 'bg-accent-bg' : manualDiscard ? 'bg-warning-bg' : 'bg-surface'
+                  const stickyBg = responded ? 'bg-accent-bg' : manualDiscard ? 'bg-warning-bg' : priority ? 'bg-violet-bg' : 'bg-surface'
                   return (
                   <tr
                     key={job.id}
