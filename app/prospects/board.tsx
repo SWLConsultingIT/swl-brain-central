@@ -83,27 +83,59 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const [sentFrom, setSentFrom] = useState<string>('')
   const [sentTo, setSentTo] = useState<string>('')
   const [addingInvite, setAddingInvite] = useState(false)
-  // Modal de alta de invite (Juan pega título + descripción del invite).
+  // Modal de alta de invite: Juan pega TÍTULO + LINK y traemos todo de Upwork.
+  // Descripción = respaldo, solo aparece si Upwork no encuentra el job por link/título.
   const [inviteOpen, setInviteOpen] = useState(false)
   const [invTitle, setInvTitle] = useState('')
-  const [invDesc, setInvDesc] = useState('')
   const [invLink, setInvLink] = useState('')
+  const [invDesc, setInvDesc] = useState('')
+  const [showDesc, setShowDesc] = useState(false)
   const [invErr, setInvErr] = useState<string | null>(null)
-  // Modal de alta por LINK (Juan pega link + título; se traen los datos desde Upwork).
-  const [linkOpen, setLinkOpen] = useState(false)
-  const [blLink, setBlLink] = useState('')
-  const [blTitle, setBlTitle] = useState('')
-  const [blErr, setBlErr] = useState<string | null>(null)
-  const [addingLink, setAddingLink] = useState(false)
   const router = useRouter()
 
-  // Enviar el invite: se procesa al toque (clasifica + genera cover letter) y entra a Invites.
+  function resetInvite() {
+    setInvTitle(''); setInvLink(''); setInvDesc(''); setShowDesc(false); setInvErr(null)
+  }
+
+  // Agregar invite: pegás TÍTULO + LINK → traemos todo de Upwork (por-link), clasificamos
+  // y generamos la cover letter. Si Upwork no lo encuentra, aparece Descripción como respaldo.
   async function submitInvite() {
     setInvErr(null)
-    if (!invTitle.trim()) { setInvErr('Pegá el título'); return }
-    if (invDesc.trim().length < 30) { setInvErr('Pegá la descripción del job'); return }
+    if (!invTitle.trim()) { setInvErr('Pegá el título del job'); return }
+    const hasLink = /upwork\.com/i.test(invLink.trim())
+    if (!hasLink && invDesc.trim().length < 30) {
+      setShowDesc(true)
+      setInvErr('Pegá el link del job de Upwork. (Si no lo tenés, pegá la descripción completa acá abajo.)')
+      return
+    }
     setAddingInvite(true)
     try {
+      // 1) Con link → traemos todo de Upwork, sin pedir descripción.
+      if (hasLink) {
+        const r = await fetch('/api/jobs/by-link', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ link: invLink.trim(), title: invTitle.trim() }),
+        })
+        const data = await r.json()
+        if (r.ok && data.existing) {
+          setInviteOpen(false); resetInvite(); router.refresh()
+          alert('Ese job ya estaba cargado en la app (buscalo en Check Proposal o By Status).')
+          return
+        }
+        if (r.ok && data.found) {
+          setInviteOpen(false); resetInvite(); setViewId('invites'); router.refresh()
+          return
+        }
+        // No lo encontró por link/título → pedimos la descripción como respaldo.
+        if (invDesc.trim().length < 30) {
+          setShowDesc(true)
+          setInvErr('No lo encontré en Upwork. Revisá que el TÍTULO sea exacto y el link tenga el "~02…". O pegá la descripción abajo y lo agrego igual.')
+          return
+        }
+        // Con descripción cargada → seguimos al paste manual (abajo).
+      }
+      // 2) Sin link (o no encontrado) → paste manual con descripción.
       const r = await fetch('/api/jobs/add-invite', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -111,40 +143,9 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
       })
       const data = await r.json()
       if (!r.ok) { setInvErr(data.error ?? 'No se pudo agregar el invite'); return }
-      setInviteOpen(false)
-      setInvTitle(''); setInvDesc(''); setInvLink('')
-      setViewId('invites')
-      router.refresh()
+      setInviteOpen(false); resetInvite(); setViewId('invites'); router.refresh()
     } finally {
       setAddingInvite(false)
-    }
-  }
-
-  // Agregar por LINK: trae los datos desde Upwork (busca por título, matchea por ciphertext),
-  // clasifica + genera cover letter, y entra a Invites (elegido a mano = alta prioridad).
-  async function submitByLink() {
-    setBlErr(null)
-    if (!/upwork\.com/i.test(blLink.trim())) { setBlErr('Pegá el link del job de Upwork'); return }
-    if (!blTitle.trim()) { setBlErr('Pegá el título exacto del job'); return }
-    setAddingLink(true)
-    try {
-      const r = await fetch('/api/jobs/by-link', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ link: blLink.trim(), title: blTitle.trim() }),
-      })
-      const data = await r.json()
-      if (r.ok && data.found === false) {
-        setBlErr('No lo encontré en Upwork (puede estar viejo/cerrado o el título no coincide exacto). Probá con "Agregar invite" pegando título + descripción.')
-        return
-      }
-      if (!r.ok) { setBlErr(data.error ?? 'No se pudo agregar el job'); return }
-      setLinkOpen(false)
-      setBlLink(''); setBlTitle('')
-      setViewId('invites')
-      router.refresh()
-    } finally {
-      setAddingLink(false)
     }
   }
 
@@ -432,20 +433,12 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
           <button
             onClick={() => { setInvErr(null); setInviteOpen(true) }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted transition-colors disabled:opacity-50"
-            title="Agregar un invite (pegás título + descripción)"
+            title="Agregar un invite: pegás título + link y traemos todo de Upwork"
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
               <path d="M8 3.25v9.5M3.25 8h9.5" />
             </svg>
             Agregar invite
-          </button>
-
-          <button
-            onClick={() => { setBlErr(null); setLinkOpen(true) }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-fg text-[12px] font-medium hover:bg-bg transition-colors disabled:opacity-50"
-            title="Agregar un job pegando su link + título (trae los datos de Upwork)"
-          >
-            🔗 Agregar por link
           </button>
 
           <div className="flex items-center gap-3 ml-auto text-[12px] text-fg-muted">
@@ -543,34 +536,38 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
               <button onClick={() => !addingInvite && setInviteOpen(false)} className="text-fg-subtle hover:text-fg text-[18px] leading-none" aria-label="Cerrar">×</button>
             </div>
             <p className="text-[12px] text-fg-muted mb-4">
-              Abrí el invite en Upwork y pegá el <strong>título</strong> y la <strong>descripción</strong> del job.
-              Se clasifica y se genera la cover letter al instante, igual que un job normal.
+              Pegá el <strong>título</strong> y el <strong>link</strong> del job. Traemos todos los datos
+              desde Upwork, clasificamos y generamos la cover letter al instante. Entra a <strong>Invites</strong>.
             </p>
 
             <label className="block text-[11px] font-medium text-fg-muted mb-1">Título</label>
             <input
               value={invTitle}
               onChange={(e) => setInvTitle(e.target.value)}
-              placeholder="Ej: Senior n8n Automation Engineer"
+              placeholder="Copiá el título tal cual aparece en el job"
               className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
             />
 
-            <label className="block text-[11px] font-medium text-fg-muted mb-1">Descripción</label>
-            <textarea
-              value={invDesc}
-              onChange={(e) => setInvDesc(e.target.value)}
-              rows={7}
-              placeholder="Pegá acá la descripción completa del job del invite…"
-              className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent resize-y"
-            />
-
-            <label className="block text-[11px] font-medium text-fg-muted mb-1">Link (opcional)</label>
+            <label className="block text-[11px] font-medium text-fg-muted mb-1">Link del job</label>
             <input
               value={invLink}
               onChange={(e) => setInvLink(e.target.value)}
-              placeholder="https://www.upwork.com/…"
-              className="w-full mb-4 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
+              placeholder="https://www.upwork.com/jobs/…_~02…"
+              className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
             />
+
+            {showDesc && (
+              <>
+                <label className="block text-[11px] font-medium text-fg-muted mb-1">Descripción (respaldo)</label>
+                <textarea
+                  value={invDesc}
+                  onChange={(e) => setInvDesc(e.target.value)}
+                  rows={6}
+                  placeholder="Solo si no lo encuentra por el link: pegá la descripción completa…"
+                  className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent resize-y"
+                />
+              </>
+            )}
 
             {invErr && <p className="text-[12px] text-destructive mb-3">{invErr}</p>}
 
@@ -587,63 +584,7 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
                 disabled={addingInvite}
                 className="px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted disabled:opacity-50"
               >
-                {addingInvite ? 'Procesando…' : 'Agregar y generar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {linkOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => !addingLink && setLinkOpen(false)}
-        >
-          <div
-            className="w-full max-w-lg rounded-xl bg-surface border border-border shadow-xl p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-[15px] font-semibold text-fg">🔗 Agregar por link</h2>
-              <button onClick={() => !addingLink && setLinkOpen(false)} className="text-fg-subtle hover:text-fg text-[18px] leading-none" aria-label="Cerrar">×</button>
-            </div>
-            <p className="text-[12px] text-fg-muted mb-4">
-              Pegá el <strong>link</strong> del job de Upwork y su <strong>título exacto</strong>.
-              Traemos todos los datos desde Upwork, clasificamos y generamos la cover letter. Entra a <strong>Invites</strong>.
-            </p>
-
-            <label className="block text-[11px] font-medium text-fg-muted mb-1">Link del job</label>
-            <input
-              value={blLink}
-              onChange={(e) => setBlLink(e.target.value)}
-              placeholder="https://www.upwork.com/jobs/~02…"
-              className="w-full mb-3 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-
-            <label className="block text-[11px] font-medium text-fg-muted mb-1">Título exacto</label>
-            <input
-              value={blTitle}
-              onChange={(e) => setBlTitle(e.target.value)}
-              placeholder="Copiá el título tal cual aparece en el job"
-              className="w-full mb-4 px-3 py-2 rounded-md border border-border bg-bg text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-
-            {blErr && <p className="text-[12px] text-destructive mb-3">{blErr}</p>}
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={() => setLinkOpen(false)}
-                disabled={addingLink}
-                className="px-3 py-1.5 rounded-md border border-border text-[12px] text-fg-muted hover:bg-bg disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={submitByLink}
-                disabled={addingLink}
-                className="px-3 py-1.5 rounded-md bg-fg text-bg text-[12px] font-medium hover:bg-fg-muted disabled:opacity-50"
-              >
-                {addingLink ? 'Buscando en Upwork…' : 'Traer y generar'}
+                {addingInvite ? 'Buscando en Upwork…' : 'Agregar y generar'}
               </button>
             </div>
           </div>
