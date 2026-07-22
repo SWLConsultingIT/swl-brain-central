@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import LogoutButton from '@/app/logout-button'
 import { getServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -216,6 +217,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center gap-5 text-[13px]">
             <Link href="/prospects" className="text-fg-muted hover:text-fg transition font-medium">Prospects</Link>
+            <LogoutButton />
           </div>
         </div>
       </header>

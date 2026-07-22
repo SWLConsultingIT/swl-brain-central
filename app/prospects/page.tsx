@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getServerClient } from '@/lib/supabase/server'
 import { listJobs, type JobRow } from '@/lib/jobs/list'
 import Board from './board'
+import LogoutButton from '@/app/logout-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,6 +69,7 @@ export default async function ProspectsPage() {
               </svg>
               Exportar Excel
             </a>
+            <LogoutButton />
           </div>
         </div>
       </header>

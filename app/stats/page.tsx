@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import LogoutButton from '@/app/logout-button'
 import { getServerClient } from '@/lib/supabase/server'
 import { getSentProposals } from '@/lib/stats/sent'
 import StatsView from './stats-view'
@@ -30,6 +31,7 @@ export default async function StatsPage() {
           <div className="flex items-center gap-6 text-[13px]">
             <Link href="/prospects" className="text-fg-muted hover:text-fg transition-colors font-medium">Prospects</Link>
             <Link href="/dashboard" className="text-fg-muted hover:text-fg transition-colors font-medium">Dashboard</Link>
+            <LogoutButton />
           </div>
         </div>
       </header>
