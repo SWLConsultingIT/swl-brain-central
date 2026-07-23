@@ -176,6 +176,9 @@ export async function listJobs(supabase: SupabaseClient): Promise<JobRow[]> {
   for (const j of merged) {
     if (seen.has(j.id)) continue
     seen.add(j.id)
+    // Algunos jobs scrapeados vinieron sin jobUrl (link null). Reconstruimos el link
+    // desde el upwork_id: el ciphertext de un job es "~02" + id numérico.
+    if (!j.link && j.upwork_id) j.link = `https://www.upwork.com/jobs/~02${j.upwork_id}`
     out.push(j)
   }
   return out
