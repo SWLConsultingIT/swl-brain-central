@@ -26,6 +26,25 @@ export const maxDuration = 60
 const N8N_URL =
   process.env.N8N_JOB_BY_LINK_URL ?? 'https://n8n.srv949269.hstgr.cloud/webhook/brain-job-by-link'
 const N8N_KEY = process.env.N8N_JOB_BY_LINK_KEY ?? '' // opcional; el webhook lo valida si != CHANGE_ME
+// Webhook aparte para las screening questions (por-id). Si no está o falla, seguimos sin questions.
+const N8N_SCREENING_URL =
+  process.env.N8N_SCREENING_URL ?? 'https://n8n.srv949269.hstgr.cloud/webhook/brain-screening'
+
+/** Trae las screening questions del job vía webhook n8n. Best-effort: cualquier error → []. */
+async function fetchScreeningQuestions(jobId: string): Promise<any[]> {
+  try {
+    const res = await fetch(N8N_SCREENING_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: jobId, key: N8N_KEY }),
+    })
+    const json = await res.json()
+    const payload = Array.isArray(json) ? json[0] : json
+    return payload && Array.isArray(payload.questions) ? payload.questions : []
+  } catch {
+    return []
+  }
+}
 
 /** upwork_id como lo guarda el scraper (node.id, sin el prefijo ~02). */
 function extractUpworkId(link: string): string | null {
@@ -52,7 +71,7 @@ function rawNum(x: any): number | null {
 }
 
 /** Mapea el nodo del marketplaceJobPostingsSearch a las columnas de `jobs` (igual que el scraper). */
-function mapNode(node: any, link: string, nowIso: string) {
+function mapNode(node: any, link: string, nowIso: string, questions: any[]) {
   const client = node.client ?? {}
   const loc = client.location ?? {}
   const act = ((node.job ?? {}).activityStat ?? {}).jobActivity ?? {}
@@ -69,7 +88,7 @@ function mapNode(node: any, link: string, nowIso: string) {
     is_invite: false,
     title: node.title ?? '',
     description: node.description ?? '',
-    questions: [],
+    questions: Array.isArray(questions) ? questions : [],
     ticket: hourlyAvg,
     ticket_raw: ticketRaw,
     ticket_currency: 'USD',
@@ -200,8 +219,9 @@ export async function POST(request: Request) {
   }
   const anthropic = new Anthropic({ apiKey })
 
-  // 3) Insertar el job con todos los datos reales
-  const row = mapNode(node, link, nowIso)
+  // 3) Traer screening questions (best-effort) e insertar el job con todos los datos reales
+  const questions = node.id != null ? await fetchScreeningQuestions(String(node.id)) : []
+  const row = mapNode(node, link, nowIso, questions)
   const { data: inserted, error: insErr } = await supabase
     .from('jobs')
     .insert({ ...row, status: 'new' })
