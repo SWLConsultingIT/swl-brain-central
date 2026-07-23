@@ -14,12 +14,15 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const { id } = await params
   const supabase = getServerClient()
 
-  const { data: job } = await supabase.from('jobs').select('id, title, is_invite').eq('id', id).maybeSingle()
+  const { data: job } = await supabase.from('jobs').select('id, title, is_invite, matched_keyword').eq('id', id).maybeSingle()
   if (!job) return NextResponse.json({ error: 'job not found' }, { status: 404 })
 
   const isPlaceholder = typeof job.title === 'string' && job.title.startsWith('⏳')
+  // Los agregados a mano (placeholder de invite o "por link") se BORRAN de verdad al tachar.
+  // Un job real que solo fue marcado invite se des-marca (queda como job normal).
+  const isManualAdd = isPlaceholder || job.matched_keyword === 'by-link'
 
-  if (isPlaceholder) {
+  if (isManualAdd) {
     // limpiar decisiones asociadas primero (FK) y borrar la fila
     await supabase.from('job_decisions').delete().eq('job_id', id)
     const { error } = await supabase.from('jobs').delete().eq('id', id)

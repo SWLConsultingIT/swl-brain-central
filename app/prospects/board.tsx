@@ -71,6 +71,12 @@ const NOTION_VIEWS: NotionView[] = [
   { id: 'estado',         label: 'By Status',      status: null },
 ]
 
+// Manual ACTIVO = agregado a mano (invite / por link) y todavía en juego:
+// NO borrado ni mandado a revisión. Define qué se ve en la solapa Invites.
+function isActiveManual(j: JobRow): boolean {
+  return prioritySource(j) != null && j.status !== 'discarded' && j.status !== 'discarded_review'
+}
+
 export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; businessUnits: BU[] }) {
   const [viewId, setViewId] = useState<string>('estado')
   const [query, setQuery] = useState('')
@@ -211,8 +217,8 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   const viewCounts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const v of NOTION_VIEWS) {
-      // Solapa Invites = todos los "elegidos a mano" (invites del cliente + agregados por link).
-      if (v.invitesOnly) { m[v.id] = filtered.filter(j => prioritySource(j) != null).length; continue }
+      // Solapa Invites = manuales ACTIVOS (invites + por link). Los borrados/en-review no cuentan.
+      if (v.invitesOnly) { m[v.id] = filtered.filter(isActiveManual).length; continue }
       const statuses = v.statuses ?? (v.status ? [v.status] : [])
       let rows = v.status === null ? filtered : filtered.filter(j => statuses.includes(j.status))
       // Check Proposal NO muestra los manuales: viven en su propia solapa (Invites).
@@ -247,8 +253,8 @@ export default function Board({ jobs, businessUnits }: { jobs: JobRow[]; busines
   // Filas para la vista de tabla activa (filtra por el status de la vista).
   const tableRows = useMemo(() => {
     if (isBoardView) return []
-    // Solapa Invites = todos los "elegidos a mano" (invites del cliente + agregados por link).
-    if (activeView.invitesOnly) return filtered.filter(j => prioritySource(j) != null)
+    // Solapa Invites = manuales ACTIVOS (borrados/en-review salen de acá).
+    if (activeView.invitesOnly) return filtered.filter(isActiveManual)
     if (activeView.status === null) return []
     const statuses = activeView.statuses ?? [activeView.status]
     let rows = filtered.filter(j => statuses.includes(j.status))

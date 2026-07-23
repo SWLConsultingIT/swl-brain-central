@@ -503,10 +503,10 @@ export default function NotionTable({
                           </button>
                         )}
                         <button
-                          onClick={(e) => (job.is_invite ? deleteInvite(job.id, e) : discardJob(job.id, e))}
+                          onClick={(e) => (prioritySource(job) ? deleteInvite(job.id, e) : discardJob(job.id, e))}
                           disabled={discarding === job.id}
-                          title={job.is_invite ? 'Borrar invite' : 'Discard (move to Discarded)'}
-                          aria-label={job.is_invite ? 'Borrar invite' : 'Discard job'}
+                          title={prioritySource(job) ? 'Borrar (lo saca de la lista)' : 'Discard (move to Discarded)'}
+                          aria-label={prioritySource(job) ? 'Borrar job' : 'Discard job'}
                           className="inline-flex items-center justify-center text-fg-subtle/60 hover:text-destructive hover:scale-110 transition disabled:opacity-30 cursor-pointer"
                         >
                           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
