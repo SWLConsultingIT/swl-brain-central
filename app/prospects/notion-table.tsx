@@ -341,6 +341,20 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   discarded: [COL.title, COL.keyword, COL.whyDiscarded, COL.status, COL.score, COL.ticket, COL.country, COL.link],
 }
 
+// Columna Source (siempre primera): distingue el origen del job.
+function SourceBadge({ job }: { job: JobRow }) {
+  const isInvite = prioritySource(job) != null
+  return (
+    <span
+      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap"
+      style={isInvite ? { backgroundColor: '#E9DEF4', color: '#603DA0' } : { backgroundColor: '#EBEBE7', color: '#5E5E57' }}
+    >
+      {isInvite ? 'Upwork invite' : 'Upwork'}
+    </span>
+  )
+}
+const sourceCol: Col = { key: 'source', label: 'Source', render: (j: JobRow) => <SourceBadge job={j} /> }
+
 // ── table ───────────────────────────────────────────────────────────────────
 
 export default function NotionTable({
@@ -423,6 +437,10 @@ export default function NotionTable({
     return (ageDays(a) - ageDays(b)) || (matchPct(b) - matchPct(a)) || byDate(a, b)
   })
 
+  // Source va primera; Job Title segunda. Ambas fijas a la izquierda.
+  const cols = [sourceCol, ...columns]
+  const SRC_W = 104
+
   return (
     <>
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -430,11 +448,12 @@ export default function NotionTable({
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
               <tr className="border-b border-border">
-                {columns.map((c, i) => (
+                {cols.map((c, i) => (
                   <th
                     key={c.key}
+                    style={i === 1 ? { left: SRC_W } : undefined}
                     className={`font-medium text-fg-muted text-[12px] px-3 py-2.5 bg-bg sticky top-0 z-20 border-b border-r border-border whitespace-nowrap ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : 'text-left'} ${
-                      i === 0 ? 'sticky left-0 z-30 pl-4 min-w-[200px] md:min-w-[300px] border-r' : ''
+                      i === 0 ? 'sticky left-0 z-30 pl-4 w-[104px] min-w-[104px]' : i === 1 ? 'sticky z-30 pl-3 min-w-[200px] md:min-w-[300px]' : ''
                     } ${c.className ?? ''}`}
                   >
                     {c.label}
@@ -446,7 +465,7 @@ export default function NotionTable({
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-4 py-12 text-center text-fg-subtle font-mono text-[12px]">
+                  <td colSpan={cols.length + 1} className="px-4 py-12 text-center text-fg-subtle font-mono text-[12px]">
                     no jobs match these filters
                   </td>
                 </tr>
@@ -476,11 +495,12 @@ export default function NotionTable({
                     }}
                     className={`border-b border-border last:border-0 group transition-colors cursor-pointer ${rowClass}`}
                   >
-                    {columns.map((c, i) => (
+                    {cols.map((c, i) => (
                       <td
                         key={c.key}
+                        style={i === 1 ? { left: SRC_W } : undefined}
                         className={`px-3 py-2 align-middle border-b border-r border-border ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : ''} ${
-                          i === 0 ? `sticky left-0 z-10 pl-4 min-w-[200px] md:min-w-[300px] ${stickyBg}` : 'whitespace-nowrap'
+                          i === 0 ? `sticky left-0 z-10 pl-4 w-[104px] min-w-[104px] ${stickyBg}` : i === 1 ? `sticky z-10 pl-3 min-w-[200px] md:min-w-[300px] ${stickyBg}` : 'whitespace-nowrap'
                         } ${c.className ?? ''}`}
                       >
                         {c.render(job, ctx)}
