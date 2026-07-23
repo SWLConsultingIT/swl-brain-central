@@ -1,0 +1,314 @@
+{
+  "name": "LinkedIn → Supabase (Scraper)",
+  "nodes": [
+    {
+      "id": "sched",
+      "name": "Schedule (every 4h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        400
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 1-23/4 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cfg",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        400
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "geoId",
+              "value": "103644278",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "f_JT",
+              "value": "C,F",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "f_TPR",
+              "value": "r604800",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "searches",
+              "value": "[{\"term\": \"1099 contractor\", \"pages\": 3}, {\"term\": \"independent contractor\", \"pages\": 3}, {\"term\": \"fractional CFO\", \"pages\": 2}, {\"term\": \"financial analyst contract\", \"pages\": 2}, {\"term\": \"Power BI contractor\", \"pages\": 2}, {\"term\": \"n8n automation contract\", \"pages\": 2}]",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "urls",
+      "name": "Build search URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ],
+      "parameters": {
+        "jsCode": "\n// Config de búsqueda LinkedIn (guest API). Editá `searches` para cambiar keywords por BU.\n// geoId 103644278 = United States. f_JT=C (Contract) + F (Freelance). f_WT=2 (Remote).\n// f_TPR=r604800 = última semana. LinkedIn pagina de a 10 (start=0,10,20...).\nconst cfg = $json;\nconst geoId = cfg.geoId || '103644278';\nconst fJT = cfg.f_JT || 'C,F';\nconst fWT = cfg.f_WT || '';            // '' = cualquier modalidad; '2' = remote\nconst fTPR = cfg.f_TPR || 'r604800';\nconst searches = cfg.searches || [];\n\nconst base = 'https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search';\nconst out = [];\nfor (const s of searches) {\n  const term = typeof s === 'string' ? s : s.term;\n  const pages = (typeof s === 'object' && s.pages) ? s.pages : (cfg.pages || 3);\n  for (let p = 0; p < pages; p++) {\n    const start = p * 10;\n    const qs = new URLSearchParams({\n      keywords: term,\n      location: 'United States',\n      geoId,\n      f_JT: fJT,\n      f_TPR: fTPR,\n      start: String(start),\n    });\n    if (fWT) qs.set('f_WT', fWT);\n    out.push({ json: { url: `${base}?${qs.toString()}`, term, start } });\n  }\n}\nreturn out;\n"
+      }
+    },
+    {
+      "id": "search",
+      "name": "LinkedIn Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2500
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "cards",
+      "name": "Parse cards",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ],
+      "parameters": {
+        "jsCode": "\n// Parsea las <li> del HTML del guest search → 1 item por job.\nconst items = $input.all();\nconst jobs = [];\nconst seen = new Set();\nfor (const it of items) {\n  const term = it.json.term || null;\n  const html = typeof it.json === 'string' ? it.json : (it.json.data || it.json.body || it.json.html || '');\n  const text = typeof html === 'string' ? html : JSON.stringify(html);\n  const cards = text.split('<li>').slice(1);\n  for (const c of cards) {\n    const idM = c.match(/urn:li:jobPosting:(\\d+)/);\n    const linkId = c.match(/jobs\\/view\\/[^\"?]*?-(\\d{7,})/);\n    const id = (idM && idM[1]) || (linkId && linkId[1]);\n    if (!id || seen.has(id)) continue;\n    seen.add(id);\n    const clean = (s) => s ? s.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&#39;/g,\"'\").replace(/&quot;/g,'\"').replace(/\\s+/g,' ').trim() : null;\n    const title = clean((c.match(/base-search-card__title\">([\\s\\S]*?)<\\/h3>/)||[])[1]);\n    const company = clean((c.match(/base-search-card__subtitle\">[\\s\\S]*?>([\\s\\S]*?)<\\/a>/)||c.match(/base-search-card__subtitle\">([\\s\\S]*?)<\\/h4>/)||[])[1]);\n    const location = clean((c.match(/job-search-card__location\">([\\s\\S]*?)<\\/span>/)||[])[1]);\n    const posted = (c.match(/datetime=\"([^\"]+)\"/)||[])[1] || null;\n    const linkM = c.match(/href=\"(https:\\/\\/www\\.linkedin\\.com\\/jobs\\/view\\/[^\"?]+)/);\n    const companyUrl = (c.match(/href=\"(https:\\/\\/www\\.linkedin\\.com\\/company\\/[^\"?]+)/)||[])[1] || null;\n    jobs.push({ json: {\n      linkedin_id: id,\n      title: title || '(sin título)',\n      company_name: company,\n      company_url: companyUrl,\n      location,\n      link: linkM ? linkM[1] : `https://www.linkedin.com/jobs/view/${id}`,\n      post_date: posted,\n      matched_keyword: term,\n      detail_url: `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${id}`,\n    }});\n  }\n}\nreturn jobs;\n"
+      }
+    },
+    {
+      "id": "detail",
+      "name": "LinkedIn Detail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "={{ $json.detail_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2500
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "map",
+      "name": "Map + Filter (Contract/Freelance)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\n// Corre 1 vez por job. Parsea el detalle, mapea a columnas de linkedin_jobs y filtra.\nconst meta = $('Parse cards').item.json;\nconst raw = $json;\nconst html = typeof raw === 'string' ? raw : (raw.data || raw.body || raw.html || '');\nconst text = typeof html === 'string' ? html : '';\n\nconst clean = (s) => s ? s.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&#39;/g,\"'\").replace(/&quot;/g,'\"').replace(/\\s+/g,' ').trim() : null;\n\n// criteria: Seniority level / Employment type / Job function / Industries\nconst crit = {};\nconst re = /description__job-criteria-subheader\">([\\s\\S]*?)<\\/h3>[\\s\\S]*?description__job-criteria-text[^>]*>([\\s\\S]*?)<\\/span>/g;\nlet m;\nwhile ((m = re.exec(text)) !== null) { crit[clean(m[1]).toLowerCase()] = clean(m[2]); }\n\nconst descM = text.match(/show-more-less-html__markup([\\s\\S]*?)<\\/div>/);\nconst description = descM ? clean(descM[1]) : null;\nconst applicantsM = text.match(/num-applicants__caption\">([\\s\\S]*?)</);\nconst applicants = applicantsM ? parseInt((applicantsM[1].match(/\\d+/)||[])[0]||'',10) : null;\n\nconst employment = crit['employment type'] || null;   // Contract / Freelance / Full-time...\nconst seniority  = crit['seniority level'] || null;\nconst jobFunction = crit['job function'] || null;\nconst industry   = crit['industries'] || null;\n\n// --- FILTRO: solo Contract/Freelance (objetivo 1099). Full-time/otros → fuera. ---\nconst ok = employment && /contract|freelance|temporary/i.test(employment);\nif (!ok) return [];   // descartar acá (no llega al upsert)\n\nconst loc = meta.location || '';\nconst row = {\n  linkedin_id: meta.linkedin_id,\n  link: meta.link,\n  title: meta.title,\n  description,\n  company_name: meta.company_name,\n  company_url: meta.company_url,\n  location: loc,\n  country: /united states|usa|, [a-z]{2}$/i.test(loc) ? 'United States' : null,\n  industry,\n  employment_type: employment,\n  workplace_type: null,\n  seniority,\n  job_function: jobFunction,\n  applicants_count: Number.isFinite(applicants) ? applicants : null,\n  posted_ago: null,\n  post_date: meta.post_date,\n  matched_keyword: meta.matched_keyword,\n\n  raw_data: { search: meta, criteria: crit },\n};\nreturn [{ json: row }];\n"
+      }
+    },
+    {
+      "id": "upsert",
+      "name": "Supabase Upsert linkedin_jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/linkedin_jobs?on_conflict=linkedin_id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Schedule (every 4h)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Build search URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build search URLs": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Search": {
+      "main": [
+        [
+          {
+            "node": "Parse cards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse cards": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Detail": {
+      "main": [
+        [
+          {
+            "node": "Map + Filter (Contract/Freelance)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map + Filter (Contract/Freelance)": {
+      "main": [
+        [
+          {
+            "node": "Supabase Upsert linkedin_jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "pinData": {},
+  "meta": {}
+}

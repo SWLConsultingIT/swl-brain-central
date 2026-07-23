@@ -1,0 +1,318 @@
+{
+  "name": "LinkedIn Application Note",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkedin-cover-letter",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "cover-letter-webhook",
+      "name": "Webhook: Job Qualified",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        400
+      ],
+      "webhookId": "linkedin-cover-letter-wh"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/linkedin_jobs?id=eq.{{ $json.body.job_id }}&select=id,title,description,ticket,industry,country,duration,business_unit_id,hourly_average,proposals_count",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.pgrst.object+json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        400
+      ],
+      "id": "aaaa0004-bbbb-cccc-dddd-eeeeeeee0004",
+      "name": "Fetch this job"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/business_units?id=eq.{{ $json.business_unit_id }}&select=id,name,description,scopes,keywords,good_fit_signals,decision_logic",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.pgrst.object+json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        400
+      ],
+      "id": "aaaa0006-bbbb-cccc-dddd-eeeeeeee0006",
+      "name": "Fetch BU"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/proposals?status=eq.Sent&business_unit_id=eq.{{ $('Fetch this job').item.json.business_unit_id }}&order=sent_date.desc&limit=5&select=job_title,cover_letter,sent_date",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        400
+      ],
+      "id": "aaaa0007-bbbb-cccc-dddd-eeeeeeee0007",
+      "name": "Fetch precedent"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $('Fetch this job').item.json;\nconst bu = $('Fetch BU').item.json;\nconst precedentRaw = $json;\nconst precedent = Array.isArray(precedentRaw) ? precedentRaw : (Array.isArray(precedentRaw?.body) ? precedentRaw.body : []);\n\nconst MAX = 600;\nconst precedentBlock = precedent.map((p, i) => {\n  const cl = p.cover_letter ? '\\n' + p.cover_letter.slice(0, MAX) + (p.cover_letter.length > MAX ? '…' : '') : '\\n(no text)';\n  return `### Precedent ${i+1}: ${p.job_title}` + cl;\n}).join('\\n\\n');\n\nconst systemPrompt = [\n  'You write concise, high-conversion application notes for SWL Consulting applying to LinkedIn CONTRACT / FREELANCE jobs (USA, 1099). 180-240 words, English unless the job is in Spanish. Tone: professional, strategic, direct. Sign with \"Juan\". No hyphens or em dashes. Output only the note, no preamble.',\n  '',\n  '## Structure (in this order):',\n  '1. Opening (2 sentences): reference one specific detail of the role + who we are (\"we\", SWL).',\n  '2. Authority: MBA + Master Finance + FMVA (CFI Canada) + one relevant SWL role with a measurable result.',\n  '3. 3-4 bullets: what we would deliver for THIS role, tied to the BU scope below.',\n  '4. SWL intro (2 lines): boutique AI-native advisory, 20+ pros, finance/strategy/ops/sales.',\n  '5. Call to action: propose a short intro call.',\n  '6. Closing line + \"Juan\".',\n  '',\n  '## NOTE: This is a LinkedIn application (not an Upwork proposal). Do NOT mention Upwork, connects, or proposals.',\n  '',\n  `## SWL Business Unit: ${bu.name || 'unknown'}`,\n  bu.description || '',\n  `Scopes: ${(bu.scopes || []).join(' · ')}`,\n  `Keywords: ${(bu.keywords || []).slice(0, 25).join(', ')}`,\n  `Good-fit signals: ${bu.good_fit_signals || ''}`,\n  '',\n  precedent.length ? `## Recent Sent precedent (tone reference, do not copy)\\n\\n${precedentBlock}` : '## Recent Sent precedent\\n(none yet)',\n].join('\\n');\n\nconst userPrompt = [\n  '## LINKEDIN JOB',\n  `Title: ${job.title}`,\n  `Company: ${job.company_name || 'n/a'}`,\n  `Employment type: ${job.employment_type || 'n/a'}`,\n  `Seniority: ${job.seniority || 'n/a'}`,\n  `Location: ${job.location || job.country || 'n/a'}`,\n  '',\n  'Description:',\n  job.description || '(no description)',\n].join('\\n');\n\nreturn { json: { job_id: job.id, systemPrompt, userPrompt } };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ],
+      "id": "aaaa0008-bbbb-cccc-dddd-eeeeeeee0008",
+      "name": "Build Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "<REPLACE_WITH_ANTHROPIC_API_KEY>"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"claude-sonnet-4-5\",\n  max_tokens: 1500,\n  system: $json.systemPrompt,\n  messages: [ { role: \"user\", content: $json.userPrompt } ]\n}) }}",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        400
+      ],
+      "id": "aaaa0009-bbbb-cccc-dddd-eeeeeeee0009",
+      "name": "Anthropic"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ai = $json;\nconst job_id = $('Build Prompt').item.json.job_id;\nconst text = (ai.content && ai.content[0] && ai.content[0].text) || '';\nreturn { json: { job_id, cover_letter: text.trim(), chars: text.length } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ],
+      "id": "aaaa0010-bbbb-cccc-dddd-eeeeeeee0010",
+      "name": "Extract Text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uaefxpewxmvmhxpgehuv.supabase.co/rest/v1/rpc/brain_transition_linkedin_job",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "apikey",
+              "value": "<REPLACE_WITH_SUPABASE_SECRET_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  p_job_id: $json.job_id,\n  p_to_status: 'proposal_drafted',\n  p_actor: 'brain_cover_letter',\n  p_actor_detail: 'claude-sonnet-4-5',\n  p_reason: 'cover letter drafted (' + $json.chars + ' chars)',\n  p_cover_letter_draft: $json.cover_letter\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        400
+      ],
+      "id": "aaaa0011-bbbb-cccc-dddd-eeeeeeee0011",
+      "name": "Save to Supabase"
+    }
+  ],
+  "connections": {
+    "Webhook: Job Qualified": {
+      "main": [
+        [
+          {
+            "node": "Fetch this job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch this job": {
+      "main": [
+        [
+          {
+            "node": "Fetch BU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch BU": {
+      "main": [
+        [
+          {
+            "node": "Fetch precedent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch precedent": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "Anthropic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Save to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "pinData": {},
+  "meta": {}
+}
