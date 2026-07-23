@@ -3,6 +3,7 @@ import { getServerClient } from '@/lib/supabase/server'
 import { listJobs, type JobRow } from '@/lib/jobs/list'
 import Board from './board'
 import LogoutButton from '@/app/logout-button'
+import BrandSwitch from '@/app/brand-switch'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,16 +43,11 @@ export default async function ProspectsPage() {
           </div>
 
           <div className="flex items-center gap-6 text-[13px]">
+            <BrandSwitch />
             <span className="text-fg-muted font-mono tabular-nums">
               <span className="font-semibold text-fg">{jobs.length}</span>
               <span className="text-fg-subtle ml-1">jobs</span>
             </span>
-            <Link
-              href="/linkedin"
-              className="text-fg-muted hover:text-fg transition-colors font-medium"
-            >
-              LinkedIn
-            </Link>
             <Link
               href="/stats"
               className="text-fg-muted hover:text-fg transition-colors font-medium"

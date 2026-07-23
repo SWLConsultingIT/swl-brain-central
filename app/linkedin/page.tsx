@@ -3,6 +3,7 @@ import { getServerClient } from '@/lib/supabase/server'
 import { listLinkedInJobs, type LinkedInJobRow } from '@/lib/linkedin/list'
 import Board from './board'
 import LogoutButton from '@/app/logout-button'
+import BrandSwitch from '@/app/brand-switch'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,17 +41,12 @@ export default async function LinkedInPage() {
             <span className="text-fg-muted text-[13px] font-medium">LinkedIn</span>
           </div>
 
-          <div className="flex items-center gap-6 text-[13px]">
+          <div className="flex items-center gap-4 text-[13px]">
+            <BrandSwitch />
             <span className="text-fg-muted font-mono tabular-nums">
               <span className="font-semibold text-fg">{jobs.length}</span>
               <span className="text-fg-subtle ml-1">jobs</span>
             </span>
-            <Link href="/prospects" className="text-fg-muted hover:text-fg transition-colors font-medium">
-              Upwork
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-4">
             <LogoutButton />
           </div>
         </div>
