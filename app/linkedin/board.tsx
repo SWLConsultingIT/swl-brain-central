@@ -11,25 +11,25 @@ type BU = { id: string; name: string }
 
 type Column = { status: string; label: string; dotClass: string; countClass: string; windowDays?: number; emptyText: string }
 
-// LinkedIn: TODOS los scrapeados (1099-US) se muestran en Check Proposal, ordenados por
-// score. El classifier solo PUNTÚA (no esconde nada). El humano revisa, aplica y descarta
-// a mano lo que no sirve (→ Descartados). Kanban By Status = desglose informativo.
+// LinkedIn: solo los que hacen FIT (qualified) aparecen en Check Proposal. Los que el
+// classifier marca sin fit (discarded, score bajo) y los que descartás a mano
+// (discarded_review) van a la solapa Descartados. Kanban By Status = desglose.
 const COLUMNS: Column[] = [
-  { status: 'new',              label: 'Sin clasificar', dotClass: 'bg-slate',     countClass: 'text-slate',     emptyText: 'Nada sin clasificar' },
-  { status: 'qualified',        label: 'Fit',            dotClass: 'bg-accent',    countClass: 'text-accent-fg', emptyText: 'Nada fit' },
-  { status: 'discarded',        label: 'Bajo score',     dotClass: 'bg-fg-subtle', countClass: 'text-fg-subtle', emptyText: 'Nada' },
+  { status: 'qualified',        label: 'Check Proposal', dotClass: 'bg-accent',    countClass: 'text-accent-fg', emptyText: 'Nada para revisar' },
   { status: 'sent',             label: 'Sent',           dotClass: 'bg-fg',        countClass: 'text-fg',        emptyText: 'Nada aplicado' },
+  { status: 'responded',        label: 'Responded',      dotClass: 'bg-violet',    countClass: 'text-violet',    emptyText: 'Sin respuestas' },
+  { status: 'discarded',        label: 'Sin fit',        dotClass: 'bg-fg-subtle', countClass: 'text-fg-subtle', emptyText: 'Nada' },
   { status: 'discarded_review', label: 'Descartados',    dotClass: 'bg-warning',   countClass: 'text-warning',   emptyText: 'Nada descartado' },
 ]
 
 type View = { id: string; label: string; statuses: string[] | null; columnsKey?: keyof typeof LINKEDIN_VIEW_COLUMNS }
 
-// Check Proposal = TODOS los jobs scrapeados que todavía no aplicaste ni descartaste
-// (new/qualified/discarded/proposal_drafted). Ordenados por score. Descartar → Descartados.
+// Check Proposal = SOLO los que hacen fit con SWL (qualified + los que tengan nota).
+// Los sin fit (discarded) + descartados a mano (discarded_review) → solapa Descartados.
 const VIEWS: View[] = [
-  { id: 'check_proposal', label: 'Check Proposal', statuses: ['new', 'prequalified', 'qualified', 'proposal_drafted', 'discarded'], columnsKey: 'check_proposal' },
+  { id: 'check_proposal', label: 'Check Proposal', statuses: ['qualified', 'proposal_drafted'], columnsKey: 'check_proposal' },
   { id: 'sent',           label: 'Sent',           statuses: ['sent', 'responded'], columnsKey: 'sent' },
-  { id: 'descartados',    label: 'Descartados',    statuses: ['discarded_review'], columnsKey: 'review' },
+  { id: 'descartados',    label: 'Descartados',    statuses: ['discarded', 'discarded_review'], columnsKey: 'discarded' },
   { id: 'estado',         label: 'By Status',      statuses: null },
 ]
 
