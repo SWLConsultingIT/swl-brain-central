@@ -54,7 +54,7 @@
             {
               "id": "a4",
               "name": "searches",
-              "value": "[{\"term\": \"1099 contractor\", \"pages\": 3}, {\"term\": \"independent contractor\", \"pages\": 3}, {\"term\": \"fractional CFO\", \"pages\": 2}, {\"term\": \"financial analyst contract\", \"pages\": 2}, {\"term\": \"Power BI contractor\", \"pages\": 2}, {\"term\": \"n8n automation contract\", \"pages\": 2}]",
+              "value": "[{\"term\":\"1099 contractor\",\"pages\":3},{\"term\":\"independent contractor\",\"pages\":3},{\"term\":\"fractional CFO\",\"pages\":2},{\"term\":\"financial analyst contract\",\"pages\":2},{\"term\":\"Power BI contractor\",\"pages\":2},{\"term\":\"n8n automation contract\",\"pages\":2},{\"term\":\"FP&A consultant\",\"pages\":1},{\"term\":\"financial modeling contractor\",\"pages\":1},{\"term\":\"data analyst contract\",\"pages\":1},{\"term\":\"Tableau consultant\",\"pages\":1},{\"term\":\"AI consultant\",\"pages\":1},{\"term\":\"machine learning contractor\",\"pages\":1},{\"term\":\"Zapier consultant\",\"pages\":1},{\"term\":\"integration consultant\",\"pages\":1},{\"term\":\"HubSpot consultant\",\"pages\":1},{\"term\":\"lead generation contractor\",\"pages\":1},{\"term\":\"Meta ads contractor\",\"pages\":1},{\"term\":\"SEO consultant\",\"pages\":1},{\"term\":\"Webflow developer contract\",\"pages\":1},{\"term\":\"Shopify developer contract\",\"pages\":1},{\"term\":\"ERP consultant\",\"pages\":1},{\"term\":\"NetSuite consultant contract\",\"pages\":1}]",
               "type": "array"
             }
           ]
