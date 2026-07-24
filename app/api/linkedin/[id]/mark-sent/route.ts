@@ -15,11 +15,11 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (fetchErr || !job) return NextResponse.json({ error: 'job not found' }, { status: 404 })
 
   // Cadena de pasos según estado actual hasta llegar a 'sent'.
+  // LinkedIn: cualquier job en Check Proposal (new/qualified/discarded/proposal_drafted/
+  // ready_to_send) puede marcarse enviado directo → sent (aplicaste en LinkedIn).
   const steps: string[] = []
-  if (job.status === 'qualified') steps.push('sent')                       // LinkedIn sin nota: qualified → sent directo
-  else if (job.status === 'proposal_drafted') steps.push('ready_to_send', 'sent')
-  else if (job.status === 'ready_to_send') steps.push('sent')
-  else if (job.status === 'sent') return NextResponse.json({ ok: true, id, status: 'sent' })
+  if (job.status === 'sent') return NextResponse.json({ ok: true, id, status: 'sent' })
+  if (['new', 'prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'discarded'].includes(job.status)) steps.push('sent')
   else return NextResponse.json({ error: `no se puede enviar desde '${job.status}'` }, { status: 409 })
 
   for (const to of steps) {

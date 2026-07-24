@@ -177,16 +177,13 @@ export default function LinkedInDetailModal({
         {/* Footer: acciones según estado */}
         <div className="sticky bottom-0 bg-surface/95 backdrop-blur border-t border-border px-6 py-3 flex items-center gap-2 flex-wrap justify-end">
           {['new', 'prequalified'].includes(job.status) && (
-            <ActionBtn primary busy={busy === 'classify'} onClick={() => act('classify')}>Clasificar</ActionBtn>
+            <ActionBtn busy={busy === 'classify'} onClick={() => act('classify')}>Clasificar</ActionBtn>
           )}
           {job.status === 'qualified' && (
-            <ActionBtn primary busy={busy === 'cover-letter'} onClick={() => act('cover-letter')}>Generar nota</ActionBtn>
+            <ActionBtn busy={busy === 'cover-letter'} onClick={() => act('cover-letter')}>Generar nota (opcional)</ActionBtn>
           )}
-          {['qualified', 'proposal_drafted', 'ready_to_send'].includes(job.status) && (
+          {['new', 'prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'discarded'].includes(job.status) && (
             <ActionBtn primary busy={busy === 'mark-sent'} onClick={() => act('mark-sent')}>Marcar enviado</ActionBtn>
-          )}
-          {['proposal_drafted', 'ready_to_send', 'qualified'].includes(job.status) && (
-            <ActionBtn busy={busy === 'to-review'} onClick={() => act('to-review', {})}>A chequear</ActionBtn>
           )}
           <ActionBtn busy={busy === 'discard'} onClick={() => act('discard', { reason: 'ui_discard' })}>Descartar</ActionBtn>
         </div>

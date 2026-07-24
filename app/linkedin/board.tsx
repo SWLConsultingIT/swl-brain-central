@@ -11,27 +11,25 @@ type BU = { id: string; name: string }
 
 type Column = { status: string; label: string; dotClass: string; countClass: string; windowDays?: number; emptyText: string }
 
-// LinkedIn (sin nota): el job entra → se clasifica → los que encajan quedan en
-// 'qualified' y aparecen DIRECTO en Check Proposal para revisar y aplicar. 'new' es
-// estado de paso (el classifier lo avanza), no se muestra.
+// LinkedIn: TODOS los scrapeados (1099-US) se muestran en Check Proposal, ordenados por
+// score. El classifier solo PUNTÚA (no esconde nada). El humano revisa, aplica y descarta
+// a mano lo que no sirve (→ Descartados). Kanban By Status = desglose informativo.
 const COLUMNS: Column[] = [
-  { status: 'qualified',        label: 'Check Proposal', dotClass: 'bg-accent',    countClass: 'text-accent-fg', emptyText: 'Nada para revisar' },
-  { status: 'sent',             label: 'Sent',          dotClass: 'bg-fg',         countClass: 'text-fg',        emptyText: 'Nada aplicado' },
-  { status: 'responded',        label: 'Responded',     dotClass: 'bg-violet',     countClass: 'text-violet',    emptyText: 'Sin respuestas' },
-  { status: 'discarded_review', label: 'Para Chequear', dotClass: 'bg-warning',    countClass: 'text-warning',   emptyText: 'Nada para chequear' },
-  { status: 'discarded',        label: 'Discarded',     dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3, emptyText: 'Sin descartes recientes' },
+  { status: 'new',              label: 'Sin clasificar', dotClass: 'bg-slate',     countClass: 'text-slate',     emptyText: 'Nada sin clasificar' },
+  { status: 'qualified',        label: 'Fit',            dotClass: 'bg-accent',    countClass: 'text-accent-fg', emptyText: 'Nada fit' },
+  { status: 'discarded',        label: 'Bajo score',     dotClass: 'bg-fg-subtle', countClass: 'text-fg-subtle', emptyText: 'Nada' },
+  { status: 'sent',             label: 'Sent',           dotClass: 'bg-fg',        countClass: 'text-fg',        emptyText: 'Nada aplicado' },
+  { status: 'discarded_review', label: 'Descartados',    dotClass: 'bg-warning',   countClass: 'text-warning',   emptyText: 'Nada descartado' },
 ]
 
 type View = { id: string; label: string; statuses: string[] | null; columnsKey?: keyof typeof LINKEDIN_VIEW_COLUMNS }
 
-// Espejo de Upwork. En LinkedIn los 'qualified' van directo a Check Proposal (sin nota):
-// el humano revisa y aplica en LinkedIn con su perfil. Se incluye 'proposal_drafted' por
-// si a algún job se le generó nota manualmente.
+// Check Proposal = TODOS los jobs scrapeados que todavía no aplicaste ni descartaste
+// (new/qualified/discarded/proposal_drafted). Ordenados por score. Descartar → Descartados.
 const VIEWS: View[] = [
-  { id: 'check_proposal', label: 'Check Proposal', statuses: ['qualified', 'proposal_drafted'], columnsKey: 'check_proposal' },
-  { id: 'review',         label: 'Para Chequear',  statuses: ['discarded_review'], columnsKey: 'review' },
+  { id: 'check_proposal', label: 'Check Proposal', statuses: ['new', 'prequalified', 'qualified', 'proposal_drafted', 'discarded'], columnsKey: 'check_proposal' },
   { id: 'sent',           label: 'Sent',           statuses: ['sent', 'responded'], columnsKey: 'sent' },
-  { id: 'discarded',      label: 'Discarded',      statuses: ['discarded'],        columnsKey: 'discarded' },
+  { id: 'descartados',    label: 'Descartados',    statuses: ['discarded_review'], columnsKey: 'review' },
   { id: 'estado',         label: 'By Status',      statuses: null },
 ]
 
