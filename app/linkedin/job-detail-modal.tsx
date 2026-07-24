@@ -182,7 +182,7 @@ export default function LinkedInDetailModal({
           {job.status === 'qualified' && (
             <ActionBtn primary busy={busy === 'cover-letter'} onClick={() => act('cover-letter')}>Generar nota</ActionBtn>
           )}
-          {['proposal_drafted', 'ready_to_send'].includes(job.status) && (
+          {['qualified', 'proposal_drafted', 'ready_to_send'].includes(job.status) && (
             <ActionBtn primary busy={busy === 'mark-sent'} onClick={() => act('mark-sent')}>Marcar enviado</ActionBtn>
           )}
           {['proposal_drafted', 'ready_to_send', 'qualified'].includes(job.status) && (

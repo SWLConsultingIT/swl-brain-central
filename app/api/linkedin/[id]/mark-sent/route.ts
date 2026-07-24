@@ -16,7 +16,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   // Cadena de pasos según estado actual hasta llegar a 'sent'.
   const steps: string[] = []
-  if (job.status === 'proposal_drafted') steps.push('ready_to_send', 'sent')
+  if (job.status === 'qualified') steps.push('sent')                       // LinkedIn sin nota: qualified → sent directo
+  else if (job.status === 'proposal_drafted') steps.push('ready_to_send', 'sent')
   else if (job.status === 'ready_to_send') steps.push('sent')
   else if (job.status === 'sent') return NextResponse.json({ ok: true, id, status: 'sent' })
   else return NextResponse.json({ error: `no se puede enviar desde '${job.status}'` }, { status: 409 })

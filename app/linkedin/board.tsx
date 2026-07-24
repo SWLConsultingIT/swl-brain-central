@@ -11,22 +11,24 @@ type BU = { id: string; name: string }
 
 type Column = { status: string; label: string; dotClass: string; countClass: string; windowDays?: number; emptyText: string }
 
-// Mismas columnas del kanban que Upwork: new/qualified son estados de PASO (el pipeline
-// los auto-avanza a proposal_drafted), así que no se muestran.
+// LinkedIn (sin nota): el job entra → se clasifica → los que encajan quedan en
+// 'qualified' y aparecen DIRECTO en Check Proposal para revisar y aplicar. 'new' es
+// estado de paso (el classifier lo avanza), no se muestra.
 const COLUMNS: Column[] = [
-  { status: 'proposal_drafted', label: 'Proposal',      dotClass: 'bg-info',       countClass: 'text-info',      emptyText: 'Sin notas para revisar' },
+  { status: 'qualified',        label: 'Check Proposal', dotClass: 'bg-accent',    countClass: 'text-accent-fg', emptyText: 'Nada para revisar' },
   { status: 'sent',             label: 'Sent',          dotClass: 'bg-fg',         countClass: 'text-fg',        emptyText: 'Nada aplicado' },
-  { status: 'responded',        label: 'Responded',     dotClass: 'bg-accent',     countClass: 'text-accent-fg', emptyText: 'Sin respuestas' },
+  { status: 'responded',        label: 'Responded',     dotClass: 'bg-violet',     countClass: 'text-violet',    emptyText: 'Sin respuestas' },
   { status: 'discarded_review', label: 'Para Chequear', dotClass: 'bg-warning',    countClass: 'text-warning',   emptyText: 'Nada para chequear' },
   { status: 'discarded',        label: 'Discarded',     dotClass: 'bg-fg-subtle',  countClass: 'text-fg-subtle', windowDays: 3, emptyText: 'Sin descartes recientes' },
 ]
 
 type View = { id: string; label: string; statuses: string[] | null; columnsKey?: keyof typeof LINKEDIN_VIEW_COLUMNS }
 
-// Espejo de las solapas de Upwork. Sin "Nuevos"/"Qualified": son estados de paso, el
-// job entra → se clasifica → se le genera la nota → aparece directo en Check Proposal.
+// Espejo de Upwork. En LinkedIn los 'qualified' van directo a Check Proposal (sin nota):
+// el humano revisa y aplica en LinkedIn con su perfil. Se incluye 'proposal_drafted' por
+// si a algún job se le generó nota manualmente.
 const VIEWS: View[] = [
-  { id: 'check_proposal', label: 'Check Proposal', statuses: ['proposal_drafted'], columnsKey: 'check_proposal' },
+  { id: 'check_proposal', label: 'Check Proposal', statuses: ['qualified', 'proposal_drafted'], columnsKey: 'check_proposal' },
   { id: 'review',         label: 'Para Chequear',  statuses: ['discarded_review'], columnsKey: 'review' },
   { id: 'sent',           label: 'Sent',           statuses: ['sent', 'responded'], columnsKey: 'sent' },
   { id: 'discarded',      label: 'Discarded',      statuses: ['discarded'],        columnsKey: 'discarded' },
