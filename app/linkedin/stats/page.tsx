@@ -1,28 +1,21 @@
 import Link from 'next/link'
-import { getServerClient } from '@/lib/supabase/server'
-import { listLinkedInJobs, type LinkedInJobRow } from '@/lib/linkedin/list'
-import Board from './board'
 import LogoutButton from '@/app/logout-button'
 import BrandSwitch from '@/app/brand-switch'
+import { getServerClient } from '@/lib/supabase/server'
+import { getLinkedInSent } from '@/lib/stats/linkedin-sent'
+import StatsView from '@/app/stats/stats-view'
 
 export const dynamic = 'force-dynamic'
 
-export default async function LinkedInPage() {
+export default async function LinkedInStatsPage() {
   const supabase = getServerClient()
-  let jobs: LinkedInJobRow[] = []
+  let rows: Awaited<ReturnType<typeof getLinkedInSent>> = []
   let error: string | null = null
   try {
-    jobs = await listLinkedInJobs(supabase)
+    rows = await getLinkedInSent(supabase)
   } catch (e) {
     error = (e as Error).message
   }
-
-  const { data: bus } = await supabase
-    .from('business_units')
-    .select('id, name')
-    .eq('is_active', true)
-    .order('name')
-  const businessUnits = (bus ?? []) as { id: string; name: string }[]
 
   return (
     <main className="min-h-screen bg-bg">
@@ -30,24 +23,15 @@ export default async function LinkedInPage() {
         <div className="px-8 py-3.5 flex items-center justify-between max-w-[2400px] mx-auto">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="size-6 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[11px] tracking-tighter">
-                B
-              </div>
-              <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">
-                Upwork Brain
-              </h1>
+              <div className="size-6 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[11px] tracking-tighter">B</div>
+              <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">Upwork Brain</h1>
             </Link>
             <span className="text-fg-subtle text-[13px]" aria-hidden>/</span>
-            <span className="text-fg-muted text-[13px] font-medium">LinkedIn</span>
+            <span className="text-fg-muted text-[13px] font-medium">LinkedIn · Stats</span>
           </div>
-
           <div className="flex items-center gap-5 text-[13px]">
             <BrandSwitch />
-            <span className="text-fg-muted font-mono tabular-nums">
-              <span className="font-semibold text-fg">{jobs.length}</span>
-              <span className="text-fg-subtle ml-1">jobs</span>
-            </span>
-            <Link href="/linkedin/stats" className="text-fg-muted hover:text-fg transition-colors font-medium">Stats</Link>
+            <Link href="/linkedin" className="text-fg-muted hover:text-fg transition-colors font-medium">Jobs</Link>
             <Link href="/linkedin/dashboard" className="text-fg-muted hover:text-fg transition-colors font-medium">Dashboard</Link>
             <LogoutButton />
           </div>
@@ -60,7 +44,7 @@ export default async function LinkedInPage() {
         </div>
       )}
 
-      <Board jobs={jobs} businessUnits={businessUnits} />
+      <StatsView rows={rows} variant="linkedin" />
     </main>
   )
 }

@@ -50,7 +50,9 @@ function aggregate(rows: SentRow[]): Agg {
   }
 }
 
-export default function StatsView({ rows }: { rows: SentRow[] }) {
+export default function StatsView({ rows, variant = 'upwork' }: { rows: SentRow[]; variant?: 'upwork' | 'linkedin' }) {
+  // LinkedIn no tiene connects/costo → ocultamos esas columnas y KPIs.
+  const showConnects = variant !== 'linkedin'
   const [period, setPeriod] = useState<Period>('month')
   const [bucket, setBucket] = useState<string>('all') // 'all' o clave de bucket
   const [catFilter, setCatFilter] = useState<string>('all')
@@ -149,22 +151,22 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
         <Kpi label="Este mes" value={kpis.month} accent="bg-info" />
         <Kpi label="Total enviadas" value={kpis.proposals} accent="bg-fg" />
         <Kpi label="Respuestas" value={kpis.replies} accent="bg-accent" />
-        <Kpi label="Connects" value={kpis.connects} accent="bg-violet" />
-        <Kpi label="$ gastado" value={usd(kpis.connects)} accent="bg-warning" />
+        {showConnects && <Kpi label="Connects" value={kpis.connects} accent="bg-violet" />}
+        {showConnects && <Kpi label="$ gastado" value={usd(kpis.connects)} accent="bg-warning" />}
       </div>
 
       {/* Resultado & costo */}
       <section className="bg-surface border border-border rounded-xl p-5">
         <h2 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-fg mb-4">
-          Resultado &amp; costo {activeBucket !== 'all' && <span className="text-fg-subtle font-normal normal-case">· {bucketLabel(activeBucket, period)}</span>}
+          {showConnects ? 'Resultado & costo' : 'Resultado'} {activeBucket !== 'all' && <span className="text-fg-subtle font-normal normal-case">· {bucketLabel(activeBucket, period)}</span>}
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <Stat label="Enviadas" value={agg.sent} />
+        <div className={`grid grid-cols-2 md:grid-cols-3 ${showConnects ? 'lg:grid-cols-6' : 'lg:grid-cols-3'} gap-4 mb-6`}>
+          <Stat label={showConnects ? 'Enviadas' : 'Aplicadas'} value={agg.sent} />
           <Stat label="Respuestas" value={agg.responses} sub={`${(agg.rate * 100).toFixed(0)}% tasa`} />
-          <Stat label="Connects" value={agg.withConnCount ? agg.connects : '—'} sub={agg.withConnCount ? `${agg.withConnCount}/${agg.sent} cargadas` : 'sin cargar'} />
-          <Stat label="$ gastado" value={agg.withConnCount ? `$${agg.spent.toFixed(2)}` : '—'} />
-          <Stat label="Costo/propuesta" value={agg.costPerProposal != null ? `$${agg.costPerProposal.toFixed(2)}` : '—'} />
-          <Stat label="Costo/respuesta" value={agg.costPerResponse != null ? `$${agg.costPerResponse.toFixed(2)}` : '—'} />
+          {showConnects && <Stat label="Connects" value={agg.withConnCount ? agg.connects : '—'} sub={agg.withConnCount ? `${agg.withConnCount}/${agg.sent} cargadas` : 'sin cargar'} />}
+          {showConnects && <Stat label="$ gastado" value={agg.withConnCount ? `$${agg.spent.toFixed(2)}` : '—'} />}
+          {showConnects && <Stat label="Costo/propuesta" value={agg.costPerProposal != null ? `$${agg.costPerProposal.toFixed(2)}` : '—'} />}
+          {showConnects && <Stat label="Costo/respuesta" value={agg.costPerResponse != null ? `$${agg.costPerResponse.toFixed(2)}` : '—'} />}
         </div>
         <h3 className="text-[11px] font-semibold tracking-[0.06em] uppercase text-fg-muted mb-3">Tasa de respuesta por categoría</h3>
         <div className="space-y-2.5">
@@ -207,7 +209,7 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
               <tr>
-                {['Período', 'Propuestas', 'Connects', '$ gastado', 'Respuestas', 'Tasa'].map((h, i) => (
+                {['Período', 'Propuestas', ...(showConnects ? ['Connects', '$ gastado'] : []), 'Respuestas', 'Tasa'].map((h, i) => (
                   <th key={h} className={`font-medium text-fg-muted text-[12px] px-4 py-2.5 bg-bg sticky top-0 border-b border-border whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
                 ))}
               </tr>
@@ -228,8 +230,8 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
                       </span>
                     </td>
                     <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums font-semibold text-fg">{b.proposals}</td>
-                    <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.connects || '—'}</td>
-                    <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.connects ? usd(b.connects) : '—'}</td>
+                    {showConnects && <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.connects || '—'}</td>}
+                    {showConnects && <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.connects ? usd(b.connects) : '—'}</td>}
                     <td className="px-4 py-2 border-b border-border text-right font-mono tabular-nums text-fg-muted">{b.replies || '—'}</td>
                     <td className="px-4 py-2 border-b border-border text-right">
                       {b.proposals ? (
@@ -244,7 +246,7 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
                   </tr>
                 )
               })}
-              {buckets.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-fg-subtle text-[12px]">Sin envíos todavía</td></tr>}
+              {buckets.length === 0 && <tr><td colSpan={showConnects ? 6 : 4} className="px-4 py-10 text-center text-fg-subtle text-[12px]">Sin envíos todavía</td></tr>}
             </tbody>
           </table>
         </div>
@@ -289,7 +291,7 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
               <tr>
-                {['Título', 'Categoría', 'Enviado', 'Connects', 'Reply', 'Link'].map((h) => (
+                {['Título', 'Categoría', 'Enviado', ...(showConnects ? ['Connects'] : []), 'Reply', 'Link'].map((h) => (
                   <th key={h} className="text-left font-medium text-fg-muted text-[12px] px-4 py-2.5 bg-bg sticky top-0 border-b border-border whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -309,7 +311,7 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
                   <td className="px-4 py-2 border-b border-border whitespace-nowrap font-mono text-[11px] text-fg-muted">
                     {new Date(r.sent_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
                   </td>
-                  <td className="px-4 py-2 border-b border-border font-mono text-[11px] text-fg-muted tabular-nums">{r.connects ?? '—'}</td>
+                  {showConnects && <td className="px-4 py-2 border-b border-border font-mono text-[11px] text-fg-muted tabular-nums">{r.connects ?? '—'}</td>}
                   <td className="px-4 py-2 border-b border-border text-center">
                     {r.responded
                       ? <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-accent-bg text-accent-fg">Reply</span>
@@ -322,7 +324,7 @@ export default function StatsView({ rows }: { rows: SentRow[] }) {
                   </td>
                 </tr>
               ))}
-              {list.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-fg-subtle text-[12px]">No hay envíos en este filtro</td></tr>}
+              {list.length === 0 && <tr><td colSpan={showConnects ? 6 : 5} className="px-4 py-10 text-center text-fg-subtle text-[12px]">No hay envíos en este filtro</td></tr>}
             </tbody>
           </table>
         </div>
