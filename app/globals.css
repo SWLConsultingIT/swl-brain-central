@@ -72,6 +72,25 @@ html, body {
 .kanban-scroll::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-fg-subtle); }
 
+/* Login: entrada + glow */
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes login-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.8;  transform: scale(1.06); }
+}
+@keyframes login-spin-slow { to { transform: rotate(360deg); } }
+@keyframes login-shine {
+  0%        { transform: translateX(-160%) skewX(-18deg); }
+  75%, 100% { transform: translateX(280%)  skewX(-18deg); }
+}
+.animate-login-rise    { animation: login-rise 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-login-breathe { animation: login-breathe 9s ease-in-out infinite; }
+.animate-login-spin-slow { animation: login-spin-slow 16s linear infinite; }
+.animate-login-shine   { animation: login-shine 2.6s ease-in-out infinite; }
+
 /* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
