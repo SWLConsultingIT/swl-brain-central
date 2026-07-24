@@ -141,6 +141,7 @@ const COL = {
   flow:       { key: 'flow',       label: 'Flow',        className: 'hidden md:table-cell', render: (j: LinkedInJobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status:     { key: 'status',     label: 'Status',      render: (j: LinkedInJobRow) => <StatusPill status={j.status} /> },
   type:       { key: 'type',       label: 'Tipo',        render: (j: LinkedInJobRow) => <TypeCell value={j.employment_type} /> },
+  salary:     { key: 'salary',     label: 'Rango $',     render: (j: LinkedInJobRow) => j.salary_raw ? <span className="font-mono text-[11px] text-accent-fg whitespace-nowrap">{j.salary_raw}</span> : <span className="text-fg-subtle">—</span> },
   seniority:  { key: 'seniority',  label: 'Seniority',   className: 'hidden lg:table-cell', render: (j: LinkedInJobRow) => j.seniority ? <span className="text-[11px] text-fg-muted whitespace-nowrap">{j.seniority}</span> : <span className="text-fg-subtle">—</span> },
   applicants: { key: 'applicants', label: 'Applicants',  align: 'right' as const, render: (j: LinkedInJobRow) => <NumCell value={j.applicants_count} tone={j.applicants_count != null ? applicantsTone(j.applicants_count) : undefined} /> },
   location:   { key: 'location',   label: 'Location',    className: 'hidden lg:table-cell', render: (j: LinkedInJobRow) => <LocationCell job={j} /> },
@@ -164,12 +165,12 @@ const COL = {
 
 // Sets de columnas por vista (espejo del layout de Upwork, con datos de LinkedIn).
 export const LINKEDIN_VIEW_COLUMNS: Record<string, Col[]> = {
-  check_proposal: [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.seniority, COL.applicants, COL.location, COL.industry, COL.jobFunction, COL.score, COL.posted, COL.keyword, COL.cover, COL.link],
-  qualified:      [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
-  pipeline:       [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
-  sent:           [COL.title, COL.company, COL.flow, COL.type, COL.score, COL.location, COL.link, COL.sentDate],
-  review:         [COL.title, COL.company, COL.flow, COL.declineReason, COL.applicants, COL.score, COL.type, COL.location, COL.posted, COL.link],
-  discarded:      [COL.title, COL.company, COL.keyword, COL.declineReason, COL.status, COL.score, COL.type, COL.location, COL.link],
+  check_proposal: [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.jobFunction, COL.score, COL.posted, COL.keyword, COL.cover, COL.link],
+  qualified:      [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
+  pipeline:       [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
+  sent:           [COL.title, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
+  review:         [COL.title, COL.company, COL.flow, COL.declineReason, COL.salary, COL.applicants, COL.score, COL.type, COL.location, COL.posted, COL.link],
+  discarded:      [COL.title, COL.company, COL.keyword, COL.declineReason, COL.salary, COL.status, COL.score, COL.type, COL.location, COL.link],
 }
 
 // Columna Source (siempre primera): en LinkedIn todos los jobs son "LinkedIn job".

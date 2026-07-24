@@ -49,6 +49,7 @@ export default function LinkedInDetailModal({
 
   const chips: [string, string | null][] = [
     ['Tipo', job.employment_type],
+    ['Rango $', job.salary_raw],
     ['Seniority', job.seniority],
     ['Función', job.job_function],
     ['Industry', job.industry],
