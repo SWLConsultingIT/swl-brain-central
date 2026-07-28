@@ -31,8 +31,8 @@ export default async function ProspectsPage() {
         <div className="px-8 py-3.5 flex items-center justify-between max-w-[2400px] mx-auto">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="size-6 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[11px] tracking-tighter">
-                B
+              <div className="size-6 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[8px] tracking-tight">
+                CRM
               </div>
               <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">
                 CRM Jobs

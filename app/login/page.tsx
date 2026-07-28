@@ -111,8 +111,8 @@ export default function LoginPage() {
               className="absolute -inset-3 rounded-[20px] blur-lg"
               style={{ background: 'radial-gradient(closest-side, rgba(31,30,27,0.22), transparent 72%)' }}
             />
-            <div className="relative size-[52px] rounded-2xl flex items-center justify-center overflow-hidden text-bg font-extrabold text-2xl tracking-tighter shadow-[0_8px_22px_-6px_rgba(31,30,27,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] bg-gradient-to-b from-[#2C2A26] to-[#1F1E1B]">
-              <span className="relative z-10">B</span>
+            <div className="relative size-[52px] rounded-2xl flex items-center justify-center overflow-hidden text-bg font-extrabold text-base tracking-tight shadow-[0_8px_22px_-6px_rgba(31,30,27,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] bg-gradient-to-b from-[#2C2A26] to-[#1F1E1B]">
+              <span className="relative z-10">CRM</span>
               {/* sheen superior */}
               <span
                 aria-hidden
