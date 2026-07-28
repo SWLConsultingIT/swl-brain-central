@@ -34,7 +34,7 @@ export default async function LinkedInPage() {
                 B
               </div>
               <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">
-                Upwork Brain
+                CRM Jobs
               </h1>
             </Link>
             <span className="text-fg-subtle text-[13px]" aria-hidden>/</span>

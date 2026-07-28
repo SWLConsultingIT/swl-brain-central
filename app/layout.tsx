@@ -2,8 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Brain Central — SWL Consulting',
-  description: 'AI-native prospecting brain',
+  title: 'CRM Jobs — SWL Consulting',
+  description: 'CRM de jobs — Upwork & LinkedIn',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

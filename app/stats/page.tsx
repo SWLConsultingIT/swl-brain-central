@@ -23,7 +23,7 @@ export default async function StatsPage() {
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="size-6 rounded-md bg-fg flex items-center justify-center text-bg font-bold text-[11px] tracking-tighter">B</div>
-              <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">Upwork Brain</h1>
+              <h1 className="text-[14px] font-semibold tracking-tight text-fg group-hover:text-fg-muted transition-colors">CRM Jobs</h1>
             </Link>
             <span className="text-fg-subtle text-[13px]" aria-hidden>/</span>
             <span className="text-fg-muted text-[13px] font-medium">Stats</span>

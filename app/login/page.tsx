@@ -127,7 +127,7 @@ export default function LoginPage() {
               />
             </div>
           </div>
-          <h1 className="mt-4 text-[23px] font-bold tracking-tight text-fg">Upwork Brain</h1>
+          <h1 className="mt-4 text-[23px] font-bold tracking-tight text-fg">CRM Jobs</h1>
           <p className="mt-1 text-[13px] text-fg-muted">Prospecting Upwork &amp; LinkedIn</p>
         </div>
 
