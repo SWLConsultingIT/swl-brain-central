@@ -95,39 +95,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm">
         {/* Marca */}
         <div className="flex flex-col items-center mb-8 animate-login-rise">
-          <div className="relative">
-            {/* glow cónico rotando lento detrás del logo */}
-            <div
-              aria-hidden
-              className="absolute -inset-4 rounded-full blur-md opacity-70 animate-login-spin-slow"
-              style={{
-                background:
-                  'conic-gradient(from 0deg, transparent, rgba(31,30,27,0.18), transparent 45%, rgba(31,30,27,0.12), transparent 75%)',
-              }}
-            />
-            {/* halo detrás del logo */}
-            <div
-              aria-hidden
-              className="absolute -inset-3 rounded-[20px] blur-lg"
-              style={{ background: 'radial-gradient(closest-side, rgba(31,30,27,0.22), transparent 72%)' }}
-            />
-            <div className="relative size-[52px] rounded-2xl flex items-center justify-center overflow-hidden text-bg font-extrabold text-base tracking-tight shadow-[0_8px_22px_-6px_rgba(31,30,27,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] bg-gradient-to-b from-[#2C2A26] to-[#1F1E1B]">
-              <span className="relative z-10">CRM</span>
-              {/* sheen superior */}
-              <span
-                aria-hidden
-                className="absolute inset-x-1 top-1 h-1/3 rounded-t-xl"
-                style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.14), transparent)' }}
-              />
-              {/* destello que barre en diagonal */}
-              <span
-                aria-hidden
-                className="absolute inset-y-0 -left-1/2 w-2/5 animate-login-shine"
-                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }}
-              />
-            </div>
-          </div>
-          <h1 className="mt-4 text-[23px] font-bold tracking-tight text-fg">CRM Jobs</h1>
+          <h1 className="text-[23px] font-bold tracking-tight text-fg">CRM Jobs</h1>
           <p className="mt-1 text-[13px] text-fg-muted">Prospecting Upwork &amp; LinkedIn</p>
         </div>
 
