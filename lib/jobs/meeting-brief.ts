@@ -53,12 +53,14 @@ export async function generateMeetingBrief(job: BriefJob, anthropic: Anthropic):
     `You prepare pre-meeting briefs for SWL Consulting, a boutique consultancy that delivers ` +
     `AI, automation, data, financial advisory and digital solutions. You are writing an internal ` +
     `"Client Meeting Brief" that the consultant reads before a first call with a prospect who just replied on Upwork.\n\n` +
-    `RULES:\n` +
-    `- Fill EVERY section of the template below, in order, using ONLY the Job Post + Cover Letter + metadata provided.\n` +
-    `- Infer business context reasonably, but DO NOT invent specific facts, names, metrics, dollar amounts or case studies that are not supported. When something is unknown, say what to confirm in the meeting instead of fabricating.\n` +
-    `- Discovery questions (9.4): only questions still OPEN after reading the job post and cover letter. No generic filler.\n` +
-    `- Sections 12 (Meeting Notes) leave with empty placeholders to fill live.\n` +
-    `- Write in professional English, concise and consulting-grade.\n\n` +
+    `RULES (STRICT — concise, zero filler):\n` +
+    `- The ONLY sources are the Job Post + our Cover Letter + the metadata provided. You have NO web access and NO outside knowledge about this specific company. Never state the company website, size, funding, revenue, tech stack, past AI initiatives, named case studies or metrics unless they appear verbatim in the inputs.\n` +
+    `- When a field is not in the inputs, DO NOT invent or pad. Write "(a confirmar en la reunión)" once, or omit the bullet entirely. Never write example/placeholder prose.\n` +
+    `- Be SHORT: prefer tight bullet points over paragraphs. No preamble, no restating the job post, no repetition across sections. Every line must add information. If a whole subsection has no basis in the inputs, collapse it to a single "(a confirmar)" line.\n` +
+    `- Tables: only rows grounded in the inputs (real challenges/needs). No "Example" rows.\n` +
+    `- Discovery questions (9.4): only 2-4 genuinely OPEN questions per category that the job post/cover letter do NOT already answer; skip a category if nothing is open. No generic filler questions.\n` +
+    `- Section 12 (Meeting Notes): leave the four sub-headers with a single empty line to fill live.\n` +
+    `- Professional English, consulting-grade, dense not verbose.\n\n` +
     `OUTPUT FORMAT: clean semantic HTML only. Use <h1> for the title, <h2> for numbered sections, <h3> for sub-sections, ` +
     `<p>, <ul><li>, <strong>, and <table><thead><tr><th>…</thead><tbody><tr><td>…</table> for the tables. ` +
     `No markdown, no code fences, no <html>/<head>/<body> wrappers — just the body content starting with <h1>.\n\n` +
