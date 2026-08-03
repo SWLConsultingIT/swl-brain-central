@@ -13,7 +13,7 @@ import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth'
  * Todo lo demás (páginas + APIs llamadas por el navegador) requiere sesión.
  * Las llamadas del front ya viajan con la cookie, así que nada se rompe.
  */
-const PUBLIC_PATHS = ['/login', '/api/auth/', '/api/jobs/ingest-questions']
+const PUBLIC_PATHS = ['/login', '/api/auth/', '/api/jobs/ingest-questions', '/api/odoo-leads/ingest']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
