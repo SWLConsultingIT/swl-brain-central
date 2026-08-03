@@ -160,6 +160,51 @@ function FitButton({ job, clientName }: { job: JobRow; clientName: string }) {
   )
 }
 
+// Columna "Meeting Brief": genera (o abre) el Google Doc armado desde Job Post + Cover Letter.
+function BriefButton({ job }: { job: JobRow }) {
+  const [busy, setBusy] = useState(false)
+  const [url, setUrl] = useState<string | null>(job.meeting_brief_url)
+
+  async function generate(e: React.MouseEvent) {
+    e.stopPropagation()
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/jobs/${job.id}/meeting-brief`, { method: 'POST' })
+      const out = (await r.json().catch(() => ({}))) as { url?: string; error?: string }
+      if (!r.ok || !out.url) { alert('No se pudo generar el brief: ' + (out.error ?? r.status)); return }
+      setUrl(out.url)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        title="Abrir el Client Meeting Brief (Google Doc)"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-accent-bg text-accent-fg hover:opacity-80 transition whitespace-nowrap"
+      >
+        Abrir Doc ↗
+      </a>
+    )
+  }
+
+  return (
+    <button
+      onClick={generate}
+      disabled={busy}
+      title="Generar el Client Meeting Brief (Google Doc) desde el Job Post + Cover Letter"
+      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border border-border text-fg hover:bg-bg transition cursor-pointer disabled:cursor-default whitespace-nowrap"
+    >
+      {busy ? 'Generando…' : 'Generar brief'}
+    </button>
+  )
+}
+
 // ── column definitions ─────────────────────────────────────────────────────
 
 type Ctx = {
@@ -301,6 +346,7 @@ const COL = {
   responded: { key: 'responded', label: 'Respondió', align: 'center' as const, render: (j: JobRow) => <RespondedCheckbox job={j} /> },
   clientName: { key: 'clientName', label: 'Cliente', render: (j: JobRow, c: Ctx) => <ClientNameInput value={c.clientNames[j.id] ?? ''} onChange={(v) => c.onClientName(j.id, v)} /> },
   fit: { key: 'fit', label: 'Hubo fit', align: 'center' as const, render: (j: JobRow, c: Ctx) => <FitButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
+  brief: { key: 'brief', label: 'Meeting Brief', align: 'center' as const, render: (j: JobRow) => <BriefButton job={j} /> },
   flow: { key: 'flow', label: 'Flow', className: 'hidden md:table-cell', render: (j: JobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status: { key: 'status', label: 'Status', render: (j: JobRow) => <StatusPill status={j.status} /> },
   ticket: { key: 'ticket', label: 'Ticket', align: 'right' as const, render: (j: JobRow) => ticketLabel(j) },
@@ -393,7 +439,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   // Invites: jobs que entraron por invitación del cliente (pegando el link).
   invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.link, COL.added],
   // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
-  client_reply: [COL.title, COL.responded, COL.clientName, COL.fit, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
+  client_reply: [COL.title, COL.responded, COL.clientName, COL.fit, COL.brief, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
   // Muestra el motivo + las señales que dispararon el movimiento.
   review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],
