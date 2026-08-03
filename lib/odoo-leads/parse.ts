@@ -21,7 +21,7 @@ export type OdooEmailInput = {
 // Grupos: 1=nombre(+intro), 2=empresa(paréntesis), 3=empresa repetida (ignorada),
 //         4=país, 5=email, 6=teléfono
 const LEAD_RE =
-  /([^\n(]{1,120}?)\s*\(([^)\n]*)\)\s*Registration\s*,\s*([^,\n]*),\s*([^,\n]+?)\s*,\s*([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})\s*,\s*(\+?\d[\d \t().\-]{5,}\d)/g
+  /([^\n(]{1,120}?)\s*\(([^)\n]*)\)\s*Registration\s*(?:\[\d+\])?\s*,\s*([^,\n]*),\s*([^,\n]+?)\s*,\s*([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})\s*,\s*(\+?\d[\d \t().\-]{5,}\d)/g
 
 function htmlToText(html: string): string {
   return html
