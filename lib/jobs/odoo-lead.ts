@@ -1,6 +1,8 @@
-// Arma el payload para el webhook n8n "create-odoo-lead" con TODOS los datos del job.
-// La app construye el HTML completo; n8n solo lo usa como description del lead.
-// Así, agregar más campos NO requiere tocar n8n.
+// Arma el payload para el webhook n8n "create-odoo-lead".
+// La app construye el HTML; n8n lo escribe en los campos VISIBLES de la pestaña Upwork:
+//   coverLetterHtml -> x_studio_cover_leter ("Cover Leter")
+//   jobPostHtml     -> x_studio_job_scope   ("Job Post": metadata + descripción del job)
+// Así queda visible (no en Notas). Agregar campos = solo editar acá.
 
 type AnyJob = Record<string, any>
 
@@ -9,7 +11,8 @@ export type OdooLeadPayload = {
   source: string
   title: string
   company: string
-  descriptionHtml: string
+  coverLetterHtml: string
+  jobPostHtml: string
 }
 
 export function odooSource(j: AnyJob): string {
@@ -18,9 +21,7 @@ export function odooSource(j: AnyJob): string {
 }
 
 function rateLabel(j: AnyJob): string {
-  if (j.hourly_min != null || j.hourly_max != null) {
-    return `$${j.hourly_min ?? '?'} - $${j.hourly_max ?? '?'}/h`
-  }
+  if (j.hourly_min != null || j.hourly_max != null) return `$${j.hourly_min ?? '?'} - $${j.hourly_max ?? '?'}/h`
   if (j.ticket != null) return `${j.ticket_currency ?? 'USD'} ${j.ticket}`
   return ''
 }
@@ -37,7 +38,7 @@ export function buildOdooLeadPayload(j: AnyJob, clientName: string): OdooLeadPay
   add('Origen', source)
   if (clientName) add('Cliente', clientName)
   add('Empresa', j.client_company_name)
-  add('Job', j.title)
+  if (j.link) rows.push(`<p><b>Link Upwork:</b> <a href="${j.link}">${j.link}</a></p>`)
   add('Área / BU', j.classifier_area)
   add('País', j.country ? `${j.country}${j.city_region ? ' — ' + j.city_region : ''}` : '')
   add('Tarifa', rateLabel(j))
@@ -50,7 +51,6 @@ export function buildOdooLeadPayload(j: AnyJob, clientName: string): OdooLeadPay
   add('Entrevistando', j.interviewing)
   add('Skills', Array.isArray(j.skills) ? j.skills.join(', ') : j.skills)
   add('Score', j.match_score ?? j.classifier_score)
-
   const cli = [
     j.client_total_spent ? `$${j.client_total_spent} gastado` : '',
     j.client_total_hires ? `${j.client_total_hires} hires` : '',
@@ -62,31 +62,28 @@ export function buildOdooLeadPayload(j: AnyJob, clientName: string): OdooLeadPay
   add('Cliente desde', j.client_member_since)
   add('Posteado', j.published_date ?? j.post_date)
   add('Upwork ID', j.upwork_id)
-  if (j.link) rows.push(`<p><b>Link:</b> <a href="${j.link}">${j.link}</a></p>`)
-
-  const blocks: string[] = ['<h3>Cliente respondió</h3>', ...rows]
-  if (j.description) blocks.push(`<hr/><p><b>Descripción del job:</b><br/>${nl2br(j.description)}</p>`)
 
   const qa = Array.isArray(j.questions_answers) ? j.questions_answers : []
   const qs = Array.isArray(j.questions) ? j.questions : []
   if (qa.length) {
-    blocks.push('<hr/><p><b>Screening Q&amp;A:</b></p>')
-    for (const a of qa) blocks.push(`<p><b>${a?.question ?? ''}</b><br/>${nl2br(a?.answer)}</p>`)
+    rows.push('<p><b>Screening Q&amp;A:</b></p>')
+    for (const a of qa) rows.push(`<p><b>${a?.question ?? ''}</b><br/>${nl2br(a?.answer)}</p>`)
   } else if (qs.length) {
-    blocks.push('<hr/><p><b>Screening questions:</b></p>')
-    for (const q of qs) blocks.push(`<p>${q?.question ?? ''}</p>`)
+    rows.push('<p><b>Screening questions:</b></p>')
+    for (const q of qs) rows.push(`<p>${q?.question ?? ''}</p>`)
   }
 
-  if (j.cover_letter_draft) {
-    blocks.push(`<hr/><p><b>Cover letter enviada:</b><br/>${nl2br(j.cover_letter_draft)}</p>`)
-  }
+  const jobPostHtml =
+    `${rows.join('\n')}\n<hr/>\n<p><b>Descripción del job:</b></p>\n${nl2br(j.description)}`
+  const coverLetterHtml = nl2br(j.cover_letter_draft)
 
   return {
     clientName,
     source,
     title: j.title ?? '',
     company: j.client_company_name ?? '',
-    descriptionHtml: blocks.join('\n'),
+    coverLetterHtml,
+    jobPostHtml,
   }
 }
 
