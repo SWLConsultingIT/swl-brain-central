@@ -69,13 +69,23 @@ function RespondedCheckbox({ job }: { job: JobRow }) {
   async function toggle(e: React.MouseEvent | React.ChangeEvent) {
     e.stopPropagation()
     const next = !checked
+    // Al marcar "respondió", pedimos el nombre del cliente (lo ves en el mensaje de Upwork).
+    // Se manda a Odoo junto con los datos del job. Cancelar = no marcar.
+    let clientName = ''
+    if (next) {
+      const entered = window.prompt(
+        'Nombre del cliente que respondió (lo ves en el mensaje de Upwork). Podés dejarlo vacío:',
+      )
+      if (entered === null) return
+      clientName = entered.trim()
+    }
     setChecked(next)
     setBusy(true)
     try {
       const r = await fetch(`/api/jobs/${job.id}/mark-responded`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ responded: next }),
+        body: JSON.stringify({ responded: next, clientName }),
       })
       if (!r.ok) {
         setChecked(!next)
