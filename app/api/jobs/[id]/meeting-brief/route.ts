@@ -4,6 +4,9 @@ import { getServerClient } from '@/lib/supabase/server'
 import { generateMeetingBrief, type BriefJob } from '@/lib/jobs/meeting-brief'
 
 export const dynamic = 'force-dynamic'
+// Haiku escribe 13 secciones + n8n crea el Doc: puede tardar 20-40s. Sin esto,
+// Vercel corta la función (~10-15s) y el botón queda colgado en "Generando…".
+export const maxDuration = 60
 
 /**
  * POST /api/jobs/[id]/meeting-brief
