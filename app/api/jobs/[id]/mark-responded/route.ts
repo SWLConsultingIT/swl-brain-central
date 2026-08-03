@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerClient } from '@/lib/supabase/server'
+import { buildOdooLeadPayload, ODOO_LEAD_SELECT } from '@/lib/jobs/odoo-lead'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,44 +8,15 @@ export const dynamic = 'force-dynamic'
 const ODOO_LEAD_URL =
   process.env.N8N_ODOO_LEAD_URL ?? 'https://n8n.srv949269.hstgr.cloud/webhook/create-odoo-lead'
 
-/** Manda el job (recién marcado como respondido) a Odoo como lead. No lanza: cualquier error se ignora. */
+/** Manda el job (recién marcado como respondido) a Odoo como lead con TODOS los datos. No lanza. */
 async function sendToOdoo(supabase: ReturnType<typeof getServerClient>, id: string, clientName: string) {
   try {
-    const { data } = await supabase
-      .from('jobs')
-      .select(
-        'title, description, link, country, classifier_area, hourly_min, hourly_max, ticket, ticket_currency, ' +
-          'client_company_name, client_total_spent, client_total_hires, client_rating, cover_letter_draft, matched_keyword, is_invite',
-      )
-      .eq('id', id)
-      .single()
-    const j = data as any
-    if (!j) return
-    const source = j.is_invite || j.matched_keyword === 'by-link' ? 'Upwork invite' : 'Upwork job'
-    const rate =
-      j.hourly_min != null || j.hourly_max != null
-        ? `$${j.hourly_min ?? '?'} - $${j.hourly_max ?? '?'}/h`
-        : j.ticket != null
-        ? `${j.ticket_currency ?? 'USD'} ${j.ticket}`
-        : ''
+    const { data } = await supabase.from('jobs').select(ODOO_LEAD_SELECT).eq('id', id).single()
+    if (!data) return
     await fetch(ODOO_LEAD_URL, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        clientName,
-        source,
-        title: j.title ?? '',
-        description: j.description ?? '',
-        company: j.client_company_name ?? '',
-        area: j.classifier_area ?? '',
-        country: j.country ?? '',
-        rate,
-        link: j.link ?? '',
-        coverLetter: j.cover_letter_draft ?? '',
-        clientSpent: j.client_total_spent ?? '',
-        clientHires: j.client_total_hires ?? '',
-        clientRating: j.client_rating ?? '',
-      }),
+      body: JSON.stringify(buildOdooLeadPayload(data as unknown as Record<string, unknown>, clientName)),
     })
   } catch {
     /* best-effort: no romper el marcado si Odoo/n8n falla */
