@@ -1,7 +1,8 @@
 // Parser de los emails de Odoo "Sus leads / Tus leads" que llegan a sales@.
-// Formato de cada lead (una línea):
+// Cada lead trae la firma consistente de Odoo:
 //   "Nombre Apellido (Empresa) Registration, Empresa, País, email@dom.com, +54 ...”
-// Puede haber varios leads numerados (1., 2., …). Devuelve un lead por línea con email.
+// Nos anclamos a "(Empresa) Registration," con un regex global → así funciona aunque
+// el email venga sin saltos de línea, y descarta líneas de intro / headers / footers.
 
 export type ParsedLead = {
   name: string | null
@@ -17,8 +18,10 @@ export type OdooEmailInput = {
   html?: string | null
 }
 
-const EMAIL_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/
-const PHONE_RE = /\+?\d[\d\s().\-]{6,}\d/
+// Grupos: 1=nombre(+intro), 2=empresa(paréntesis), 3=empresa repetida (ignorada),
+//         4=país, 5=email, 6=teléfono
+const LEAD_RE =
+  /([^\n(]{1,120}?)\s*\(([^)\n]*)\)\s*Registration\s*,\s*([^,\n]*),\s*([^,\n]+?)\s*,\s*([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})\s*,\s*(\+?\d[\d \t().\-]{5,}\d)/g
 
 function htmlToText(html: string): string {
   return html
@@ -29,6 +32,19 @@ function htmlToText(html: string): string {
     .replace(/&amp;/gi, '&')
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
+}
+
+/** Limpia el nombre: saca intro ("… Consulting: 1. Nombre"), numeración y "Registration". */
+function cleanName(raw: string): string | null {
+  let name = raw.replace(/\s+/g, ' ').trim()
+  const numM = name.match(/(?:^|\s)\d+[.)]\s*(.+)$/) // "…: 1. Nombre" → "Nombre"
+  if (numM) name = numM[1].trim()
+  else {
+    const colonM = name.match(/:\s*(.+)$/) // "… algo: Nombre" → "Nombre"
+    if (colonM) name = colonM[1].trim()
+  }
+  name = name.replace(/registration/gi, '').trim()
+  return name || null
 }
 
 /** Link "portal del contacto" (best-effort desde el HTML). */
@@ -45,37 +61,23 @@ export function parseOdooLeads(input: OdooEmailInput): ParsedLead[] {
   const out: ParsedLead[] = []
   const seen = new Set<string>()
 
-  for (const rawLine of body.split('\n')) {
-    const line = rawLine.trim()
-    if (!EMAIL_RE.test(line)) continue
-    // Saltar la firma/footer del remitente de Odoo (kanm@odoo.com, etc.)
-    if (/@odoo\.com/i.test(line)) continue
-
-    const emailMatch = line.match(EMAIL_RE)
-    if (!emailMatch) continue
-    const email = emailMatch[0].toLowerCase()
+  LEAD_RE.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = LEAD_RE.exec(body)) !== null) {
+    const email = m[5].toLowerCase()
+    const domain = email.split('@')[1] ?? ''
+    // Saltar la firma del remitente (odoo.com) y nuestra propia casilla.
+    if (/odoo\.com$/i.test(domain) || /swlconsulting\.com$/i.test(domain)) continue
     if (seen.has(email)) continue
-
-    const parts = line.split(',').map((s) => s.trim()).filter(Boolean)
-    const emailIdx = parts.findIndex((p) => EMAIL_RE.test(p))
-    if (emailIdx === -1) continue
-
-    // parts[0] = "Nombre (Empresa) Registration" (con posible "1." adelante)
-    const first = parts[0].replace(/^\d+[.)]\s*/, '')
-    const parenM = first.match(/\(([^)]*)\)/)
-    const companyParen = parenM ? parenM[1].trim() : ''
-    const name = first.split('(')[0].replace(/registration/gi, '').trim() || null
-
-    const country = emailIdx >= 1 ? parts[emailIdx - 1] : null
-    const company = companyParen || (emailIdx >= 2 ? parts[emailIdx - 2] : null)
-
-    let phone: string | null = null
-    const after = parts.slice(emailIdx + 1).join(' ')
-    const pm = after.match(PHONE_RE)
-    if (pm) phone = pm[0].trim()
-
     seen.add(email)
-    out.push({ name, company: company || null, country: country || null, email, phone })
+
+    out.push({
+      name: cleanName(m[1]),
+      company: (m[2] || '').trim() || null,
+      country: (m[4] || '').trim() || null,
+      email,
+      phone: (m[6] || '').trim() || null,
+    })
   }
 
   return out
