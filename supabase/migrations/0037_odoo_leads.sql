@@ -23,9 +23,9 @@ create table if not exists odoo_leads (
 comment on table odoo_leads is
   'Leads que Odoo asigna a SWL por email (fuente 3 del CRM). Ingesta vía n8n (Gmail sales@ → parse → upsert). Feature 2026-08.';
 
--- Dedup: un lead = un email. Permite upsert desde n8n on conflict (email).
-create unique index if not exists odoo_leads_email_uidx
-  on odoo_leads (lower(email)) where email is not null;
+-- Dedup: un lead = un email. Índice único NO parcial sobre email para que n8n
+-- pueda hacer upsert REST con on_conflict=email (los null se tratan distintos → OK).
+create unique index if not exists odoo_leads_email_uidx on odoo_leads (email);
 
 create index if not exists odoo_leads_status_idx on odoo_leads (status);
 create index if not exists odoo_leads_received_idx on odoo_leads (email_received_at desc);
