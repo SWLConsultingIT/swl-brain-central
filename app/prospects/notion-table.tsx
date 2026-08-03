@@ -69,23 +69,13 @@ function RespondedCheckbox({ job }: { job: JobRow }) {
   async function toggle(e: React.MouseEvent | React.ChangeEvent) {
     e.stopPropagation()
     const next = !checked
-    // Al marcar "respondió", pedimos el nombre del cliente (lo ves en el mensaje de Upwork).
-    // Se manda a Odoo junto con los datos del job. Cancelar = no marcar.
-    let clientName = ''
-    if (next) {
-      const entered = window.prompt(
-        'Nombre del cliente que respondió (lo ves en el mensaje de Upwork). Podés dejarlo vacío:',
-      )
-      if (entered === null) return
-      clientName = entered.trim()
-    }
     setChecked(next)
     setBusy(true)
     try {
       const r = await fetch(`/api/jobs/${job.id}/mark-responded`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ responded: next, clientName }),
+        body: JSON.stringify({ responded: next }),
       })
       if (!r.ok) {
         setChecked(!next)
@@ -114,6 +104,46 @@ function RespondedCheckbox({ job }: { job: JobRow }) {
         className="size-4 rounded accent-emerald-600 cursor-pointer disabled:opacity-40"
       />
     </label>
+  )
+}
+
+// Botón "Hubo fit" → pide el nombre del cliente y crea el lead en Odoo (PROSPECT).
+// SOLO esto manda a Odoo (marcar Client Reply ya no lo hace). El webhook dedupea por job.
+function FitButton({ job }: { job: JobRow }) {
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function send(e: React.MouseEvent) {
+    e.stopPropagation()
+    const name = window.prompt(
+      'Hubo fit ✓ → crear lead en Odoo.\nNombre del cliente (lo ves en el mensaje de Upwork):',
+    )
+    if (name === null) return // canceló → no manda
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/jobs/${job.id}/send-to-odoo`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ clientName: name.trim() }),
+      })
+      if (!r.ok) { alert('No se pudo crear el lead en Odoo: ' + (await r.text())); return }
+      setDone(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={send}
+      disabled={busy || done}
+      title="Hubo fit → crear lead en Odoo (etapa PROSPECT)"
+      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer disabled:cursor-default whitespace-nowrap ${
+        done ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
+      }`}
+    >
+      {busy ? '…' : done ? '✓ En Odoo' : 'Hubo fit'}
+    </button>
   )
 }
 
@@ -252,6 +282,7 @@ function PriorityCell({ value }: { value: number | null }) {
 const COL = {
   title: { key: 'title', label: 'Job Title', render: (j: JobRow) => <TitleCell job={j} /> },
   responded: { key: 'responded', label: 'Respondió', align: 'center' as const, render: (j: JobRow) => <RespondedCheckbox job={j} /> },
+  fit: { key: 'fit', label: 'Hubo fit', align: 'center' as const, render: (j: JobRow) => <FitButton job={j} /> },
   flow: { key: 'flow', label: 'Flow', className: 'hidden md:table-cell', render: (j: JobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status: { key: 'status', label: 'Status', render: (j: JobRow) => <StatusPill status={j.status} /> },
   ticket: { key: 'ticket', label: 'Ticket', align: 'right' as const, render: (j: JobRow) => ticketLabel(j) },
@@ -344,7 +375,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   // Invites: jobs que entraron por invitación del cliente (pegando el link).
   invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.link, COL.added],
   // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
-  client_reply: [COL.title, COL.responded, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
+  client_reply: [COL.title, COL.responded, COL.fit, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
   // Muestra el motivo + las señales que dispararon el movimiento.
   review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],

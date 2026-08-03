@@ -11,6 +11,7 @@ export type OdooLeadPayload = {
   source: string
   title: string
   company: string
+  upworkId: string
   coverLetterHtml: string
   jobPostHtml: string
 }
@@ -82,6 +83,7 @@ export function buildOdooLeadPayload(j: AnyJob, clientName: string): OdooLeadPay
     source,
     title: j.title ?? '',
     company: j.client_company_name ?? '',
+    upworkId: j.upwork_id != null ? String(j.upwork_id) : '',
     coverLetterHtml,
     jobPostHtml,
   }
