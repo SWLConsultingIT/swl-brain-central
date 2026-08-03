@@ -29,6 +29,7 @@ type View = { id: string; label: string; statuses: string[] | null; columnsKey?:
 const VIEWS: View[] = [
   { id: 'check_proposal', label: 'Check Proposal', statuses: ['qualified', 'proposal_drafted'], columnsKey: 'check_proposal' },
   { id: 'sent',           label: 'Sent',           statuses: ['sent', 'responded'], columnsKey: 'sent' },
+  { id: 'client_reply',   label: 'Client Reply',   statuses: ['responded'], columnsKey: 'client_reply' },
   { id: 'descartados',    label: 'Descartados',    statuses: ['discarded', 'discarded_review'], columnsKey: 'discarded' },
   { id: 'estado',         label: 'By Status',      statuses: null },
 ]

@@ -119,9 +119,97 @@ function CoverCell({ job }: { job: LinkedInJobRow }) {
   )
 }
 
+// Checkbox: marca si el cliente respondió en LinkedIn (sent ↔ responded).
+function RespondedCheckbox({ job }: { job: LinkedInJobRow }) {
+  const router = useRouter()
+  const [checked, setChecked] = useState(job.status === 'responded')
+  const [busy, setBusy] = useState(false)
+
+  async function toggle(e: React.ChangeEvent) {
+    e.stopPropagation()
+    const next = !checked
+    setChecked(next)
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/linkedin/${job.id}/mark-responded`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ responded: next }),
+      })
+      if (!r.ok) { setChecked(!next); alert('No se pudo marcar: ' + (await r.text())); return }
+      router.refresh()
+    } catch {
+      setChecked(!next)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <label onClick={(e) => e.stopPropagation()} className="inline-flex items-center justify-center cursor-pointer" title={checked ? 'Cliente respondió — clic para desmarcar' : 'Marcar: el cliente respondió'}>
+      <input type="checkbox" checked={checked} disabled={busy} onChange={toggle} className="size-4 rounded accent-emerald-600 cursor-pointer disabled:opacity-40" />
+    </label>
+  )
+}
+
+// Campo para escribir a mano el nombre del cliente; lo usa "Hubo fit" al mandar a Odoo.
+function ClientNameInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Nombre cliente…"
+      className="w-[130px] px-2 py-1 text-[11px] bg-bg border border-border rounded-md text-fg placeholder:text-fg-subtle focus:outline-none focus:border-fg transition-colors"
+    />
+  )
+}
+
+// "Hubo fit" → crea el lead en Odoo (PROSPECT) con el nombre escrito. source = "LinkedIn job".
+function FitButton({ job, clientName }: { job: LinkedInJobRow; clientName: string }) {
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function send(e: React.MouseEvent) {
+    e.stopPropagation()
+    const name = clientName.trim()
+    if (!name) { alert('Escribí primero el nombre del cliente en la columna "Cliente".'); return }
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/linkedin/${job.id}/send-to-odoo`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ clientName: name }),
+      })
+      if (!r.ok) { alert('No se pudo crear el lead en Odoo: ' + (await r.text())); return }
+      setDone(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={send}
+      disabled={busy || done}
+      title="Hubo fit → crear lead en Odoo (etapa PROSPECT)"
+      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer disabled:cursor-default whitespace-nowrap ${
+        done ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
+      }`}
+    >
+      {busy ? '…' : done ? '✓ En Odoo' : 'Hubo fit'}
+    </button>
+  )
+}
+
 // ── definición de columnas ───────────────────────────────────────────────────
 
-type Ctx = { buNames: Record<string, string> }
+type Ctx = {
+  buNames: Record<string, string>
+  clientNames: Record<string, string>
+  onClientName: (id: string, v: string) => void
+}
 
 type Col = {
   key: string
@@ -140,6 +228,9 @@ const COL = {
   company:    { key: 'company',    label: 'Company',     render: (j: LinkedInJobRow) => <CompanyCell job={j} /> },
   flow:       { key: 'flow',       label: 'Flow',        className: 'hidden md:table-cell', render: (j: LinkedInJobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status:     { key: 'status',     label: 'Status',      render: (j: LinkedInJobRow) => <StatusPill status={j.status} /> },
+  responded:  { key: 'responded',  label: 'Respondió',   align: 'center' as const, render: (j: LinkedInJobRow) => <RespondedCheckbox job={j} /> },
+  clientName: { key: 'clientName', label: 'Cliente',     render: (j: LinkedInJobRow, c: Ctx) => <ClientNameInput value={c.clientNames[j.id] ?? ''} onChange={(v) => c.onClientName(j.id, v)} /> },
+  fit:        { key: 'fit',        label: 'Hubo fit',    align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
   type:       { key: 'type',       label: 'Tipo',        render: (j: LinkedInJobRow) => <TypeCell value={j.employment_type} /> },
   salary:     { key: 'salary',     label: 'Rango $',     render: (j: LinkedInJobRow) => j.salary_raw ? <span className="font-mono text-[11px] text-accent-fg whitespace-nowrap">{j.salary_raw}</span> : <span className="text-fg-subtle">—</span> },
   seniority:  { key: 'seniority',  label: 'Seniority',   className: 'hidden lg:table-cell', render: (j: LinkedInJobRow) => j.seniority ? <span className="text-[11px] text-fg-muted whitespace-nowrap">{j.seniority}</span> : <span className="text-fg-subtle">—</span> },
@@ -168,7 +259,8 @@ export const LINKEDIN_VIEW_COLUMNS: Record<string, Col[]> = {
   check_proposal: [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.jobFunction, COL.score, COL.posted, COL.keyword, COL.cover, COL.link],
   qualified:      [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
   pipeline:       [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
-  sent:           [COL.title, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
+  sent:           [COL.title, COL.responded, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
+  client_reply:   [COL.title, COL.responded, COL.clientName, COL.fit, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
   review:         [COL.title, COL.company, COL.flow, COL.declineReason, COL.salary, COL.applicants, COL.score, COL.type, COL.location, COL.posted, COL.link],
   discarded:      [COL.title, COL.company, COL.keyword, COL.declineReason, COL.salary, COL.status, COL.score, COL.type, COL.location, COL.link],
 }
@@ -199,8 +291,13 @@ export default function LinkedInTable({
   const [activeJob, setActiveJob] = useState<LinkedInJobRow | null>(null)
   const [discarding, setDiscarding] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState<string | null>(null)
+  const [clientNames, setClientNames] = useState<Record<string, string>>({})
   const router = useRouter()
-  const ctx: Ctx = { buNames }
+  const ctx: Ctx = {
+    buNames,
+    clientNames,
+    onClientName: (id, v) => setClientNames((m) => ({ ...m, [id]: v })),
+  }
 
   async function discardJob(id: string, e: React.MouseEvent) {
     e.stopPropagation()
