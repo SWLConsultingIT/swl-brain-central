@@ -53,4 +53,4 @@ export function buildLinkedInOdooLeadPayload(j: AnyJob, clientName: string): Odo
 export const LINKEDIN_ODOO_LEAD_SELECT =
   'id, linkedin_id, title, description, link, company_name, country, city_region, location, classifier_area, ' +
   'employment_type, workplace_type, seniority, job_function, industry, salary_raw, applicants_count, ' +
-  'match_score, classifier_score, post_date, posted_ago, cover_letter_draft'
+  'match_score, classifier_score, post_date, posted_ago, cover_letter_draft, client_contact_name'

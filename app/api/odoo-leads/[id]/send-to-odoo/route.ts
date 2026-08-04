@@ -57,9 +57,12 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       body: JSON.stringify(payload),
     })
     if (!res.ok) return NextResponse.json({ error: `n8n ${res.status}` }, { status: 502 })
+    const out = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string; odooLeadId?: number }
+    if (out.error || out.success !== true) {
+      return NextResponse.json({ error: out.error ?? 'Odoo no confirmó la creación del lead' }, { status: 502 })
+    }
+    return NextResponse.json({ ok: true, id, odooLeadId: out.odooLeadId })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 })
   }
-
-  return NextResponse.json({ ok: true, id })
 }

@@ -29,16 +29,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { data } = await supabase.from('jobs').select(ODOO_LEAD_SELECT).eq('id', id).single()
   if (!data) return NextResponse.json({ error: 'job not found' }, { status: 404 })
 
+  // Si no vino nombre en el request, usar el persistido en la base.
+  const rec = data as unknown as Record<string, unknown>
+  if (!clientName && typeof rec.client_contact_name === 'string') clientName = rec.client_contact_name.trim()
+
   try {
     const res = await fetch(ODOO_LEAD_URL, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(buildOdooLeadPayload(data as unknown as Record<string, unknown>, clientName)),
+      body: JSON.stringify(buildOdooLeadPayload(rec, clientName)),
     })
     if (!res.ok) return NextResponse.json({ error: `n8n ${res.status}` }, { status: 502 })
+    // El webhook devuelve {success:true,...} o {error:'...'} — detectar el fallo real.
+    const out = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string; odooLeadId?: number }
+    if (out.error || out.success !== true) {
+      return NextResponse.json({ error: out.error ?? 'Odoo no confirmó la creación del lead' }, { status: 502 })
+    }
+    return NextResponse.json({ ok: true, id, odooLeadId: out.odooLeadId })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 })
   }
-
-  return NextResponse.json({ ok: true, id })
 }
