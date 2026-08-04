@@ -251,9 +251,6 @@ function Table({ leads }: { leads: OdooLead[] }) {
                         Gmail
                       </a>
                     )}
-                    {l.portal_link && (
-                      <a href={l.portal_link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg whitespace-nowrap" title="Portal del contacto en Odoo">portal ↗</a>
-                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); sendToOdoo(l.id) }}
                       disabled={busy === l.id || sentToOdoo[l.id]}
