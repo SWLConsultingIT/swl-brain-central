@@ -19,7 +19,7 @@ const STATUS_PILL: Record<string, string> = {
   discarded: 'bg-slate-bg text-fg-subtle',
 }
 
-// Mensaje base de presentación (editable acá). Se personaliza con nombre + empresa.
+// Mensaje base de WhatsApp (editable acá). Se personaliza con nombre + empresa.
 function outreachMessage(lead: OdooLead): string {
   const first = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
   const forCompany = lead.company ? ` para ${lead.company}` : ''
@@ -27,6 +27,19 @@ function outreachMessage(lead: OdooLead): string {
     `Hola ${first}, ¿cómo estás? Te escribo de SWL Consulting, partner de Odoo. ` +
     `Vi que dejaste tus datos interesado/a en Odoo${forCompany} y quería ponerme a disposición para ayudarte. ` +
     `Somos una consultora de software, IA, automatización y datos. ¿Tenés unos minutos para una breve charla?`
+  )
+}
+
+// Mensaje base del email (editable acá). Se personaliza con el nombre.
+function emailMessage(lead: OdooLead): string {
+  const first = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
+  return (
+    `Hola ${first}, ¿cómo estás?\n\n` +
+    `Vi que estás interesado/a en Odoo. Somos SWL Consulting, partner de Odoo: además de ayudarte a ` +
+    `implementar los módulos de Odoo que necesites, podemos ayudarte a automatizar procesos, integrar ` +
+    `tus sistemas y potenciar tu operación con soluciones de software, IA y datos.\n\n` +
+    `¿Tenés unos minutos para una breve charla y ver cómo podemos ayudarte?\n\n` +
+    `Saludos,\nEquipo SWL Consulting`
   )
 }
 
@@ -241,7 +254,7 @@ function Table({ leads }: { leads: OdooLead[] }) {
                     )}
                     {l.email && (
                       <a
-                        href={`https://mail.google.com/mail/?view=cm&fs=1&authuser=sales@swlconsulting.com&to=${encodeURIComponent(l.email)}&su=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(outreachMessage(l))}`}
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&authuser=sales@swlconsulting.com&to=${encodeURIComponent(l.email)}&su=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(emailMessage(l))}`}
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
