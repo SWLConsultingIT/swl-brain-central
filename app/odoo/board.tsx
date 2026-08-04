@@ -19,9 +19,15 @@ const STATUS_PILL: Record<string, string> = {
   discarded: 'bg-slate-bg text-fg-subtle',
 }
 
+// Primer nombre con la inicial en mayúscula (los leads de Odoo vienen en minúscula).
+function firstName(lead: OdooLead): string {
+  const w = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
+  return w ? w.charAt(0).toUpperCase() + w.slice(1) : ''
+}
+
 // Mensaje base de WhatsApp (editable acá). Se personaliza con nombre + empresa.
 function outreachMessage(lead: OdooLead): string {
-  const first = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
+  const first = firstName(lead)
   const forCompany = lead.company ? ` para ${lead.company}` : ''
   return (
     `Hola ${first}, ¿cómo estás? Te escribo de SWL Consulting, partner de Odoo. ` +
@@ -35,7 +41,7 @@ const BOOKING_URL = 'https://calendar.app.google/A4pw4zWHZGn6Eynz8'
 
 // Mensaje base del email (editable acá). Se personaliza con el nombre.
 function emailMessage(lead: OdooLead): string {
-  const first = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
+  const first = firstName(lead)
   return (
     `Hola ${first}, ¿cómo estás?\n\n` +
     `Vi que estás interesado/a en Odoo. Somos SWL Consulting, partner de Odoo: además de ayudarte a ` +
