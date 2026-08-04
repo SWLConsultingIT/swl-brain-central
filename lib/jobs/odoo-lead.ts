@@ -17,6 +17,9 @@ export type OdooLeadPayload = {
 }
 
 export function odooSource(j: AnyJob): string {
+  // La marca manual (Client Reply) manda sobre la detección automática.
+  if (j.marked_invite === true) return 'Upwork invite'
+  if (j.marked_invite === false) return 'Upwork job'
   if (j.is_invite || j.matched_keyword === 'by-link') return 'Upwork invite'
   return 'Upwork job'
 }
@@ -95,4 +98,4 @@ export const ODOO_LEAD_SELECT =
   'weekly_budget, duration, experience_level, engagement, proposals_count, total_applicants, invites_sent, interviewing, ' +
   'skills, match_score, classifier_score, client_company_name, client_total_spent, client_total_hires, client_rating, ' +
   'client_total_reviews, client_verification, client_member_since, published_date, post_date, upwork_id, ' +
-  'cover_letter_draft, questions, questions_answers, matched_keyword, is_invite, client_contact_name'
+  'cover_letter_draft, questions, questions_answers, matched_keyword, is_invite, client_contact_name, marked_invite'

@@ -130,6 +130,37 @@ function ClientNameInput({ job, ctx }: { job: JobRow; ctx: Ctx }) {
   )
 }
 
+// Check "Invite": marca a mano que el job vino por invite (aunque el scraper lo haya
+// levantado como job) → va a Odoo como "Upwork invite". La API de Upwork no lo detecta sola.
+function InviteCheckbox({ job }: { job: JobRow }) {
+  const auto = job.is_invite || job.matched_keyword === 'by-link'
+  const [checked, setChecked] = useState(job.marked_invite ?? auto)
+  const [busy, setBusy] = useState(false)
+
+  async function toggle(e: React.ChangeEvent) {
+    e.stopPropagation()
+    const next = !checked
+    setChecked(next)
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/jobs/${job.id}/mark-invite`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ invite: next }),
+      })
+      if (!r.ok) { setChecked(!next); alert('No se pudo marcar: ' + (await r.text())) }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <label onClick={(e) => e.stopPropagation()} className="inline-flex items-center justify-center cursor-pointer" title={checked ? 'Vino por invite → va a Odoo como "Upwork invite"' : 'Marcar: vino por invite'}>
+      <input type="checkbox" checked={checked} disabled={busy} onChange={toggle} className="size-4 rounded accent-violet-600 cursor-pointer disabled:opacity-40" />
+    </label>
+  )
+}
+
 // Marcador de fit: dos columnas ("Hubo fit" / "No hubo fit") sobre un único campo
 // jobs.had_fit (true / false / null). Marcar uno desmarca el otro (mutuamente excluyentes).
 function FitMarker({ job, want, ctx }: { job: JobRow; want: boolean; ctx: Ctx }) {
@@ -376,6 +407,7 @@ const COL = {
   title: { key: 'title', label: 'Job Title', render: (j: JobRow) => <TitleCell job={j} /> },
   responded: { key: 'responded', label: 'Respondió', align: 'center' as const, render: (j: JobRow) => <RespondedCheckbox job={j} /> },
   clientName: { key: 'clientName', label: 'Cliente', render: (j: JobRow, c: Ctx) => <ClientNameInput job={j} ctx={c} /> },
+  invite: { key: 'invite', label: 'Invite', align: 'center' as const, render: (j: JobRow) => <InviteCheckbox job={j} /> },
   fit: { key: 'fit', label: 'Hubo fit', align: 'center' as const, render: (j: JobRow, c: Ctx) => <FitMarker job={j} want={true} ctx={c} /> },
   nofit: { key: 'nofit', label: 'No hubo fit', align: 'center' as const, render: (j: JobRow, c: Ctx) => <FitMarker job={j} want={false} ctx={c} /> },
   sendOdoo: { key: 'sendOdoo', label: 'Send to Odoo', align: 'center' as const, render: (j: JobRow, c: Ctx) => <SendToOdooButton job={j} clientName={c.clientNames[j.id] ?? j.client_contact_name ?? ''} /> },
@@ -472,7 +504,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   // Invites: jobs que entraron por invitación del cliente (pegando el link).
   invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.link, COL.added],
   // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
-  client_reply: [COL.title, COL.responded, COL.clientName, COL.fit, COL.nofit, COL.sendOdoo, COL.brief, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
+  client_reply: [COL.title, COL.responded, COL.clientName, COL.invite, COL.fit, COL.nofit, COL.sendOdoo, COL.brief, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
   // Muestra el motivo + las señales que dispararon el movimiento.
   review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],
