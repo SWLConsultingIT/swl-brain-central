@@ -380,6 +380,43 @@ function CoverCell({ job }: { job: JobRow }) {
   )
 }
 
+// Botón "Copiar": pone la cover letter + las respuestas de screening en el portapapeles,
+// listo para pegar en Upwork (sin abrir el modal).
+function CopyButton({ job }: { job: JobRow }) {
+  const [done, setDone] = useState(false)
+  const hasCover = !!job.cover_letter_draft && job.cover_letter_draft.length > 0
+  if (!hasCover) return <span className="text-fg-subtle text-[11px]">—</span>
+
+  async function copy(e: React.MouseEvent) {
+    e.stopPropagation()
+    const parts: string[] = [String(job.cover_letter_draft)]
+    const qa = Array.isArray(job.questions_answers) ? job.questions_answers : []
+    if (qa.length) {
+      parts.push('\n━━━━━ Respuestas de screening ━━━━━')
+      for (const a of qa) parts.push(`▸ ${a.question}\n${a.answer}`)
+    }
+    try {
+      await navigator.clipboard.writeText(parts.join('\n\n'))
+      setDone(true)
+      setTimeout(() => setDone(false), 1500)
+    } catch {
+      alert('No se pudo copiar (probá con HTTPS / permisos del navegador)')
+    }
+  }
+
+  return (
+    <button
+      onClick={copy}
+      title="Copiar cover letter + respuestas para pegar en Upwork"
+      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer whitespace-nowrap ${
+        done ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
+      }`}
+    >
+      {done ? '✓ Copiado' : 'Copiar'}
+    </button>
+  )
+}
+
 function dateLabel(iso: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
@@ -436,6 +473,7 @@ const COL = {
     ? <a href={j.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg transition-colors whitespace-nowrap">open&nbsp;↗</a>
     : <span className="text-fg-subtle text-[11px]">—</span> },
   cover: { key: 'cover', label: 'Cover Letter', align: 'center' as const, render: (j: JobRow) => <CoverCell job={j} /> },
+  copy: { key: 'copy', label: 'Copiar', align: 'center' as const, render: (j: JobRow) => <CopyButton job={j} /> },
   posted: { key: 'posted', label: 'Posted', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
   postedB: { key: 'postedB', label: 'Posted', render: (j: JobRow) => <span className="font-mono text-[11px] text-fg-muted">{postedAgo(j.post_date) ?? '—'}</span> },
   ready: { key: 'ready', label: 'Ready Date', className: 'hidden md:table-cell', render: (j: JobRow) => <span className="font-mono text-[10px] text-fg-muted">{dateLabel(j.cover_letter_generated_at)}</span> },
@@ -497,12 +535,12 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
     COL.title, COL.posted, COL.flow, COL.status, COL.ticket, COL.proposals, COL.invites, COL.postedB, COL.prefLoc,
     COL.universe, COL.link, COL.declineReason, COL.added, COL.priority, COL.country,
     COL.currentState, COL.scrapMethod, COL.interviewing, COL.keyword, COL.unanswered,
-    COL.viewedByClient, COL.reviews, COL.lastUpdate, COL.payment, COL.totalSpent, COL.ready, COL.cover,
+    COL.viewedByClient, COL.reviews, COL.lastUpdate, COL.payment, COL.totalSpent, COL.ready, COL.cover, COL.copy,
   ],
-  ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.ready],
+  ready_to_send: [COL.title, COL.flow, COL.ticket, COL.score, COL.cover, COL.copy, COL.ready],
   sent: [COL.title, COL.responded, COL.flow, COL.ticket, COL.score, COL.link, COL.sent],
   // Invites: jobs que entraron por invitación del cliente (pegando el link).
-  invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.link, COL.added],
+  invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.copy, COL.link, COL.added],
   // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
   client_reply: [COL.title, COL.responded, COL.clientName, COL.invite, COL.fit, COL.nofit, COL.sendOdoo, COL.brief, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
