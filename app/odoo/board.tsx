@@ -25,13 +25,12 @@ function firstName(lead: OdooLead): string {
   return w ? w.charAt(0).toUpperCase() + w.slice(1) : ''
 }
 
-// Mensaje base de WhatsApp (editable acá). Se personaliza con nombre + empresa.
+// Mensaje base de WhatsApp (editable acá). Se personaliza con el nombre.
 function outreachMessage(lead: OdooLead): string {
   const first = firstName(lead)
-  const forCompany = lead.company ? ` para ${lead.company}` : ''
   return (
     `Hola ${first}, ¿cómo estás? Te escribo de SWL Consulting, partner de Odoo. ` +
-    `Vi que dejaste tus datos interesado/a en Odoo${forCompany} y quería ponerme a disposición para ayudarte. ` +
+    `Vi que dejaste tus datos interesado/a en Odoo y quería ponerme a disposición para ayudarte. ` +
     `Somos una consultora de software, IA, automatización y datos. ¿Tenés unos minutos para una breve charla?`
   )
 }
