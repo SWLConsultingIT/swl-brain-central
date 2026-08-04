@@ -124,6 +124,7 @@ export default function Board({ leads }: { leads: OdooLead[] }) {
 function Table({ leads }: { leads: OdooLead[] }) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
+  const [sentToOdoo, setSentToOdoo] = useState<Record<string, boolean>>({})
 
   async function setStatus(id: string, status: string) {
     setBusy(id)
@@ -135,6 +136,17 @@ function Table({ leads }: { leads: OdooLead[] }) {
       })
       if (!r.ok) { alert('No se pudo actualizar: ' + (await r.text())); return }
       router.refresh()
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function sendToOdoo(id: string) {
+    setBusy(id)
+    try {
+      const r = await fetch(`/api/odoo-leads/${id}/send-to-odoo`, { method: 'POST' })
+      if (!r.ok) { alert('No se pudo enviar a Odoo: ' + (await r.text())); return }
+      setSentToOdoo((m) => ({ ...m, [id]: true }))
     } finally {
       setBusy(null)
     }
@@ -206,6 +218,16 @@ function Table({ leads }: { leads: OdooLead[] }) {
                     {l.portal_link && (
                       <a href={l.portal_link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg whitespace-nowrap" title="Portal del contacto en Odoo">portal ↗</a>
                     )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); sendToOdoo(l.id) }}
+                      disabled={busy === l.id || sentToOdoo[l.id]}
+                      title="Mandar este lead a tu Odoo CRM (etapa PROSPECT)"
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer disabled:cursor-default whitespace-nowrap ${
+                        sentToOdoo[l.id] ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
+                      }`}
+                    >
+                      {sentToOdoo[l.id] ? '✓ En Odoo' : '→ Odoo CRM'}
+                    </button>
                     {l.status !== 'contacted' && (
                       <StatusBtn label="Contactado" onClick={() => setStatus(l.id, 'contacted')} disabled={busy === l.id} />
                     )}
