@@ -122,9 +122,30 @@ function ClientNameInput({ value, onChange }: { value: string; onChange: (v: str
   )
 }
 
-// Botón "Hubo fit" → crea el lead en Odoo (PROSPECT) con el nombre escrito en la columna.
-// SOLO esto manda a Odoo (marcar Client Reply ya no lo hace). El webhook dedupea por job.
-function FitButton({ job, clientName }: { job: JobRow; clientName: string }) {
+// Marcador de fit: dos columnas ("Hubo fit" / "No hubo fit") sobre un único campo
+// jobs.had_fit (true / false / null). Marcar uno desmarca el otro (mutuamente excluyentes).
+function FitMarker({ job, want, ctx }: { job: JobRow; want: boolean; ctx: Ctx }) {
+  const current = ctx.hadFitOf(job)
+  const checked = current === want
+  return (
+    <label
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center justify-center cursor-pointer"
+      title={want ? 'Marcar: hubo fit' : 'Marcar: no hubo fit'}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => ctx.onHadFit(job.id, checked ? null : want)}
+        className={`size-4 rounded cursor-pointer ${want ? 'accent-emerald-600' : 'accent-rose-500'}`}
+      />
+    </label>
+  )
+}
+
+// Botón "Send to Odoo" → crea el lead en Odoo (PROSPECT) con el nombre de la columna Cliente.
+// Acción manual e independiente de marcar fit/no-fit. El webhook dedupea por job.
+function SendToOdooButton({ job, clientName }: { job: JobRow; clientName: string }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -150,12 +171,12 @@ function FitButton({ job, clientName }: { job: JobRow; clientName: string }) {
     <button
       onClick={send}
       disabled={busy || done}
-      title="Hubo fit → crear lead en Odoo (etapa PROSPECT)"
+      title="Mandar este lead a tu Odoo CRM (etapa PROSPECT)"
       className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer disabled:cursor-default whitespace-nowrap ${
         done ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
       }`}
     >
-      {busy ? '…' : done ? '✓ En Odoo' : 'Hubo fit'}
+      {busy ? '…' : done ? '✓ En Odoo' : 'Send to Odoo'}
     </button>
   )
 }
@@ -211,6 +232,8 @@ type Ctx = {
   buNames: Record<string, string>
   clientNames: Record<string, string>
   onClientName: (id: string, v: string) => void
+  hadFitOf: (job: JobRow) => boolean | null
+  onHadFit: (id: string, val: boolean | null) => void
 }
 
 type Col = {
@@ -345,7 +368,9 @@ const COL = {
   title: { key: 'title', label: 'Job Title', render: (j: JobRow) => <TitleCell job={j} /> },
   responded: { key: 'responded', label: 'Respondió', align: 'center' as const, render: (j: JobRow) => <RespondedCheckbox job={j} /> },
   clientName: { key: 'clientName', label: 'Cliente', render: (j: JobRow, c: Ctx) => <ClientNameInput value={c.clientNames[j.id] ?? ''} onChange={(v) => c.onClientName(j.id, v)} /> },
-  fit: { key: 'fit', label: 'Hubo fit', align: 'center' as const, render: (j: JobRow, c: Ctx) => <FitButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
+  fit: { key: 'fit', label: 'Hubo fit', align: 'center' as const, render: (j: JobRow, c: Ctx) => <FitMarker job={j} want={true} ctx={c} /> },
+  nofit: { key: 'nofit', label: 'No hubo fit', align: 'center' as const, render: (j: JobRow, c: Ctx) => <FitMarker job={j} want={false} ctx={c} /> },
+  sendOdoo: { key: 'sendOdoo', label: 'Send to Odoo', align: 'center' as const, render: (j: JobRow, c: Ctx) => <SendToOdooButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
   brief: { key: 'brief', label: 'Meeting Brief', align: 'center' as const, render: (j: JobRow) => <BriefButton job={j} /> },
   flow: { key: 'flow', label: 'Flow', className: 'hidden md:table-cell', render: (j: JobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status: { key: 'status', label: 'Status', render: (j: JobRow) => <StatusPill status={j.status} /> },
@@ -439,7 +464,7 @@ export const NOTION_VIEW_COLUMNS: Record<string, Col[]> = {
   // Invites: jobs que entraron por invitación del cliente (pegando el link).
   invites: [COL.title, COL.flow, COL.status, COL.ticket, COL.score, COL.proposals, COL.country, COL.cover, COL.link, COL.added],
   // Clientes que respondieron: mismas columnas que Sent + el checkbox para des-marcar.
-  client_reply: [COL.title, COL.responded, COL.clientName, COL.fit, COL.brief, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
+  client_reply: [COL.title, COL.responded, COL.clientName, COL.fit, COL.nofit, COL.sendOdoo, COL.brief, COL.flow, COL.ticket, COL.score, COL.country, COL.link, COL.sent],
   // "Para Chequear": jobs que el Update mandó a revisar (saturación / interviews).
   // Muestra el motivo + las señales que dispararon el movimiento.
   review: [COL.title, COL.flow, COL.whyDiscarded, COL.proposals, COL.interviewing, COL.score, COL.ticket, COL.country, COL.posted, COL.link],
@@ -477,11 +502,21 @@ export default function NotionTable({
   const [discarding, setDiscarding] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [clientNames, setClientNames] = useState<Record<string, string>>({})
+  const [hadFitOverride, setHadFitOverride] = useState<Record<string, boolean | null>>({})
   const router = useRouter()
   const ctx: Ctx = {
     buNames,
     clientNames,
     onClientName: (id, v) => setClientNames((m) => ({ ...m, [id]: v })),
+    hadFitOf: (job) => (job.id in hadFitOverride ? hadFitOverride[job.id] : job.had_fit),
+    onHadFit: (id, val) => {
+      setHadFitOverride((m) => ({ ...m, [id]: val }))
+      fetch(`/api/jobs/${id}/fit`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ fit: val }),
+      }).catch(() => {})
+    },
   }
 
   // Tachito: descartar un job desde la fila (sin abrir el modal).

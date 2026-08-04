@@ -167,7 +167,23 @@ function ClientNameInput({ value, onChange }: { value: string; onChange: (v: str
 }
 
 // "Hubo fit" → crea el lead en Odoo (PROSPECT) con el nombre escrito. source = "LinkedIn job".
-function FitButton({ job, clientName }: { job: LinkedInJobRow; clientName: string }) {
+// Marcador fit: "Hubo fit" / "No hubo fit" sobre linkedin_jobs.had_fit (true/false/null).
+function FitMarker({ job, want, ctx }: { job: LinkedInJobRow; want: boolean; ctx: Ctx }) {
+  const checked = ctx.hadFitOf(job) === want
+  return (
+    <label onClick={(e) => e.stopPropagation()} className="inline-flex items-center justify-center cursor-pointer" title={want ? 'Marcar: hubo fit' : 'Marcar: no hubo fit'}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => ctx.onHadFit(job.id, checked ? null : want)}
+        className={`size-4 rounded cursor-pointer ${want ? 'accent-emerald-600' : 'accent-rose-500'}`}
+      />
+    </label>
+  )
+}
+
+// "Send to Odoo" → crea el lead en Odoo (PROSPECT) con el nombre. Acción manual aparte.
+function SendToOdooButton({ job, clientName }: { job: LinkedInJobRow; clientName: string }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -193,12 +209,12 @@ function FitButton({ job, clientName }: { job: LinkedInJobRow; clientName: strin
     <button
       onClick={send}
       disabled={busy || done}
-      title="Hubo fit → crear lead en Odoo (etapa PROSPECT)"
+      title="Mandar este lead a tu Odoo CRM (etapa PROSPECT)"
       className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer disabled:cursor-default whitespace-nowrap ${
         done ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
       }`}
     >
-      {busy ? '…' : done ? '✓ En Odoo' : 'Hubo fit'}
+      {busy ? '…' : done ? '✓ En Odoo' : 'Send to Odoo'}
     </button>
   )
 }
@@ -243,6 +259,8 @@ type Ctx = {
   buNames: Record<string, string>
   clientNames: Record<string, string>
   onClientName: (id: string, v: string) => void
+  hadFitOf: (job: LinkedInJobRow) => boolean | null
+  onHadFit: (id: string, val: boolean | null) => void
 }
 
 type Col = {
@@ -264,7 +282,9 @@ const COL = {
   status:     { key: 'status',     label: 'Status',      render: (j: LinkedInJobRow) => <StatusPill status={j.status} /> },
   responded:  { key: 'responded',  label: 'Respondió',   align: 'center' as const, render: (j: LinkedInJobRow) => <RespondedCheckbox job={j} /> },
   clientName: { key: 'clientName', label: 'Cliente',     render: (j: LinkedInJobRow, c: Ctx) => <ClientNameInput value={c.clientNames[j.id] ?? ''} onChange={(v) => c.onClientName(j.id, v)} /> },
-  fit:        { key: 'fit',        label: 'Hubo fit',    align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
+  fit:        { key: 'fit',        label: 'Hubo fit',    align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitMarker job={j} want={true} ctx={c} /> },
+  nofit:      { key: 'nofit',      label: 'No hubo fit', align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitMarker job={j} want={false} ctx={c} /> },
+  sendOdoo:   { key: 'sendOdoo',   label: 'Send to Odoo', align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <SendToOdooButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
   brief:      { key: 'brief',      label: 'Meeting Brief', align: 'center' as const, render: (j: LinkedInJobRow) => <BriefButton job={j} /> },
   type:       { key: 'type',       label: 'Tipo',        render: (j: LinkedInJobRow) => <TypeCell value={j.employment_type} /> },
   salary:     { key: 'salary',     label: 'Rango $',     render: (j: LinkedInJobRow) => j.salary_raw ? <span className="font-mono text-[11px] text-accent-fg whitespace-nowrap">{j.salary_raw}</span> : <span className="text-fg-subtle">—</span> },
@@ -295,7 +315,7 @@ export const LINKEDIN_VIEW_COLUMNS: Record<string, Col[]> = {
   qualified:      [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
   pipeline:       [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
   sent:           [COL.title, COL.responded, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
-  client_reply:   [COL.title, COL.responded, COL.clientName, COL.fit, COL.brief, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
+  client_reply:   [COL.title, COL.responded, COL.clientName, COL.fit, COL.nofit, COL.sendOdoo, COL.brief, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
   review:         [COL.title, COL.company, COL.flow, COL.declineReason, COL.salary, COL.applicants, COL.score, COL.type, COL.location, COL.posted, COL.link],
   discarded:      [COL.title, COL.company, COL.keyword, COL.declineReason, COL.salary, COL.status, COL.score, COL.type, COL.location, COL.link],
 }
@@ -327,11 +347,21 @@ export default function LinkedInTable({
   const [discarding, setDiscarding] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [clientNames, setClientNames] = useState<Record<string, string>>({})
+  const [hadFitOverride, setHadFitOverride] = useState<Record<string, boolean | null>>({})
   const router = useRouter()
   const ctx: Ctx = {
     buNames,
     clientNames,
     onClientName: (id, v) => setClientNames((m) => ({ ...m, [id]: v })),
+    hadFitOf: (job) => (job.id in hadFitOverride ? hadFitOverride[job.id] : job.had_fit),
+    onHadFit: (id, val) => {
+      setHadFitOverride((m) => ({ ...m, [id]: val }))
+      fetch(`/api/linkedin/${id}/fit`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ fit: val }),
+      }).catch(() => {})
+    },
   }
 
   async function discardJob(id: string, e: React.MouseEvent) {
