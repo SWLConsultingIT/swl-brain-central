@@ -395,12 +395,39 @@ function CopyButton({ job }: { job: JobRow }) {
       parts.push('\n━━━━━ Respuestas de screening ━━━━━')
       for (const a of qa) parts.push(`▸ ${a.question}\n${a.answer}`)
     }
+    const text = parts.join('\n\n')
+
+    // Método moderno; si falla (Safari suele bloquear), cae al textarea + execCommand.
+    let ok = false
     try {
-      await navigator.clipboard.writeText(parts.join('\n\n'))
+      await navigator.clipboard.writeText(text)
+      ok = true
+    } catch {
+      /* fallback abajo */
+    }
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.position = 'fixed'
+        ta.style.top = '0'
+        ta.style.left = '0'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.focus()
+        ta.select()
+        ok = document.execCommand('copy')
+        document.body.removeChild(ta)
+      } catch {
+        ok = false
+      }
+    }
+
+    if (ok) {
       setDone(true)
       setTimeout(() => setDone(false), 1500)
-    } catch {
-      alert('No se pudo copiar (probá con HTTPS / permisos del navegador)')
+    } else {
+      alert('No se pudo copiar automáticamente. Abrí el job (modal) y copiá desde ahí.')
     }
   }
 
