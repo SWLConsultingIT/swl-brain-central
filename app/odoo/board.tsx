@@ -29,9 +29,10 @@ function firstName(lead: OdooLead): string {
 function outreachMessage(lead: OdooLead): string {
   const first = firstName(lead)
   return (
-    `Hola ${first}, ¿cómo estás? Te escribo de SWL Consulting, partner de Odoo. ` +
-    `Vi que dejaste tus datos interesado/a en Odoo y quería ponerme a disposición para ayudarte. ` +
-    `Somos una consultora de software, IA, automatización y datos. ¿Tenés unos minutos para una breve charla?`
+    `Hola ${first}, ¿cómo estás? Vi que estás interesado/a en Odoo. ` +
+    `Somos SWL Consulting, partner de Odoo: además de ayudarte a implementar los módulos de Odoo que necesites, ` +
+    `podemos ayudarte a automatizar procesos, integrar tus sistemas y potenciar tu operación con soluciones de software, IA y datos. ` +
+    `¿Tenés unos minutos para ver cómo podemos ayudarte?`
   )
 }
 
