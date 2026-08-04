@@ -203,6 +203,40 @@ function FitButton({ job, clientName }: { job: LinkedInJobRow; clientName: strin
   )
 }
 
+// Columna "Meeting Brief": genera (o abre) el Google Doc desde Job Post + Cover Letter.
+function BriefButton({ job }: { job: LinkedInJobRow }) {
+  const [busy, setBusy] = useState(false)
+  const [url, setUrl] = useState<string | null>(job.meeting_brief_url)
+
+  async function generate(e: React.MouseEvent) {
+    e.stopPropagation()
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/linkedin/${job.id}/meeting-brief`, { method: 'POST' })
+      const out = (await r.json().catch(() => ({}))) as { url?: string; error?: string }
+      if (!r.ok || !out.url) { alert('No se pudo generar el brief: ' + (out.error ?? r.status)); return }
+      setUrl(out.url)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (url) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} title="Abrir el Client Meeting Brief (Google Doc)"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-accent-bg text-accent-fg hover:opacity-80 transition whitespace-nowrap">
+        Abrir Doc ↗
+      </a>
+    )
+  }
+  return (
+    <button onClick={generate} disabled={busy} title="Generar el Client Meeting Brief (Google Doc)"
+      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border border-border text-fg hover:bg-bg transition cursor-pointer disabled:cursor-default whitespace-nowrap">
+      {busy ? 'Generando…' : 'Generar brief'}
+    </button>
+  )
+}
+
 // ── definición de columnas ───────────────────────────────────────────────────
 
 type Ctx = {
@@ -231,6 +265,7 @@ const COL = {
   responded:  { key: 'responded',  label: 'Respondió',   align: 'center' as const, render: (j: LinkedInJobRow) => <RespondedCheckbox job={j} /> },
   clientName: { key: 'clientName', label: 'Cliente',     render: (j: LinkedInJobRow, c: Ctx) => <ClientNameInput value={c.clientNames[j.id] ?? ''} onChange={(v) => c.onClientName(j.id, v)} /> },
   fit:        { key: 'fit',        label: 'Hubo fit',    align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
+  brief:      { key: 'brief',      label: 'Meeting Brief', align: 'center' as const, render: (j: LinkedInJobRow) => <BriefButton job={j} /> },
   type:       { key: 'type',       label: 'Tipo',        render: (j: LinkedInJobRow) => <TypeCell value={j.employment_type} /> },
   salary:     { key: 'salary',     label: 'Rango $',     render: (j: LinkedInJobRow) => j.salary_raw ? <span className="font-mono text-[11px] text-accent-fg whitespace-nowrap">{j.salary_raw}</span> : <span className="text-fg-subtle">—</span> },
   seniority:  { key: 'seniority',  label: 'Seniority',   className: 'hidden lg:table-cell', render: (j: LinkedInJobRow) => j.seniority ? <span className="text-[11px] text-fg-muted whitespace-nowrap">{j.seniority}</span> : <span className="text-fg-subtle">—</span> },
@@ -260,7 +295,7 @@ export const LINKEDIN_VIEW_COLUMNS: Record<string, Col[]> = {
   qualified:      [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
   pipeline:       [COL.title, COL.company, COL.flow, COL.status, COL.type, COL.salary, COL.seniority, COL.applicants, COL.location, COL.industry, COL.score, COL.posted, COL.keyword, COL.link],
   sent:           [COL.title, COL.responded, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
-  client_reply:   [COL.title, COL.responded, COL.clientName, COL.fit, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
+  client_reply:   [COL.title, COL.responded, COL.clientName, COL.fit, COL.brief, COL.company, COL.flow, COL.type, COL.salary, COL.score, COL.location, COL.link, COL.sentDate],
   review:         [COL.title, COL.company, COL.flow, COL.declineReason, COL.salary, COL.applicants, COL.score, COL.type, COL.location, COL.posted, COL.link],
   discarded:      [COL.title, COL.company, COL.keyword, COL.declineReason, COL.salary, COL.status, COL.score, COL.type, COL.location, COL.link],
 }
