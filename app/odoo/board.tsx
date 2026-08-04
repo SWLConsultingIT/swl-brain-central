@@ -241,12 +241,14 @@ function Table({ leads }: { leads: OdooLead[] }) {
                     )}
                     {l.email && (
                       <a
-                        href={`mailto:${l.email}?subject=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(outreachMessage(l))}`}
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(l.email)}&su=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(outreachMessage(l))}`}
+                        target="_blank"
+                        rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        title="Abrir email con el mensaje ya escrito"
+                        title="Abrir Gmail con el mensaje ya escrito"
                         className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border border-border text-fg hover:bg-bg whitespace-nowrap transition"
                       >
-                        Email
+                        Gmail
                       </a>
                     )}
                     {l.portal_link && (
