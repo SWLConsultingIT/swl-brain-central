@@ -59,6 +59,7 @@ export async function generateMeetingBrief(job: BriefJob, anthropic: Anthropic):
     `- If a section, subsection, table, row or bullet has NO content that is directly supported by the inputs, OMIT IT ENTIRELY. Do not output the heading, do not write placeholders, "(a confirmar)", "N/A", "example", or generic filler. A short brief that only contains real, supported content is the goal.\n` +
     `- Do NOT fabricate SWL's experience, past projects, case studies, clients or metrics. Only mention our experience if it is stated in the cover letter; otherwise omit "Our Experience" and "Benefits" specifics.\n` +
     `- Sections 5 (Proposed Solution), 9.4/9.5 (Discovery Questions & approach) may reason from the challenges the client actually described — they are suggestions/questions, not factual claims — but must reference ONLY what the client wrote. No assumed tools, systems or context.\n` +
+    `- Do NOT add illustrative examples, categories, segments, tools, roles or terms that are not present in the inputs — not even inside a question or a parenthetical "(e.g., ...)". If the job post lists specific items, you may use those exact ones; never expand the list with your own examples.\n` +
     `- Every sentence must be traceable to the Job Post or the Cover Letter. If in doubt, leave it out.\n` +
     `- Be short, dense, bullet-first. Professional English.\n\n` +
     `Include ONLY the sections (from the template below) that you can fill with supported content. Skip the rest entirely.\n\n` +
