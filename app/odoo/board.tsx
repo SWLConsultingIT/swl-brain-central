@@ -241,7 +241,7 @@ function Table({ leads }: { leads: OdooLead[] }) {
                     )}
                     {l.email && (
                       <a
-                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(l.email)}&su=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(outreachMessage(l))}`}
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&authuser=sales@swlconsulting.com&to=${encodeURIComponent(l.email)}&su=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(outreachMessage(l))}`}
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
