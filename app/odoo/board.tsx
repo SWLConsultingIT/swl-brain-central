@@ -30,6 +30,9 @@ function outreachMessage(lead: OdooLead): string {
   )
 }
 
+// Link de la página de reservas (Google Calendar, crea el evento con Google Meet).
+const BOOKING_URL = 'https://calendar.app.google/A4pw4zWHZGn6Eynz8'
+
 // Mensaje base del email (editable acá). Se personaliza con el nombre.
 function emailMessage(lead: OdooLead): string {
   const first = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
@@ -38,7 +41,8 @@ function emailMessage(lead: OdooLead): string {
     `Vi que estás interesado/a en Odoo. Somos SWL Consulting, partner de Odoo: además de ayudarte a ` +
     `implementar los módulos de Odoo que necesites, podemos ayudarte a automatizar procesos, integrar ` +
     `tus sistemas y potenciar tu operación con soluciones de software, IA y datos.\n\n` +
-    `¿Tenés unos minutos para una breve charla y ver cómo podemos ayudarte?\n\n` +
+    `Si querés, podés reservar una reunión directamente acá (se crea con Google Meet):\n${BOOKING_URL}\n\n` +
+    `¿Tenés unos minutos para ver cómo podemos ayudarte?\n\n` +
     `Saludos,\nEquipo SWL Consulting`
   )
 }
