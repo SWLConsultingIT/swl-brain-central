@@ -389,13 +389,7 @@ function CopyButton({ job }: { job: JobRow }) {
 
   async function copy(e: React.MouseEvent) {
     e.stopPropagation()
-    const parts: string[] = [String(job.cover_letter_draft)]
-    const qa = Array.isArray(job.questions_answers) ? job.questions_answers : []
-    if (qa.length) {
-      parts.push('\n━━━━━ Respuestas de screening ━━━━━')
-      for (const a of qa) parts.push(`▸ ${a.question}\n${a.answer}`)
-    }
-    const text = parts.join('\n\n')
+    const text = String(job.cover_letter_draft) // solo la cover letter (su propio campo en Upwork)
 
     // Método moderno; si falla (Safari suele bloquear), cae al textarea + execCommand.
     let ok = false
@@ -434,7 +428,7 @@ function CopyButton({ job }: { job: JobRow }) {
   return (
     <button
       onClick={copy}
-      title="Copiar cover letter + respuestas para pegar en Upwork"
+      title="Copiar la cover letter para pegar en Upwork"
       className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer whitespace-nowrap ${
         done ? 'bg-accent-bg text-accent-fg' : 'border border-border text-fg hover:bg-bg'
       }`}

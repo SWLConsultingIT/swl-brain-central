@@ -11,6 +11,31 @@ type Props = {
   onClose: () => void
 }
 
+// Copiado robusto: intenta la API moderna y cae al textarea+execCommand (Safari).
+async function robustCopy(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    /* fallback */
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.top = '0'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
 export default function JobDetailModal({ job, onClose }: Props) {
   const router = useRouter()
   const original = job.cover_letter_draft ?? ''
@@ -237,12 +262,8 @@ export default function JobDetailModal({ job, onClose }: Props) {
   }
 
   const copyCoverLetter = async () => {
-    try {
-      await navigator.clipboard.writeText(draft)
-      showToast('✓ Copied to clipboard')
-    } catch {
-      setError('No se pudo copiar al portapapeles')
-    }
+    if (await robustCopy(draft)) showToast('✓ Cover letter copiada')
+    else setError('No se pudo copiar al portapapeles')
   }
 
   const sendToUpwork = async () => {
@@ -263,7 +284,7 @@ export default function JobDetailModal({ job, onClose }: Props) {
         setSavedDraft(draft)
       }
       // 2. Copy to clipboard
-      await navigator.clipboard.writeText(draft)
+      await robustCopy(draft)
       // 3. Open Upwork in new tab. NO cambiamos el status: el job se queda en
       //    Check Proposal hasta que toques "Mark Sent" (ya no pasa por Ready to Send).
       window.open(job.link, '_blank', 'noopener')
@@ -359,13 +380,26 @@ export default function JobDetailModal({ job, onClose }: Props) {
               {job.proposals_count != null && <span className="text-fg-subtle">· {job.proposals_count} props</span>}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-fg-subtle hover:text-fg transition text-xl leading-none p-1"
-            aria-label="Close"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {job.link && (
+              <a
+                href={job.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-bg border border-border text-xs font-medium text-fg-muted hover:text-fg hover:border-border-strong transition whitespace-nowrap"
+                title="Abrir el job en Upwork"
+              >
+                Open on Upwork ↗
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              className="text-fg-subtle hover:text-fg transition text-xl leading-none p-1"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
@@ -512,13 +546,21 @@ export default function JobDetailModal({ job, onClose }: Props) {
                           />
                           <div className="mt-1 flex items-center justify-between text-[10px] text-fg-subtle font-mono">
                             <span>{ans.answer.length} chars</span>
-                            <button
-                              onClick={() => regenerateAnswer(idx)}
-                              disabled={regeneratingIdx !== null}
-                              className="text-fg-subtle hover:text-fg disabled:opacity-50 transition-colors"
-                            >
-                              {regeneratingIdx === idx ? 'regenerating…' : '↻ regenerate'}
-                            </button>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={async () => { if (await robustCopy(ans.answer)) showToast('✓ Respuesta copiada') }}
+                                className="text-fg-subtle hover:text-fg transition-colors"
+                              >
+                                📋 copiar
+                              </button>
+                              <button
+                                onClick={() => regenerateAnswer(idx)}
+                                disabled={regeneratingIdx !== null}
+                                className="text-fg-subtle hover:text-fg disabled:opacity-50 transition-colors"
+                              >
+                                {regeneratingIdx === idx ? 'regenerating…' : '↻ regenerate'}
+                              </button>
+                            </div>
                           </div>
                         </>
                       ) : (
