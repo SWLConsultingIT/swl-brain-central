@@ -36,6 +36,7 @@ export type LinkedInJobRow = {
   notes: string | null
   meeting_brief_url: string | null
   had_fit: boolean | null
+  client_contact_name: string | null
   created_at: string
   updated_at: string | null
 }
@@ -44,7 +45,7 @@ const SELECT =
   'id, linkedin_id, link, title, description, company_name, company_url, location, city_region, country, industry, ' +
   'employment_type, workplace_type, seniority, job_function, applicants_count, easy_apply, salary_raw, posted_ago, ' +
   'post_date, matched_keyword, status, classifier_match, classifier_score, classifier_area, classifier_reason, ' +
-  'classifier_run_at, business_unit_id, match_score, cover_letter_draft, cover_letter_generated_at, notes, meeting_brief_url, had_fit, created_at, updated_at'
+  'classifier_run_at, business_unit_id, match_score, cover_letter_draft, cover_letter_generated_at, notes, meeting_brief_url, had_fit, client_contact_name, created_at, updated_at'
 
 // Estados que muestra el board (mismos que Upwork, sin invites/connects).
 const ACTIVE_STATUSES = ['qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']

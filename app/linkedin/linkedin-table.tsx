@@ -152,14 +152,23 @@ function RespondedCheckbox({ job }: { job: LinkedInJobRow }) {
   )
 }
 
-// Campo para escribir a mano el nombre del cliente; lo usa "Hubo fit" al mandar a Odoo.
-function ClientNameInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// Campo para escribir a mano el nombre del cliente. Se guarda en la BASE (onBlur) →
+// queda fijo y compartido entre usuarios.
+function ClientNameInput({ job, ctx }: { job: LinkedInJobRow; ctx: Ctx }) {
+  const value = ctx.clientNames[job.id] ?? job.client_contact_name ?? ''
   return (
     <input
       type="text"
       value={value}
       onClick={(e) => e.stopPropagation()}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => ctx.onClientName(job.id, e.target.value)}
+      onBlur={(e) => {
+        fetch(`/api/linkedin/${job.id}/client-name`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name: e.target.value }),
+        }).catch(() => {})
+      }}
       placeholder="Nombre cliente…"
       className="w-[130px] px-2 py-1 text-[11px] bg-bg border border-border rounded-md text-fg placeholder:text-fg-subtle focus:outline-none focus:border-fg transition-colors"
     />
@@ -281,10 +290,10 @@ const COL = {
   flow:       { key: 'flow',       label: 'Flow',        className: 'hidden md:table-cell', render: (j: LinkedInJobRow, c: Ctx) => <AreaPill label={flowOf(j, c)} /> },
   status:     { key: 'status',     label: 'Status',      render: (j: LinkedInJobRow) => <StatusPill status={j.status} /> },
   responded:  { key: 'responded',  label: 'Respondió',   align: 'center' as const, render: (j: LinkedInJobRow) => <RespondedCheckbox job={j} /> },
-  clientName: { key: 'clientName', label: 'Cliente',     render: (j: LinkedInJobRow, c: Ctx) => <ClientNameInput value={c.clientNames[j.id] ?? ''} onChange={(v) => c.onClientName(j.id, v)} /> },
+  clientName: { key: 'clientName', label: 'Cliente',     render: (j: LinkedInJobRow, c: Ctx) => <ClientNameInput job={j} ctx={c} /> },
   fit:        { key: 'fit',        label: 'Hubo fit',    align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitMarker job={j} want={true} ctx={c} /> },
   nofit:      { key: 'nofit',      label: 'No hubo fit', align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <FitMarker job={j} want={false} ctx={c} /> },
-  sendOdoo:   { key: 'sendOdoo',   label: 'Send to Odoo', align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <SendToOdooButton job={j} clientName={c.clientNames[j.id] ?? ''} /> },
+  sendOdoo:   { key: 'sendOdoo',   label: 'Send to Odoo', align: 'center' as const, render: (j: LinkedInJobRow, c: Ctx) => <SendToOdooButton job={j} clientName={c.clientNames[j.id] ?? j.client_contact_name ?? ''} /> },
   brief:      { key: 'brief',      label: 'Meeting Brief', align: 'center' as const, render: (j: LinkedInJobRow) => <BriefButton job={j} /> },
   type:       { key: 'type',       label: 'Tipo',        render: (j: LinkedInJobRow) => <TypeCell value={j.employment_type} /> },
   salary:     { key: 'salary',     label: 'Rango $',     render: (j: LinkedInJobRow) => j.salary_raw ? <span className="font-mono text-[11px] text-accent-fg whitespace-nowrap">{j.salary_raw}</span> : <span className="text-fg-subtle">—</span> },

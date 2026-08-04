@@ -66,6 +66,8 @@ export type JobRow = {
   meeting_brief_url: string | null
   // Marcador manual en Client Reply: true=hubo fit, false=no hubo fit, null=sin marcar (0039).
   had_fit: boolean | null
+  // Nombre del cliente persistido en Client Reply (compartido, migración 0040).
+  client_contact_name: string | null
 }
 
 const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency, hourly_average, duration, proposals_count, status, ' +
@@ -74,7 +76,7 @@ const SELECT = 'id, upwork_id, title, link, description, ticket, ticket_currency
   'matched_keyword, preferred_location, preferred_location_mandatory, experience_level, engagement, hourly_min, hourly_max, weekly_budget, skills, ' +
   'client_total_hires, client_total_spent, client_verification, client_total_reviews, client_rating, client_company_name, ' +
   'total_applicants, invites_sent, interviewing, unanswered_invites, total_hired, viewed_by_client, published_date, last_client_activity, ' +
-  'connects_base, connects_boost, is_invite, meeting_brief_url, had_fit'
+  'connects_base, connects_boost, is_invite, meeting_brief_url, had_fit, client_contact_name'
 
 const ACTIVE_STATUSES = ['prequalified', 'qualified', 'proposal_drafted', 'ready_to_send', 'sent', 'responded', 'discarded_review']
 const DISCARDED_LIMIT = 800
