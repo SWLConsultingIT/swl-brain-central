@@ -19,6 +19,17 @@ const STATUS_PILL: Record<string, string> = {
   discarded: 'bg-slate-bg text-fg-subtle',
 }
 
+// Mensaje base de presentación (editable acá). Se personaliza con nombre + empresa.
+function outreachMessage(lead: OdooLead): string {
+  const first = (lead.name ?? '').trim().split(/\s+/)[0] ?? ''
+  const forCompany = lead.company ? ` para ${lead.company}` : ''
+  return (
+    `Hola ${first}, ¿cómo estás? Te escribo de SWL Consulting, partner de Odoo. ` +
+    `Vi que dejaste tus datos interesado/a en Odoo${forCompany} y quería ponerme a disposición para ayudarte. ` +
+    `Somos una consultora de software, IA, automatización y datos. ¿Tenés unos minutos para una breve charla?`
+  )
+}
+
 type View = { id: string; label: string; statuses: string[] | null }
 
 const VIEWS: View[] = [
@@ -215,6 +226,29 @@ function Table({ leads }: { leads: OdooLead[] }) {
                 </td>
                 <td className="px-3 py-2 align-middle whitespace-nowrap text-right">
                   <div className="inline-flex items-center gap-1.5">
+                    {l.phone && (
+                      <a
+                        href={`https://wa.me/${l.phone.replace(/\D/g, '')}?text=${encodeURIComponent(outreachMessage(l))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Abrir WhatsApp con el mensaje ya escrito"
+                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition"
+                        style={{ backgroundColor: '#25D366', color: '#fff' }}
+                      >
+                        WhatsApp
+                      </a>
+                    )}
+                    {l.email && (
+                      <a
+                        href={`mailto:${l.email}?subject=${encodeURIComponent('SWL Consulting — Odoo')}&body=${encodeURIComponent(outreachMessage(l))}`}
+                        onClick={(e) => e.stopPropagation()}
+                        title="Abrir email con el mensaje ya escrito"
+                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border border-border text-fg hover:bg-bg whitespace-nowrap transition"
+                      >
+                        Email
+                      </a>
+                    )}
                     {l.portal_link && (
                       <a href={l.portal_link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="font-mono text-[10px] text-fg-subtle hover:text-fg whitespace-nowrap" title="Portal del contacto en Odoo">portal ↗</a>
                     )}
