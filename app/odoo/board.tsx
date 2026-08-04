@@ -41,8 +41,8 @@ function emailMessage(lead: OdooLead): string {
     `Vi que estás interesado/a en Odoo. Somos SWL Consulting, partner de Odoo: además de ayudarte a ` +
     `implementar los módulos de Odoo que necesites, podemos ayudarte a automatizar procesos, integrar ` +
     `tus sistemas y potenciar tu operación con soluciones de software, IA y datos.\n\n` +
-    `Si querés, podés reservar una reunión directamente acá (se crea con Google Meet):\n${BOOKING_URL}\n\n` +
     `¿Tenés unos minutos para ver cómo podemos ayudarte?\n\n` +
+    `📅 Agendá una reunión acá: ${BOOKING_URL}\n\n` +
     `Saludos,\nEquipo SWL Consulting`
   )
 }
